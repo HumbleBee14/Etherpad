@@ -61,13 +61,29 @@ public class MainActivity extends Activity implements OnMenuItemClickListener {
         System.loadLibrary("csoundandroid");
     }
 
+    private static final int MAX_TOUCHES = 10;
+
     private CsoundOboe csound;
     private CsoundCallbackWrapper csoundMessages;
     public MultiTouchView multiTouchView;
 
-    private final int[] touchIds = new int[10];
-    private final float[] touchX = new float[10];
-    private final float[] touchY = new float[10];
+    private final int[] touchIds = new int[MAX_TOUCHES];
+    private final float[] touchX = new float[MAX_TOUCHES];
+    private final float[] touchY = new float[MAX_TOUCHES];
+
+    private final String[] touchXChannel = new String[MAX_TOUCHES];
+    private final String[] touchYChannel = new String[MAX_TOUCHES];
+    private final String[] touchOnScore  = new String[MAX_TOUCHES];
+    private final String[] touchOffScore = new String[MAX_TOUCHES];
+
+    {
+        for (int i = 0; i < MAX_TOUCHES; i++) {
+            touchXChannel[i] = "touch." + i + ".x";
+            touchYChannel[i] = "touch." + i + ".y";
+            touchOnScore[i]  = "i1." + i + " 0 -2 " + i;
+            touchOffScore[i] = "i-1." + i + " 0 0 " + i;
+        }
+    }
 
     private final int[] sizes = { R.id.size_4, R.id.size_5, R.id.size_6, R.id.size_7, R.id.size_8,
             R.id.size_9, R.id.size_10, R.id.size_11, R.id.size_12, R.id.size_13, R.id.size_14 };
@@ -154,9 +170,9 @@ public class MainActivity extends Activity implements OnMenuItemClickListener {
                                     touchX[id] = event.getX(i) / multiTouchView.getWidth();
                                     touchY[id] = 1 - (event.getY(i) / multiTouchView.getHeight());
                                     if (csound != null) {
-                                        csound.SetControlChannel(String.format("touch.%d.x", id), touchX[id]);
-                                        csound.SetControlChannel(String.format("touch.%d.y", id), touchY[id]);
-                                        csound.InputMessage(String.format("i1.%d 0 -2 %d", id, id));
+                                        csound.SetControlChannel(touchXChannel[id], touchX[id]);
+                                        csound.SetControlChannel(touchYChannel[id], touchY[id]);
+                                        csound.InputMessage(touchOnScore[id]);
                                     }
                                 }
                             }
@@ -171,8 +187,8 @@ public class MainActivity extends Activity implements OnMenuItemClickListener {
                                 touchX[id] = event.getX(i) / multiTouchView.getWidth();
                                 touchY[id] = 1 - (event.getY(i) / multiTouchView.getHeight());
                                 if (csound != null) {
-                                    csound.SetControlChannel(String.format("touch.%d.x", id), touchX[id]);
-                                    csound.SetControlChannel(String.format("touch.%d.y", id), touchY[id]);
+                                    csound.SetControlChannel(touchXChannel[id], touchX[id]);
+                                    csound.SetControlChannel(touchYChannel[id], touchY[id]);
                                 }
                             }
                         }
@@ -186,7 +202,7 @@ public class MainActivity extends Activity implements OnMenuItemClickListener {
                         if (id != -1) {
                             touchIds[id] = -1;
                             if (csound != null) {
-                                csound.InputMessage(String.format("i-1.%d 0 0 %d", id, id));
+                                csound.InputMessage(touchOffScore[id]);
                             }
                         }
                         break;
@@ -201,39 +217,46 @@ public class MainActivity extends Activity implements OnMenuItemClickListener {
     }
 
     private void startCsound() {
+        multiTouchView.numberOfNotesProvider = () -> {
+            if (csound == null) return 8.0;
+            return csound.GetControlChannel("size");
+        };
+
         try {
             String csd = getResourceFileAsString(R.raw.etherpad);
             csound = new CsoundOboe();
 
-            csoundMessages = new CsoundCallbackWrapper(csound.getCsound()) {
-                @Override
-                public void MessageCallback(int attr, String msg) {
-                    Log.d(TAG, "csound: " + msg.trim());
-                }
-            };
-            csoundMessages.SetMessageCallback();
-            csound.SetMessageLevel(7);
+            if (BuildConfig.DEBUG) {
+                csoundMessages = new CsoundCallbackWrapper(csound.getCsound()) {
+                    @Override
+                    public void MessageCallback(int attr, String msg) {
+                        Log.d(TAG, "csound: " + msg.trim());
+                    }
+                };
+                csoundMessages.SetMessageCallback();
+                csound.SetMessageLevel(7);
+            } else {
+                csound.SetMessageLevel(0);
+            }
 
             int compileResult = csound.CompileCsdText(csd);
             if (compileResult != 0) {
                 Log.e(TAG, "CompileCsdText failed: " + compileResult);
+                csound = null;
                 return;
             }
 
             int startResult = csound.Start();
             if (startResult != 0) {
                 Log.e(TAG, "Start failed: " + startResult);
+                csound = null;
                 return;
             }
 
             csound.Play();
-
-            multiTouchView.numberOfNotesProvider = () -> {
-                if (csound == null) return 8.0;
-                return csound.GetControlChannel("size");
-            };
-        } catch (Throwable t) {
+        } catch (Exception t) {
             Log.e(TAG, "Failed to start Csound", t);
+            csound = null;
         }
     }
 
@@ -244,7 +267,8 @@ public class MainActivity extends Activity implements OnMenuItemClickListener {
             try {
                 csound.Stop();
                 csound.Cleanup();
-            } catch (Throwable ignored) {
+            } catch (Exception e) {
+                Log.w(TAG, "Csound shutdown threw", e);
             }
             csound = null;
         }
