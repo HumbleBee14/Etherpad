@@ -64,7 +64,7 @@ final class AboutViewController: UIViewController {
 
         // Developer credit
         let devLabel = UILabel()
-        devLabel.text = "iOS app by Dinesh (aka HumbleBee)"
+        devLabel.text = "iOS app by Dinesh"
         devLabel.font = .systemFont(ofSize: 17, weight: .semibold)
         devLabel.textColor = textColor
         devLabel.textAlignment = .center
@@ -76,20 +76,17 @@ final class AboutViewController: UIViewController {
             linkText: "dineshy.com",
             url: URL(string: "https://dineshy.com")!))
 
-        stack.addArrangedSubview(makeSpacer(16))
+        stack.addArrangedSubview(makeSpacer(24))
 
-        // Engine credit
-        let engineLabel = UILabel()
-        engineLabel.text = "Sound engine: Csound"
-        engineLabel.font = .systemFont(ofSize: 15)
-        engineLabel.textColor = subtleColor
-        engineLabel.textAlignment = .center
-        stack.addArrangedSubview(engineLabel)
+        // Visualizations
+        let visHeader = UILabel()
+        visHeader.text = "Visualizations"
+        visHeader.font = .systemFont(ofSize: 15, weight: .semibold)
+        visHeader.textColor = textColor
+        visHeader.textAlignment = .center
+        stack.addArrangedSubview(visHeader)
 
-        stack.addArrangedSubview(makeLinkView(
-            leading: "",
-            linkText: "csounds.com",
-            url: URL(string: "https://www.csounds.com")!))
+        stack.addArrangedSubview(makeEffectGrid())
 
         stack.addArrangedSubview(makeSpacer(20))
 
@@ -170,5 +167,86 @@ final class AboutViewController: UIViewController {
 
     @objc private func dismissSelf() {
         dismiss(animated: true)
+    }
+
+    // MARK: - Visualization chips
+
+    private var chips: [(UIButton, VisualEffects)] = []
+
+    private func makeEffectGrid() -> UIView {
+        chips.removeAll()
+        let items: [(String, VisualEffects)] = [("None", .none)]
+            + VisualEffects.all.map { ($0.label, $0) }
+
+        let cols = 3
+        let outer = UIStackView()
+        outer.axis = .vertical
+        outer.alignment = .center
+        outer.spacing = 8
+
+        var row: UIStackView?
+        for (i, item) in items.enumerated() {
+            if i % cols == 0 {
+                row = UIStackView()
+                row!.axis = .horizontal
+                row!.spacing = 8
+                row!.alignment = .center
+                outer.addArrangedSubview(row!)
+            }
+            let chip = makeChip(label: item.0, effect: item.1)
+            row!.addArrangedSubview(chip)
+            chips.append((chip, item.1))
+        }
+        return outer
+    }
+
+    private func makeChip(label: String, effect: VisualEffects) -> UIButton {
+        var cfg = UIButton.Configuration.plain()
+        cfg.attributedTitle = chipAttributed(label: label, isOn: isChipOn(effect))
+        cfg.baseForegroundColor = textColor
+        cfg.background.cornerRadius = 10
+        cfg.background.backgroundColor = UIColor.white.withAlphaComponent(0.06)
+        cfg.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 14, bottom: 10, trailing: 14)
+        let btn = UIButton(configuration: cfg, primaryAction: UIAction { [weak self] _ in
+            self?.toggle(effect)
+        })
+        return btn
+    }
+
+    private func isChipOn(_ effect: VisualEffects) -> Bool {
+        effect.rawValue == 0 ? VisualEffects.current.isEmpty
+                             : VisualEffects.current.contains(effect)
+    }
+
+    /// Bigger checkbox glyph + smaller label text, side-by-side in one
+    /// attributed string so the box and label share a single tap target.
+    private func chipAttributed(label: String, isOn: Bool) -> AttributedString {
+        var box = AttributedString(isOn ? "☑ " : "☐ ")
+        box.font = .systemFont(ofSize: 22)
+        box.foregroundColor = textColor
+        var name = AttributedString(label)
+        name.font = .systemFont(ofSize: 14)
+        name.foregroundColor = textColor
+        return box + name
+    }
+
+    private func toggle(_ effect: VisualEffects) {
+        if effect.rawValue == 0 {
+            VisualEffects.current = .none
+        } else {
+            var cur = VisualEffects.current
+            if cur.contains(effect) { cur.remove(effect) } else { cur.insert(effect) }
+            VisualEffects.current = cur
+        }
+        refreshChips()
+    }
+
+    private func refreshChips() {
+        for (btn, effect) in chips {
+            let label = effect.rawValue == 0 ? "None" : effect.label
+            var cfg = btn.configuration
+            cfg?.attributedTitle = chipAttributed(label: label, isOn: isChipOn(effect))
+            btn.configuration = cfg
+        }
     }
 }

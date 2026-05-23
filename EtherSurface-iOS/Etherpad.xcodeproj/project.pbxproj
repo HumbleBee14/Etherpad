@@ -15,6 +15,7 @@
 		A6220EE26DF77B1F7BB07A5B /* EtherpadViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D45A6FC8E72E5F76D667776A /* EtherpadViewController.swift */; };
 		AA7EEBC00F809FAA163EA3C0 /* logo.png in Resources */ = {isa = PBXBuildFile; fileRef = FB6D6CFF09FC4FFF00173174 /* logo.png */; };
 		B5485E7CEEF6E31ED6EA3E5D /* TouchSurfaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBCDF72A7572D182527EB70C /* TouchSurfaceView.swift */; };
+		B5485E7CEEF6E31ED6EA3E5E /* VisualEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBCDF72A7572D182527EB70D /* VisualEffects.swift */; };
 		C397246D22AFB03BCAD1F348 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7F596F37EDCAD3A5897614F3 /* Assets.xcassets */; };
 		E9D3E6CD2FC13CFB005E6DA3 /* CsoundiOS.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9D3E6CA2FC13C2D005E6DA3 /* CsoundiOS.xcframework */; };
 		E9D3E6CE2FC13CFB005E6DA3 /* CsoundiOS.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = E9D3E6CA2FC13C2D005E6DA3 /* CsoundiOS.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -53,6 +54,7 @@
 		97A0816C020BF0ABC8D41B1C /* AboutViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutViewController.swift; sourceTree = "<group>"; };
 		9F27D8CE40A002F33AE5D371 /* CsoundObj.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CsoundObj.m; sourceTree = "<group>"; };
 		BBCDF72A7572D182527EB70C /* TouchSurfaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchSurfaceView.swift; sourceTree = "<group>"; };
+		BBCDF72A7572D182527EB70D /* VisualEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualEffects.swift; sourceTree = "<group>"; };
 		CC90D15AF8CA6F08D2A79874 /* Etherpad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Etherpad.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D45A6FC8E72E5F76D667776A /* EtherpadViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EtherpadViewController.swift; sourceTree = "<group>"; };
 		E57CB3960F46B4B9EBF73C39 /* Etherpad-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Etherpad-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -119,6 +121,7 @@
 			isa = PBXGroup;
 			children = (
 				BBCDF72A7572D182527EB70C /* TouchSurfaceView.swift */,
+				BBCDF72A7572D182527EB70D /* VisualEffects.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -251,6 +254,7 @@
 				40E3D365C18539F2FEDB3949 /* CsoundObj.m in Sources */,
 				A6220EE26DF77B1F7BB07A5B /* EtherpadViewController.swift in Sources */,
 				B5485E7CEEF6E31ED6EA3E5D /* TouchSurfaceView.swift in Sources */,
+				B5485E7CEEF6E31ED6EA3E5E /* VisualEffects.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
