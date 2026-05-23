@@ -15,14 +15,6 @@ This repo hosts two implementations:
   engine on a native UIKit surface. The two ports share the `etherpad.csd`
   synth definition but otherwise have nothing in common code-wise.
 
-## Layout
-
-| Path | Contents |
-| ---- | -------- |
-| [`EtherSurface-Android/`](EtherSurface-Android/) | Android app — Gradle / AGP 8.5 / Java, Csound 6.19 via the Oboe Android SDK. See its own README. |
-| [`EtherSurface-iOS/`](EtherSurface-iOS/) | Etherpad — Xcode project, Swift + Obj-C, Csound iOS 7. See its own README. |
-| [`docs/`](docs/) | Cross-platform reference: architecture, Csound integration notes, the `.csd` synth definition, the 2014→2026 migration log, iOS port planning. |
-| `legacy/` | Local-only (gitignored). Decompiled 2014 EtherPad APK and resources, kept for diffing. |
 
 ## Build & install
 
@@ -34,5 +26,5 @@ This repo hosts two implementations:
 ## Credits
 
 - Original 2014 Android EtherSurface: **Paul Batchelor** ([batchelorsounds.com](https://batchelorsounds.com))
-- 2026 Android modernization + iOS app (Etherpad): **Dinesh / HumbleBee** ([dineshy.com](https://dineshy.com))
+- 2026 Android modernization + iOS app (Etherpad): **Dinesh** 
 - Sound engine: [Csound](https://www.csounds.com) by Barry Vercoe, Victor Lazzarini, et al.
