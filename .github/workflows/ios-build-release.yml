@@ -1,0 +1,111 @@
+name: iOS Build & Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'EtherSurface-iOS/**'
+      - '.github/workflows/ios-build-release.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build iOS App
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.2
+          bundler-cache: true
+
+      - name: Install Fastlane
+        run: |
+          gem install fastlane -NV
+          cd EtherSurface-iOS
+          fastlane --version
+
+      - name: Select Xcode version
+        run: sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+
+      - name: Install CocoaPods (if needed)
+        run: |
+          gem install cocoapods
+          cd EtherSurface-iOS
+          pod install --repo-update || true
+
+      - name: Build Archive
+        run: |
+          cd EtherSurface-iOS
+          xcodebuild \
+            -project Etherpad.xcodeproj \
+            -scheme Etherpad \
+            -configuration Release \
+            -archivePath $PWD/build/Etherpad.xcarchive \
+            -allowProvisioningUpdates \
+            archive
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - name: Export IPA
+        run: |
+          cd EtherSurface-iOS
+          xcodebuild \
+            -exportArchive \
+            -archivePath $PWD/build/Etherpad.xcarchive \
+            -exportOptionsPlist exportOptions.plist \
+            -exportPath $PWD/build/ipa
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - name: Upload IPA to Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Etherpad.ipa
+          path: EtherSurface-iOS/build/ipa/Etherpad.ipa
+          retention-days: 30
+
+      - name: Create Release Notes
+        run: |
+          cat > RELEASE_NOTES.md << 'EOF'
+          # Etherpad iOS App Release
+
+          **Version:** 1.0 (Build 1)
+          **Date:** $(date)
+          **Bundle ID:** com.humblebee.etherpad
+
+          ## What's Included
+          - Ready-to-submit IPA file
+          - Signed with Apple Distribution certificate
+          - All frameworks embedded (Csound, libSndfile)
+
+          ## Next Steps
+          1. Download the IPA artifact from this workflow
+          2. Go to App Store Connect (appstoreconnect.apple.com)
+          3. Create a new app version
+          4. Upload the IPA using Xcode (or use Transporter app)
+          5. Fill in app metadata (description, keywords, screenshots)
+          6. Submit for review
+
+          ## For Screenshots
+          Run the app in simulator and take screenshots of:
+          - Main touch surface view
+          - Effects menu
+          - About screen
+          EOF
+          cat RELEASE_NOTES.md
+
+      - name: Upload Release Notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: RELEASE_NOTES
+          path: RELEASE_NOTES.md
