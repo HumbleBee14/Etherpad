@@ -512,10 +512,14 @@ OSStatus  Csound_Render(void *inRefCon,
                                    AVAudioSessionCategoryOptionDefaultToSpeaker)
                                    error:&error];
         } else {
+          // DefaultToSpeaker is only valid for .playAndRecord. On .playback
+          // it triggers a noisy "Failed to set properties, error: 4294967246"
+          // warning in the iOS 17+ console. Audio is already routed to the
+          // speaker by default for playback sessions, so omitting it changes
+          // nothing functionally.
           success = [session
                       setCategory:AVAudioSessionCategoryPlayback
-                      withOptions:(AVAudioSessionCategoryOptionMixWithOthers |
-                                   AVAudioSessionCategoryOptionDefaultToSpeaker)
+                      withOptions:AVAudioSessionCategoryOptionMixWithOthers
                                    error:&error];
         }
             

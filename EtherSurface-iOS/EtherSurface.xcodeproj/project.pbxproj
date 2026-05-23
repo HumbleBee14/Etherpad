@@ -11,6 +11,7 @@
 		37C6ABF76E4DAF623B8CF569 /* logo_shadow.png in Resources */ = {isa = PBXBuildFile; fileRef = 4A5BB333ECC9469751EBCA26 /* logo_shadow.png */; };
 		40E3D365C18539F2FEDB3949 /* CsoundObj.m in Sources */ = {isa = PBXBuildFile; fileRef = 9F27D8CE40A002F33AE5D371 /* CsoundObj.m */; };
 		5E2F8DAAF338A0A386BAA573 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BF59E8C574D9F23440EEAA6 /* AppDelegate.swift */; };
+		5E2F8DAAF338A0A386BAA574 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BF59E8C574D9F23440EEAA6E /* SceneDelegate.swift */; };
 		A6220EE26DF77B1F7BB07A5B /* EtherSurfaceViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D45A6FC8E72E5F76D667776A /* EtherSurfaceViewController.swift */; };
 		AA7EEBC00F809FAA163EA3C0 /* logo.png in Resources */ = {isa = PBXBuildFile; fileRef = FB6D6CFF09FC4FFF00173174 /* logo.png */; };
 		B5485E7CEEF6E31ED6EA3E5D /* TouchSurfaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBCDF72A7572D182527EB70C /* TouchSurfaceView.swift */; };
@@ -47,6 +48,7 @@
 		4A5BB333ECC9469751EBCA26 /* logo_shadow.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = logo_shadow.png; sourceTree = "<group>"; };
 		71D16BE37D41AA9E7D6B781A /* CsoundEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CsoundEngine.swift; sourceTree = "<group>"; };
 		7BF59E8C574D9F23440EEAA6 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		7BF59E8C574D9F23440EEAA6E /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		7D6713FA6F75EF5F1CE2A741 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		7F596F37EDCAD3A5897614F3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97A0816C020BF0ABC8D41B1C /* AboutViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutViewController.swift; sourceTree = "<group>"; };
@@ -101,6 +103,7 @@
 			isa = PBXGroup;
 			children = (
 				7BF59E8C574D9F23440EEAA6 /* AppDelegate.swift */,
+				7BF59E8C574D9F23440EEAA6E /* SceneDelegate.swift */,
 				7F596F37EDCAD3A5897614F3 /* Assets.xcassets */,
 				E57CB3960F46B4B9EBF73C39 /* EtherSurface-Bridging-Header.h */,
 				D45A6FC8E72E5F76D667776A /* EtherSurfaceViewController.swift */,
@@ -247,6 +250,7 @@
 				E9D3E6D82FC13F2F005E6DA3 /* CsoundMIDI.m in Sources */,
 				FF365A60A91F3EA0C24E056E /* AboutViewController.swift in Sources */,
 				5E2F8DAAF338A0A386BAA573 /* AppDelegate.swift in Sources */,
+				5E2F8DAAF338A0A386BAA574 /* SceneDelegate.swift in Sources */,
 				EFCE75C9E6F4EA0D4C4387BD /* CsoundEngine.swift in Sources */,
 				40E3D365C18539F2FEDB3949 /* CsoundObj.m in Sources */,
 				A6220EE26DF77B1F7BB07A5B /* EtherSurfaceViewController.swift in Sources */,

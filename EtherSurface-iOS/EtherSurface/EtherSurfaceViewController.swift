@@ -15,6 +15,24 @@ final class EtherSurfaceViewController: UIViewController, TouchSurfaceDelegate {
     private let engine  = CsoundEngine()
     private let surface = TouchSurfaceView()
 
+    // MARK: - Toolbar buttons (kept so we can refresh their menus when
+    // selection changes — UIMenu is immutable, so to update the
+    // checkmark we have to rebuild and reassign the whole menu.)
+
+    private var scaleBtn:  UIBarButtonItem!
+    private var keyBtn:    UIBarButtonItem!
+    private var octBtn:    UIBarButtonItem!
+    private var sizeBtn:   UIBarButtonItem!
+    private var soundBtn:  UIBarButtonItem!
+
+    // MARK: - Current selections (mirror the CSD's init defaults)
+
+    private var selectedScale:  String = "Default"          // matches scaleDefault + giscale_type=0
+    private var selectedKey:    Int    = 0                  // C
+    private var selectedOctave: Int    = 4                  // 0 (middle) — Csound value 4
+    private var selectedSize:   Int    = 8                  // matches gisize init 8
+    private var selectedSound:  Int    = 0                  // Ether Pad
+
     // MARK: - Scales (exact copies from MainActivity.java)
 
     private let scaleMajor:   [Int] = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19, 21, 23]
@@ -137,78 +155,141 @@ final class EtherSurfaceViewController: UIViewController, TouchSurfaceDelegate {
 
         let flex = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
 
-        let scaleBtn  = makeMenuButton(title: "Scale",  menu: buildScaleMenu())
-        let keyBtn    = makeMenuButton(title: "Key",    menu: buildKeyMenu())
-        let octBtn    = makeMenuButton(title: "Octave", menu: buildOctaveMenu())
-        let sizeBtn   = makeMenuButton(title: "Size",   menu: buildSizeMenu())
-        let soundBtn  = makeMenuButton(title: "Sound",  menu: buildSoundMenu())
-        let aboutBtn  = UIBarButtonItem(title: "About", style: .plain, target: self,
-                                        action: #selector(showAbout))
+        scaleBtn  = UIBarButtonItem(title: "Scale",  menu: buildScaleMenu())
+        keyBtn    = UIBarButtonItem(title: "Key",    menu: buildKeyMenu())
+        octBtn    = UIBarButtonItem(title: "Octave", menu: buildOctaveMenu())
+        sizeBtn   = UIBarButtonItem(title: "Size",   menu: buildSizeMenu())
+        soundBtn  = UIBarButtonItem(title: "Sound",  menu: buildSoundMenu())
+        let aboutBtn = UIBarButtonItem(title: "About", style: .plain, target: self,
+                                       action: #selector(showAbout))
 
         toolbar.items = [scaleBtn, flex, keyBtn, flex, octBtn, flex, sizeBtn, flex, soundBtn, flex, aboutBtn]
     }
 
-    private func makeMenuButton(title: String, menu: UIMenu) -> UIBarButtonItem {
-        let btn = UIBarButtonItem(title: title, menu: menu)
-        return btn
+    /// Build a UIAction with a checkmark when `isSelected` is true.
+    /// If `isDefault`, prepend a small bullet so the user can identify
+    /// the CSD's original default value at a glance. (UIAction titles
+    /// are plain strings; iOS does not render attributed-string underlines
+    /// inside UIMenu rows, so a leading glyph is the cleanest equivalent.)
+    private func makeAction(title: String, isSelected: Bool, isDefault: Bool = false,
+                            handler: @escaping () -> Void) -> UIAction {
+        let displayTitle = isDefault ? "• \(title)" : title
+        return UIAction(title: displayTitle, state: isSelected ? .on : .off) { _ in handler() }
     }
 
-    // MARK: - Scale menu (12 items — exact match of scales.xml)
+    // MARK: - Menus
+    //
+    // Each menu shows a checkmark next to the currently selected option.
+    // After a selection, we update the stored state, push the value to
+    // Csound, refresh the button title to show the choice inline (e.g.
+    // "Scale: Major"), and rebuild the menu so the checkmark moves to
+    // the new row.
+
+    // Scale (12 items — exact match of scales.xml)
+
+    private struct ScaleOption {
+        let name: String
+        let steps: [Int]
+    }
+
+    private var scaleOptions: [ScaleOption] {
+        [
+            .init(name: "Default",     steps: scaleDefault),
+            .init(name: "Major",       steps: scaleMajor),
+            .init(name: "Minor",       steps: scaleMinor),
+            .init(name: "Pentatonic",  steps: scalePent),
+            .init(name: "Flamenco",    steps: scaleFlam),
+            .init(name: "Blues",       steps: scaleBlues),
+            .init(name: "Chromatic",   steps: scaleChrom),
+            .init(name: "Whole-Tone",  steps: scaleWhole),
+            .init(name: "Octatonic",   steps: scaleOct),
+            .init(name: "Bohlen-Pierce", steps: scaleBP),
+            .init(name: "Overtone Series Low",  steps: scaleOTLow),
+            .init(name: "Overtone Series High", steps: scaleOTHigh),
+        ]
+    }
 
     private func buildScaleMenu() -> UIMenu {
-        UIMenu(title: "Scale", children: [
-            UIAction(title: "Default")     { [weak self] _ in self?.engine.setScale(self!.scaleDefault) },
-            UIAction(title: "Major")       { [weak self] _ in self?.engine.setScale(self!.scaleMajor) },
-            UIAction(title: "Minor")       { [weak self] _ in self?.engine.setScale(self!.scaleMinor) },
-            UIAction(title: "Pentatonic")  { [weak self] _ in self?.engine.setScale(self!.scalePent) },
-            UIAction(title: "Flamenco")    { [weak self] _ in self?.engine.setScale(self!.scaleFlam) },
-            UIAction(title: "Blues")        { [weak self] _ in self?.engine.setScale(self!.scaleBlues) },
-            UIAction(title: "Chromatic")   { [weak self] _ in self?.engine.setScale(self!.scaleChrom) },
-            UIAction(title: "Whole-Tone")  { [weak self] _ in self?.engine.setScale(self!.scaleWhole) },
-            UIAction(title: "Octatonic")   { [weak self] _ in self?.engine.setScale(self!.scaleOct) },
-            UIAction(title: "Bohlen-Pierce") { [weak self] _ in self?.engine.setScale(self!.scaleBP) },
-            UIAction(title: "Overtone Series Low")  { [weak self] _ in self?.engine.setScale(self!.scaleOTLow) },
-            UIAction(title: "Overtone Series High") { [weak self] _ in self?.engine.setScale(self!.scaleOTHigh) },
-        ])
+        let actions = scaleOptions.map { opt in
+            makeAction(title: opt.name,
+                       isSelected: opt.name == selectedScale,
+                       isDefault: opt.name == "Default") { [weak self] in
+                guard let self = self else { return }
+                self.selectedScale = opt.name
+                self.engine.setScale(opt.steps)
+                self.scaleBtn.title = "Scale: \(opt.name)"
+                self.scaleBtn.menu = self.buildScaleMenu()
+            }
+        }
+        return UIMenu(title: "Scale", children: actions)
     }
 
-    // MARK: - Key menu (C through B — 12 chromatic roots)
+    // Key (C through B — 12 chromatic roots)
+
+    private let keyNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
     private func buildKeyMenu() -> UIMenu {
-        let keys = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-        return UIMenu(title: "Key", children: keys.enumerated().map { i, name in
-            UIAction(title: name) { [weak self] _ in self?.engine.setKey(i) }
-        })
+        let actions = keyNames.enumerated().map { i, name in
+            makeAction(title: name, isSelected: i == selectedKey, isDefault: i == 0) { [weak self] in
+                guard let self = self else { return }
+                self.selectedKey = i
+                self.engine.setKey(i)
+                self.keyBtn.title = "Key: \(name)"
+                self.keyBtn.menu = self.buildKeyMenu()
+            }
+        }
+        return UIMenu(title: "Key", children: actions)
     }
 
-    // MARK: - Octave menu (2, 1, 0, -1, -2 → Csound values 6, 5, 4, 3, 2)
+    // Octave (labels 2..-2 → Csound values 6..2)
+
+    private let octaveLabels = ["2", "1", "0", "-1", "-2"]
+    private let octaveValues = [6, 5, 4, 3, 2]
 
     private func buildOctaveMenu() -> UIMenu {
-        let labels = ["2", "1", "0", "-1", "-2"]
-        let values = [6, 5, 4, 3, 2]
-        return UIMenu(title: "Octave", children: zip(labels, values).map { label, val in
-            UIAction(title: label) { [weak self] _ in self?.engine.setOctave(val) }
-        })
+        let actions = zip(octaveLabels, octaveValues).map { label, val in
+            makeAction(title: label, isSelected: val == selectedOctave, isDefault: val == 4) { [weak self] in
+                guard let self = self else { return }
+                self.selectedOctave = val
+                self.engine.setOctave(val)
+                self.octBtn.title = "Octave: \(label)"
+                self.octBtn.menu = self.buildOctaveMenu()
+            }
+        }
+        return UIMenu(title: "Octave", children: actions)
     }
 
-    // MARK: - Size menu (4 through 14)
+    // Size (4 through 14)
 
     private func buildSizeMenu() -> UIMenu {
-        UIMenu(title: "Size", children: (4...14).map { n in
-            UIAction(title: "\(n)") { [weak self] _ in
-                self?.engine.setSize(n)
-                self?.surface.numberOfNotes = Double(n)
+        let actions = (4...14).map { n in
+            makeAction(title: "\(n)", isSelected: n == selectedSize, isDefault: n == 8) { [weak self] in
+                guard let self = self else { return }
+                self.selectedSize = n
+                self.engine.setSize(n)
+                self.surface.numberOfNotes = Double(n)
+                self.sizeBtn.title = "Size: \(n)"
+                self.sizeBtn.menu = self.buildSizeMenu()
             }
-        })
+        }
+        return UIMenu(title: "Size", children: actions)
     }
 
-    // MARK: - Sound menu (5 sounds — exact match of sounds.xml)
+    // Sound (5 sounds — exact match of sounds.xml)
+
+    private let soundNames = ["Ether Pad", "Distorted Dreams", "Xanpalamin", "Give it a Tri", "Digital Monk"]
 
     private func buildSoundMenu() -> UIMenu {
-        let names = ["Ether Pad", "Distorted Dreams", "Xanpalamin", "Give it a Tri", "Digital Monk"]
-        return UIMenu(title: "Sound", children: names.enumerated().map { i, name in
-            UIAction(title: name) { [weak self] _ in self?.engine.setSound(i) }
-        })
+        let actions = soundNames.enumerated().map { i, name in
+            makeAction(title: name, isSelected: i == selectedSound, isDefault: i == 0) { [weak self] in
+                guard let self = self else { return }
+                self.selectedSound = i
+                self.engine.setSound(i)
+                self.soundBtn.title = "Sound: \(name)"
+                self.soundBtn.menu = self.buildSoundMenu()
+            }
+        }
+        return UIMenu(title: "Sound", children: actions)
     }
 
     // MARK: - About
