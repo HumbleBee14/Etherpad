@@ -16,10 +16,19 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: Select Xcode
-        run: sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+      - name: Set up Xcode
+        run: |
+          # Find Xcode installation
+          XCODE_PATH=$(find /Applications -name "Xcode.app" -type d 2>/dev/null | head -1)
+          if [ -z "$XCODE_PATH" ]; then
+            echo "❌ Xcode not found!"
+            exit 1
+          fi
+          echo "Found Xcode at: $XCODE_PATH"
+          sudo xcode-select -s "$XCODE_PATH"
+          xcodebuild -version
 
       - name: Build Archive
         run: |
@@ -33,14 +42,24 @@ jobs:
             -configuration Release \
             -archivePath $PWD/build/Etherpad.xcarchive \
             -allowProvisioningUpdates \
+            -verbose \
             archive 2>&1 | tee build.log
 
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then
-            echo "❌ Archive failed!"
+          BUILD_STATUS=${PIPESTATUS[0]}
+          if [ $BUILD_STATUS -ne 0 ]; then
+            echo "❌ Archive failed with exit code $BUILD_STATUS"
+            tail -100 build.log
+            exit $BUILD_STATUS
+          fi
+
+          if [ ! -d "build/Etherpad.xcarchive" ]; then
+            echo "❌ Archive not created!"
+            tail -100 build.log
             exit 1
           fi
 
           echo "✅ Archive created successfully"
+          ls -lh build/Etherpad.xcarchive
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
@@ -56,15 +75,25 @@ jobs:
             -exportArchive \
             -archivePath $PWD/build/Etherpad.xcarchive \
             -exportOptionsPlist exportOptions.plist \
-            -exportPath $PWD/build/ipa 2>&1 | tee export.log
+            -exportPath $PWD/build/ipa \
+            -verbose \
+            2>&1 | tee export.log
 
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then
-            echo "❌ Export failed!"
+          EXPORT_STATUS=${PIPESTATUS[0]}
+          if [ $EXPORT_STATUS -ne 0 ]; then
+            echo "❌ Export failed with exit code $EXPORT_STATUS"
+            tail -100 export.log
+            exit $EXPORT_STATUS
+          fi
+
+          if [ ! -f "build/ipa/Etherpad.ipa" ]; then
+            echo "❌ IPA not created!"
+            tail -100 export.log
             exit 1
           fi
 
           echo "✅ IPA exported successfully"
-          ls -lh $PWD/build/ipa/Etherpad.ipa
+          ls -lh build/ipa/Etherpad.ipa
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
@@ -72,7 +101,7 @@ jobs:
 
       - name: Upload IPA Artifact
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Etherpad.ipa
           path: EtherSurface-iOS/build/ipa/Etherpad.ipa
@@ -80,7 +109,7 @@ jobs:
 
       - name: Upload Build Logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-logs
           path: |
@@ -88,7 +117,7 @@ jobs:
             EtherSurface-iOS/export.log
           retention-days: 7
 
-      - name: Summary
+      - name: Summary on Success
         if: success()
         run: |
           echo "✅ Build Complete!"
@@ -96,3 +125,18 @@ jobs:
           echo "📱 IPA ready for App Store submission"
           echo "📥 Download from: Actions → Artifacts → Etherpad.ipa"
           echo "📖 Next: Follow APP_STORE_CHECKLIST.md"
+
+      - name: Summary on Failure
+        if: failure()
+        run: |
+          echo "❌ Build Failed"
+          echo ""
+          echo "📋 Build logs uploaded as artifacts"
+          echo "Check: Actions → Artifacts → build-logs"
+          echo ""
+          echo "Common issues:"
+          echo "1. GitHub secrets not set (APPLE_ID, APPLE_ID_PASSWORD, APPLE_TEAM_ID)"
+          echo "2. No provisioning profile in Apple Developer account"
+          echo "3. Bundle ID mismatch (should be: com.humblebee.etherpad)"
+          echo ""
+          echo "📖 See IOS_DEPLOYMENT_GUIDE.md for setup instructions"
