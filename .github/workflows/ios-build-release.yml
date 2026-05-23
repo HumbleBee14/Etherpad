@@ -11,55 +11,36 @@ on:
 
 jobs:
   build:
-    name: Build iOS App
+    name: Build iOS App for App Store
     runs-on: macos-15
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: 3.2
-          bundler-cache: true
-
-      - name: Install Fastlane
-        run: |
-          gem install fastlane -NV
-          cd EtherSurface-iOS
-          fastlane --version
-
-      - name: Select Xcode version
+      - name: Select Xcode
         run: sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
-
-      - name: Install CocoaPods (if needed)
-        run: |
-          gem install cocoapods
-          cd EtherSurface-iOS
-          pod install --repo-update || true
 
       - name: Build Archive
         run: |
           cd EtherSurface-iOS
+          mkdir -p build
 
-          # Check if secrets are configured
-          if [ -z "$APPLE_ID" ] || [ -z "$APPLE_ID_PASSWORD" ] || [ -z "$TEAM_ID" ]; then
-            echo "⚠️  GitHub Secrets Not Configured"
-            echo "Add these secrets to: GitHub → Settings → Secrets and variables → Actions"
-            echo "  - APPLE_ID: your Apple email"
-            echo "  - APPLE_ID_PASSWORD: app-specific password from appleid.apple.com"
-            echo "  - APPLE_TEAM_ID: 10-char team ID from developer.apple.com"
-            exit 1
-          fi
-
+          echo "🔨 Building Etherpad.xcarchive..."
           xcodebuild \
             -project Etherpad.xcodeproj \
             -scheme Etherpad \
             -configuration Release \
             -archivePath $PWD/build/Etherpad.xcarchive \
             -allowProvisioningUpdates \
-            archive
+            archive 2>&1 | tee build.log
+
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then
+            echo "❌ Archive failed!"
+            exit 1
+          fi
+
+          echo "✅ Archive created successfully"
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
@@ -70,23 +51,26 @@ jobs:
         run: |
           cd EtherSurface-iOS
 
-          # Verify archive exists
-          if [ ! -d "build/Etherpad.xcarchive" ]; then
-            echo "❌ Archive not found. Build may have failed."
-            exit 1
-          fi
-
+          echo "📦 Exporting IPA..."
           xcodebuild \
             -exportArchive \
             -archivePath $PWD/build/Etherpad.xcarchive \
             -exportOptionsPlist exportOptions.plist \
-            -exportPath $PWD/build/ipa
+            -exportPath $PWD/build/ipa 2>&1 | tee export.log
+
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then
+            echo "❌ Export failed!"
+            exit 1
+          fi
+
+          echo "✅ IPA exported successfully"
+          ls -lh $PWD/build/ipa/Etherpad.ipa
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
-      - name: Upload IPA to Artifacts
+      - name: Upload IPA Artifact
         if: success()
         uses: actions/upload-artifact@v4
         with:
@@ -94,51 +78,21 @@ jobs:
           path: EtherSurface-iOS/build/ipa/Etherpad.ipa
           retention-days: 30
 
-      - name: Report on Failure
-        if: failure()
-        run: |
-          echo "⚠️  Build Failed"
-          echo ""
-          echo "Common issues:"
-          echo "1. GitHub Secrets not configured (APPLE_ID, APPLE_ID_PASSWORD, APPLE_TEAM_ID)"
-          echo "2. Provisioning profile not set up in Apple Developer account"
-          echo "3. Bundle ID mismatch (should be: com.humblebee.etherpad)"
-          echo ""
-          echo "📖 See IOS_DEPLOYMENT_GUIDE.md for detailed setup instructions"
-          exit 1
-
-      - name: Create Release Notes
-        run: |
-          cat > RELEASE_NOTES.md << 'EOF'
-          # Etherpad iOS App Release
-
-          **Version:** 1.0 (Build 1)
-          **Date:** $(date)
-          **Bundle ID:** com.humblebee.etherpad
-
-          ## What's Included
-          - Ready-to-submit IPA file
-          - Signed with Apple Distribution certificate
-          - All frameworks embedded (Csound, libSndfile)
-
-          ## Next Steps
-          1. Download the IPA artifact from this workflow
-          2. Go to App Store Connect (appstoreconnect.apple.com)
-          3. Create a new app version
-          4. Upload the IPA using Xcode (or use Transporter app)
-          5. Fill in app metadata (description, keywords, screenshots)
-          6. Submit for review
-
-          ## For Screenshots
-          Run the app in simulator and take screenshots of:
-          - Main touch surface view
-          - Effects menu
-          - About screen
-          EOF
-          cat RELEASE_NOTES.md
-
-      - name: Upload Release Notes
+      - name: Upload Build Logs
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: RELEASE_NOTES
-          path: RELEASE_NOTES.md
+          name: build-logs
+          path: |
+            EtherSurface-iOS/build.log
+            EtherSurface-iOS/export.log
+          retention-days: 7
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "✅ Build Complete!"
+          echo ""
+          echo "📱 IPA ready for App Store submission"
+          echo "📥 Download from: Actions → Artifacts → Etherpad.ipa"
+          echo "📖 Next: Follow APP_STORE_CHECKLIST.md"
