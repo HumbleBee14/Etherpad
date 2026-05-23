@@ -18,29 +18,12 @@
 		B5485E7CEEF6E31ED6EA3E5E /* VisualEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBCDF72A7572D182527EB70D /* VisualEffects.swift */; };
 		C397246D22AFB03BCAD1F348 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7F596F37EDCAD3A5897614F3 /* Assets.xcassets */; };
 		E9D3E6CD2FC13CFB005E6DA3 /* CsoundiOS.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9D3E6CA2FC13C2D005E6DA3 /* CsoundiOS.xcframework */; };
-		E9D3E6CE2FC13CFB005E6DA3 /* CsoundiOS.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = E9D3E6CA2FC13C2D005E6DA3 /* CsoundiOS.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		E9D3E6D12FC13D02005E6DA3 /* libSndfileiOS.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9D3E6CB2FC13C38005E6DA3 /* libSndfileiOS.xcframework */; };
-		E9D3E6D22FC13D02005E6DA3 /* libSndfileiOS.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = E9D3E6CB2FC13C38005E6DA3 /* libSndfileiOS.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		E9D3E6D82FC13F2F005E6DA3 /* CsoundMIDI.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D3E6D72FC13F2F005E6DA3 /* CsoundMIDI.m */; };
 		EFCE75C9E6F4EA0D4C4387BD /* CsoundEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71D16BE37D41AA9E7D6B781A /* CsoundEngine.swift */; };
 		F52F3B359F960552E55F1166 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7D6713FA6F75EF5F1CE2A741 /* LaunchScreen.storyboard */; };
 		FF365A60A91F3EA0C24E056E /* AboutViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97A0816C020BF0ABC8D41B1C /* AboutViewController.swift */; };
 /* End PBXBuildFile section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		E9D3E6D02FC13CFB005E6DA3 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				E9D3E6CE2FC13CFB005E6DA3 /* CsoundiOS.xcframework in Embed Frameworks */,
-				E9D3E6D22FC13D02005E6DA3 /* libSndfileiOS.xcframework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		1108A6C03B3C37B0106521D5 /* CsoundObj.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CsoundObj.h; sourceTree = "<group>"; };
@@ -180,7 +163,6 @@
 				432CD3C97FD8785748B02E00 /* Sources */,
 				95FE03720187EB3B6DF2FC9E /* Resources */,
 				E9D3E6CF2FC13CFB005E6DA3 /* Frameworks */,
-				E9D3E6D02FC13CFB005E6DA3 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -321,7 +303,11 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_LDFLAGS = "-lc++ -framework Accelerate";
+				OTHER_LDFLAGS = (
+					"-lc++",
+					"-framework",
+					Accelerate,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -423,7 +409,11 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
-				OTHER_LDFLAGS = "-lc++ -framework Accelerate";
+				OTHER_LDFLAGS = (
+					"-lc++",
+					"-framework",
+					Accelerate,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
