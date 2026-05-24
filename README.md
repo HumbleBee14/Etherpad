@@ -1,37 +1,44 @@
-# EtherSurface / Etherpad
+# Etherpad
 
-A multi-touch synthesizer instrument. Drag fingers across the screen to
-play — horizontal position picks pitch, vertical position controls
-intensity. Multiple scales, keys, octaves, sound modes. The audio
-engine is Csound; the UI is platform-native.
+An expressive multi-touch synthesizer for iPhone, iPad, and Android. Touch anywhere to make sound — every finger is an independent voice, driven by a professional [Csound](https://www.csound.com) synthesis engine. Slide, hold, lift; the music follows your gesture in real time.
 
-This repo hosts three implementations:
+No setup, no MIDI, no music theory required. Open and play.
 
-- **[EtherSurface-Android-v2/](EtherSurface-Android-v2/)** — *Etherpad v2*, a
-  from-scratch Kotlin + Jetpack Compose rewrite of the Android app in 2026
-  by Dinesh (HumbleBee). Mirrors the iOS architecture: raw `csoundPerformKsmps`
-  driven by Oboe in a small C++ engine; Compose handles the UI. Dropped the
-  v1 `csnd.CsoundOboe` Java wrapper because its threaded score scheduler
-  crashes Csound 6.19 with `FORTIFY pthread_mutex_lock` on score-end.
-- **[EtherSurface-Android/](EtherSurface-Android/)** — the original 2014
-  Android app by Paul Batchelor (CCRMA), modernized to Android 14 /
-  AGP 8.5 / Csound 6.19 in 2026. Kept for history; v2 is the active build.
-- **[EtherSurface-iOS/](EtherSurface-iOS/)** — *Etherpad*, the iOS / iPadOS
-  app built from scratch in 2026 by Dinesh (HumbleBee). Same Csound
-  engine on a native UIKit surface. The three ports share the `etherpad.csd`
-  synth definition but otherwise have nothing in common code-wise.
+<p align="center">
+  <img src="EtherSurface-Android-v2/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="120" alt="Etherpad" />
+</p>
+
+## Get the app
+
+- **Google Play (Android)** — *(Under review)* — [PlayStore](https://play.google.com/store/apps/details?id=com.humblebee.etherpad)
+- **App Store (iOS / iPadOS)** — *(Under review)*
+
+## Features
+
+- **Multi-touch synthesis** — every finger plays its own voice
+- **5 sound modes** — from lush pads to gritty leads
+- **12 musical scales** — Major, Minor, Pentatonic, Blues, Whole-Tone, Chromatic, Octatonic, Bohlen-Pierce, Flamenco, two Overtone Series, and the original Etherpad default
+- **Adjustable key, octave, and grid size** (4–14 notes per row)
+- **Optional visual effects** — ripples, finger trails, intensity rings, pitch-column glow
+- **iPad split-screen mode** — play two independent synths side-by-side on iPad
+- **Low-latency audio** — optimized for live performance
 
 
-## Build & install
+## Repository layout
 
-- **Android (v2, current)**: see [`EtherSurface-Android-v2/README.md`](EtherSurface-Android-v2/README.md).
-- **Android (v1, legacy)**: see [`EtherSurface-Android/README.md`](EtherSurface-Android/README.md).
-- **iOS / iPadOS**: see [`EtherSurface-iOS/README.md`](EtherSurface-iOS/README.md)
-  and [`EtherSurface-iOS/BUILD.md`](EtherSurface-iOS/BUILD.md) for the
-  step-by-step Csound framework setup.
+This repo is open source and contains three implementations sharing the same `etherpad.csd` synth definition:
+
+- **[EtherSurface-iOS](EtherSurface-iOS/)** — iPhone & iPad app. Swift + UIKit, Csound 6 framework. See [`BUILD.md`](EtherSurface-iOS/BUILD.md) for the Csound framework setup.
+- **[EtherSurface-Android](EtherSurface-Android-v2/)** — Android app. Kotlin + Jetpack Compose UI, with a small C++ engine driving Csound through Oboe. See its [README](EtherSurface-Android-v2/README.md) for build instructions.
+
+The three apps share the Csound score (`etherpad.csd`) and the same sonic identity but otherwise have nothing in common code-wise — each is idiomatic to its platform.
 
 ## Credits
 
-- Original 2014 Android EtherSurface: ([**Paul Batchelor**](https://paulbatchelor.github.io/about/))
-- 2026 Android modernization + iOS app (Etherpad): ([**Dinesh**](https://dineshy.com/))
-- Sound engine: [Csound](https://www.csound.com) by Barry Vercoe, Victor Lazzarini, et al.
+Etherpad is inspired by **EtherSurface**, an Android app written by [**Paul Batchelor**](https://paulbatchelor.github.io/about/) in 2014.
+
+- Sound engine — [Csound](https://www.csound.com) by Barry Vercoe, Victor Lazzarini, et al.
+
+## License
+
+See [LICENSE](LICENSE) for details.
