@@ -1,5 +1,5 @@
 # ============================================================
-# EtherSurface — combined .gitignore for Android + iOS monorepo
+# Etherpad — combined .gitignore for Android + iOS monorepo
 # ============================================================
 
 # ─── OS / editor ────────────────────────────────────────────
@@ -20,7 +20,7 @@ sign.sh
 legacy/
 
 # ============================================================
-# Android (EtherSurface-Android/)
+# Android (Etherpad-Android/)
 # ============================================================
 
 # Build outputs
@@ -40,7 +40,7 @@ captures/
 .cxx/
 
 # ============================================================
-# iOS (EtherSurface-iOS/)
+# iOS (Etherpad-iOS/)
 # ============================================================
 
 # Xcode user-specific state (window layout, breakpoints, scheme
@@ -78,14 +78,7 @@ fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
 
-# Third-party binary frameworks — large (~12 MB combined) and
-# downloaded per-developer via EtherSurface-iOS/SETUP_CSOUND.md,
-# not committed to git.
-*.xcframework/
-
-# NOTE: our own small Objective-C shim sources under
-# EtherSurface-iOS/Headers/ (CsoundObj.h/.m, CsoundMIDI.h/.m) are
-# patched copies of the Csound iOS examples that are part of the
-# build and remain tracked. The *.xcframework/ rule only matches
-# directories, so individual .h/.m files outside any xcframework
-# are not affected.
+# Csound iOS xcframeworks ARE tracked (~12 MB) so the repo clones
+# and builds without an extra download dance.
+# Our patched Objective-C shim sources at Etherpad-iOS/Headers/
+# (CsoundObj.h/.m, CsoundMIDI.h/.m) are also tracked.

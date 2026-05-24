@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'EtherSurface-iOS/**'
+      - 'Etherpad-iOS/**'
       - '.github/workflows/ios-build-release.yml'
   workflow_dispatch:
 
@@ -27,7 +27,7 @@ jobs:
           xcodebuild -version
 
       - name: Build for Simulator (no signing needed)
-        working-directory: EtherSurface-iOS
+        working-directory: Etherpad-iOS
         run: |
           xcodebuild \
             -project Etherpad.xcodeproj \

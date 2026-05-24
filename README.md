@@ -5,7 +5,7 @@ An expressive multi-touch synthesizer for iPhone, iPad, and Android. Touch anywh
 No setup, no MIDI, no music theory required. Open and play.
 
 <p align="center">
-  <img src="EtherSurface-Android-v2/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="120" alt="Etherpad" />
+  <img src="Etherpad-Android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="120" alt="Etherpad" />
 </p>
 
 ## Get the app
@@ -28,8 +28,8 @@ No setup, no MIDI, no music theory required. Open and play.
 
 This repo is open source and contains three implementations sharing the same `etherpad.csd` synth definition:
 
-- **[EtherSurface-iOS](EtherSurface-iOS/)** — iPhone & iPad app. Swift + UIKit, Csound 6 framework. See [`BUILD.md`](EtherSurface-iOS/BUILD.md) for the Csound framework setup.
-- **[EtherSurface-Android](EtherSurface-Android-v2/)** — Android app. Kotlin + Jetpack Compose UI, with a small C++ engine driving Csound through Oboe. See its [README](EtherSurface-Android-v2/README.md) for build instructions.
+- **[Etherpad-iOS](Etherpad-iOS/)** — iPhone & iPad app. Swift + UIKit, Csound 6 framework. See [`BUILD.md`](Etherpad-iOS/BUILD.md) for the Csound framework setup.
+- **[Etherpad-Android](Etherpad-Android/)** — Android app. Kotlin + Jetpack Compose UI, with a small C++ engine driving Csound through Oboe. See its [README](Etherpad-Android/README.md) for build instructions.
 
 The three apps share the Csound score (`etherpad.csd`) and the same sonic identity but otherwise have nothing in common code-wise — each is idiomatic to its platform.
 

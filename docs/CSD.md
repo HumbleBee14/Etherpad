@@ -23,7 +23,7 @@ time" constant) over a magic number.
 | ----------------- | --------- | ---------------------------- | --------------- |
 | `touch.<0..9>.x`  | input     | `MainActivity` touch handler | instr 1 (synth) |
 | `touch.<0..9>.y`  | input     | `MainActivity` touch handler | instr 1 (synth) |
-| `size`            | output    | instr 100 via `chnset`       | `MultiTouchView.numberOfNotesProvider` |
+| `size`            | output    | instr 100 via `chnset`       | platform UI reads to redraw grid |
 
 Score-event instruments triggered by menu actions: 100 (size), 101 (key),
 102 (octave), 103 (scale type), 104 (sound). Instr 1 is the per-touch
