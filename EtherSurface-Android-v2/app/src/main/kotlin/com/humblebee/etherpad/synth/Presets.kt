@@ -30,10 +30,11 @@ internal object Presets {
     /** Default octave "0" → engine value 4 → index 2. */
     const val DefaultOctaveIdx = 2
 
-    /** Sound mode names. The legacy 2014 .csd only defines `gisound == 0,1,2`;
-     *  any additional mode (Give It a Tri / Digital Monk) would require new
-     *  instr-1 branches in the .csd. */
-    val SoundLabels = arrayOf("Ether Pad", "Distorted Dreams", "Xanpalamin")
+    /** Sound mode names. Indices 0..2 are the original 2014 modes; 3 and 4
+     *  are the extra branches ported from the iOS .csd. */
+    val SoundLabels = arrayOf(
+        "Ether Pad", "Distorted Dreams", "Xanpalamin", "Give It a Tri", "Digital Monk",
+    )
     const val DefaultSoundIdx = 0
 
     /** Scale names shown in the picker. Order is important — it matches the

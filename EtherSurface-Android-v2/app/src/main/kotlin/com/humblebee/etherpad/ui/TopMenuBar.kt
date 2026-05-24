@@ -35,7 +35,7 @@ import com.humblebee.etherpad.synth.Presets
  * source of truth for everything except the UI's current pick.
  */
 @Composable
-internal fun TopMenuBar(synth: Synth, touchState: TouchState) {
+internal fun TopMenuBar(synth: Synth, touchState: TouchState, onAboutClick: () -> Unit) {
     // Defaults mirror the .csd's instr 100/101/102/103/104 init values.
     var sizeIdx   by remember { mutableIntStateOf(Presets.DefaultSizeIdx) }
     var keyIdx    by remember { mutableIntStateOf(Presets.DefaultKeyIdx) }
@@ -62,6 +62,8 @@ internal fun TopMenuBar(synth: Synth, touchState: TouchState) {
         MenuButton("Size")   { openMenu = "size" }
         Spacer(Modifier.padding(start = 20.dp))
         MenuButton("Sound")  { openMenu = "sound" }
+        Spacer(Modifier.padding(start = 20.dp))
+        MenuButton("About")  { onAboutClick() }
     }
 
     when (openMenu) {
