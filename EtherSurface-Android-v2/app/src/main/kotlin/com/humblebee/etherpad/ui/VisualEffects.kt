@@ -3,32 +3,16 @@ package com.humblebee.etherpad.ui
 import android.content.Context
 import android.content.SharedPreferences
 
-/**
- * User-selectable touch-surface visualizations. 1:1 port of the iOS
- * `VisualEffects` option set (see EtherSurface-iOS/Etherpad/Views/VisualEffects.swift).
- *
- * Stored as a bitmask in [SharedPreferences] so the choice survives app
- * restarts. Multiple effects can be active at once; passing the empty set
- * selects "None".
- */
+// Persisted as a bitmask in SharedPreferences; empty set selects "None".
 enum class VisualEffect(val mask: Int, val label: String) {
-    /** Concentric ring that expands outward from each new touch and fades. */
-    Ripple(1 shl 0, "Ripple on touch"),
-
-    /** Fading dots tracing each finger's recent path. */
-    Trail(1 shl 1, "Finger trail"),
-
-    /** Finger circle radius scales with Y position (low → small, high → large). */
-    Intensity(1 shl 2, "Y-intensity ring"),
-
-    /** Soft column highlight under each active finger's pitch column. */
-    ColumnGlow(1 shl 3, "Pitch column glow");
+    Ripple(1 shl 0, "Ripple"),
+    Trail(1 shl 1, "Trail"),
+    Intensity(1 shl 2, "Intensity Ring"),
+    ColumnGlow(1 shl 3, "Column Glow");
 
     companion object {
         const val PREFS_NAME = "EtherpadPrefs"
         const val PREFS_KEY  = "EtherpadVisualEffects"
-
-        /** All defined effects in the same order iOS lists them in About. */
         val all: List<VisualEffect> = entries.toList()
     }
 }

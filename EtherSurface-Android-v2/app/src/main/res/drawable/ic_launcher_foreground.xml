@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Left blue stripe (at x=49.5, i.e. (108-72)/2 + 72*16/64 = 18 + 18 = 36... no:
+         original SVG: 64-wide canvas, stripes at x=16 and x=48, circle r=24 at center.
+         Mapped to safe zone (centered 72x72 inside 108): scale = 72/64 = 1.125.
+         Origin offset = 18 (to center). So x=16*1.125+18 = 36, x=48*1.125+18 = 72. -->
+    <path
+        android:fillColor="#5072A7"
+        android:pathData="M35.4375,18 L36.5625,18 L36.5625,90 L35.4375,90 Z" />
+    <path
+        android:fillColor="#5072A7"
+        android:pathData="M71.4375,18 L72.5625,18 L72.5625,90 L71.4375,90 Z" />
+
+    <!-- Gold circle: center (32,32) radius 24 → center (54,54) radius 27 in canvas units -->
+    <path
+        android:fillColor="#80E9D66B"
+        android:pathData="M81,54 A27,27 0 1,1 27,54 A27,27 0 1,1 81,54 Z" />
+</vector>

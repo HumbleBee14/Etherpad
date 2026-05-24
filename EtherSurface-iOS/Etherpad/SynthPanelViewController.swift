@@ -1,9 +1,8 @@
 import UIKit
 import AVFoundation
 
-final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
+final class SynthPanelViewController: UIViewController, TouchSurfaceDelegate {
 
-    // Kept so we can rebuild menus on selection change — UIMenu is immutable.
     private let engine  = CsoundEngine()
     private let surface = TouchSurfaceView()
 
@@ -29,17 +28,11 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
     private let scaleFlam:    [Int] = [0, 1, 4, 5, 7, 8, 11, 12, 13, 16, 17, 19, 21, 22]
     private let scaleDefault: [Int] = [0, 2, 4, 7, 9, 11, 12, 14, 16, 19, 21, 24, 26, 28]
     private let scaleBP:      [Int] = [-1]
-    // Overtone series use giscale_type 2 and 3 in the CSD.
     private let scaleOTLow:   [Int] = [-2]
     private let scaleOTHigh:  [Int] = [-3]
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        // Audio session is configured by SplitSynthViewController on iPad; configure here for iPhone entry point.
-        if UIDevice.current.userInterfaceIdiom == .phone {
-            configureAudioSession()
-        }
 
         surface.delegate = self
         surface.translatesAutoresizingMaskIntoConstraints = false
@@ -62,15 +55,8 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
             name: AVAudioSession.interruptionNotification, object: nil)
     }
 
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        navigationController?.setNavigationBarHidden(true, animated: false)
-    }
-
     override var prefersStatusBarHidden: Bool { true }
     override var prefersHomeIndicatorAutoHidden: Bool { true }
-
-    // Edge touches belong to the synth, not the system swipe-up gestures.
     override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge { .all }
 
     deinit {
@@ -79,15 +65,16 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
         engine.stop()
     }
 
-    private func configureAudioSession() {
-        do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
-            try session.setPreferredIOBufferDuration(0.005)  // ~5 ms
-            try session.setActive(true)
-        } catch {
-            print("[Etherpad] Audio session setup failed: \(error)")
-        }
+    func touchBegan(slot: Int, x: Float, y: Float) {
+        engine.noteOn(slot: slot, x: x, y: y)
+    }
+
+    func touchMoved(slot: Int, x: Float, y: Float) {
+        engine.updatePosition(slot: slot, x: x, y: y)
+    }
+
+    func touchEnded(slot: Int) {
+        engine.noteOff(slot: slot)
     }
 
     @objc private func appWillResignActive() {
@@ -105,19 +92,6 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
             surface.cancelAllTouches()
             engine.allNotesOff()
         }
-        // On .ended, AVAudioSession resumes automatically for .playback category.
-    }
-
-    func touchBegan(slot: Int, x: Float, y: Float) {
-        engine.noteOn(slot: slot, x: x, y: y)
-    }
-
-    func touchMoved(slot: Int, x: Float, y: Float) {
-        engine.updatePosition(slot: slot, x: x, y: y)
-    }
-
-    func touchEnded(slot: Int) {
-        engine.noteOff(slot: slot)
     }
 
     private func configureToolbar() {
@@ -148,7 +122,6 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
         toolbar.items = [scaleBtn, flex, keyBtn, flex, octBtn, flex, sizeBtn, flex, soundBtn, flex, aboutBtn]
     }
 
-    // Leading bullet marks the CSD's default value — UIMenu rows don't support attributed underlines.
     private func makeAction(title: String, isSelected: Bool, isDefault: Bool = false,
                             handler: @escaping () -> Void) -> UIAction {
         let displayTitle = isDefault ? "• \(title)" : title
@@ -207,7 +180,6 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
         return UIMenu(title: "Key", children: actions)
     }
 
-    // Display labels 2..-2 map to Csound values 6..2.
     private let octaveLabels = ["2", "1", "0", "-1", "-2"]
     private let octaveValues = [6, 5, 4, 3, 2]
 

@@ -1,9 +1,3 @@
-// TouchSurfaceView.swift — full-screen multi-touch instrument surface.
-//
-// Renders the grid, finger circles, and optional visual effects selected
-// in About (ripple, trail, Y-intensity, column glow). All visuals run on
-// the main thread; audio is unaffected.
-
 import UIKit
 
 protocol TouchSurfaceDelegate: AnyObject {
@@ -14,8 +8,6 @@ protocol TouchSurfaceDelegate: AnyObject {
 
 final class TouchSurfaceView: UIView {
 
-    // MARK: - Configuration
-
     weak var delegate: TouchSurfaceDelegate?
 
     var numberOfNotes: Double = 8.0 {
@@ -24,8 +16,6 @@ final class TouchSurfaceView: UIView {
 
     private var effects: VisualEffects = .current
 
-    // MARK: - Visual constants
-
     private let bgColor     = UIColor(red: 0x3b/255, green: 0x44/255, blue: 0x4b/255, alpha: 1)
     private let lineColor   = UIColor(red: 0x50/255, green: 0x72/255, blue: 0xA7/255, alpha: 1)
     private let circleColor = UIColor(red: 233/255, green: 214/255, blue: 107/255, alpha: 0.5)
@@ -33,28 +23,19 @@ final class TouchSurfaceView: UIView {
     private let baseRadius: CGFloat = 60
     private let lineWidth: CGFloat = 3
 
-    // MARK: - Touch tracking
-
     private var activeVoices: [UITouch: Int] = [:]
     private let maxSlots = CsoundEngine.maxTouches
 
-    // MARK: - Effect state
-
-    /// Ripples in flight. Each ripple animates from radius=0 → bounds and
-    /// alpha=1 → 0 over ~0.8s, then is removed.
     private struct Ripple { var origin: CGPoint; var t: CFTimeInterval }
     private var ripples: [Ripple] = []
     private static let rippleDuration: CFTimeInterval = 0.8
     private static let rippleMaxRadius: CGFloat = 220
 
-    /// Per-touch trail: last N points + age. Older points fade.
     private struct TrailPoint { var p: CGPoint; var t: CFTimeInterval }
     private var trails: [UITouch: [TrailPoint]] = [:]
     private static let trailDuration: CFTimeInterval = 1.2
 
     private var displayLink: CADisplayLink?
-
-    // MARK: - Init
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -106,8 +87,6 @@ final class TouchSurfaceView: UIView {
         setNeedsDisplay()
     }
 
-    // MARK: - Drawing
-
     override func draw(_ rect: CGRect) {
         guard let ctx = UIGraphicsGetCurrentContext() else { return }
         let now = CACurrentMediaTime()
@@ -145,10 +124,12 @@ final class TouchSurfaceView: UIView {
             for (_, pts) in trails {
                 for tp in pts {
                     let age = now - tp.t
-                    let alpha = max(0, 1 - age / Self.trailDuration) * 0.35
+                    let life = max(0, 1 - age / Self.trailDuration)
+                    let alpha = life * 0.35
+                    // Older points shrink toward 30% of their original radius for a tapered trail.
+                    let r: CGFloat = 18 * (0.3 + 0.7 * CGFloat(life))
                     ctx.setFillColor(UIColor(red: 233/255, green: 214/255, blue: 107/255,
                                              alpha: alpha).cgColor)
-                    let r: CGFloat = 18
                     ctx.fillEllipse(in: CGRect(x: tp.p.x - r, y: tp.p.y - r, width: r * 2, height: r * 2))
                 }
             }
@@ -185,8 +166,6 @@ final class TouchSurfaceView: UIView {
             ctx.fillEllipse(in: CGRect(x: p.x - r, y: p.y - r, width: r * 2, height: r * 2))
         }
     }
-
-    // MARK: - Touch handling
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         for touch in touches {
@@ -246,8 +225,6 @@ final class TouchSurfaceView: UIView {
         super.didMoveToWindow()
         updateDisplayLink()
     }
-
-    // MARK: - Helpers
 
     private func nextFreeSlot() -> Int? {
         let used = Set(activeVoices.values)

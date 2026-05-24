@@ -1,9 +1,3 @@
-// AppDelegate.swift — app entry point
-//
-// Adopts the UIScene lifecycle (iOS 13+). Apple has marked the legacy
-// UIWindow-on-AppDelegate path for removal — this is the modern API.
-// Scene setup happens in SceneDelegate.swift.
-
 import UIKit
 
 @main

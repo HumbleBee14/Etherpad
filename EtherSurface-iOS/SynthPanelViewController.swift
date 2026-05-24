@@ -1,17 +1,20 @@
 import UIKit
 import AVFoundation
 
-final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
+final class SynthPanelViewController: UIViewController, TouchSurfaceDelegate {
 
-    // Kept so we can rebuild menus on selection change — UIMenu is immutable.
+    var showsAboutButton: Bool = true
+    var trailingAlignedToolbar: Bool = false
+
     private let engine  = CsoundEngine()
     private let surface = TouchSurfaceView()
 
-    private var scaleBtn:  UIBarButtonItem!
-    private var keyBtn:    UIBarButtonItem!
-    private var octBtn:    UIBarButtonItem!
-    private var sizeBtn:   UIBarButtonItem!
-    private var soundBtn:  UIBarButtonItem!
+    private var scaleBtn: UIButton!
+    private var keyBtn:   UIButton!
+    private var octBtn:   UIButton!
+    private var sizeBtn:  UIButton!
+    private var soundBtn: UIButton!
+    private weak var settingsBtn: UIButton?
 
     private var selectedScale:  String = "Default"
     private var selectedKey:    Int    = 0
@@ -29,23 +32,18 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
     private let scaleFlam:    [Int] = [0, 1, 4, 5, 7, 8, 11, 12, 13, 16, 17, 19, 21, 22]
     private let scaleDefault: [Int] = [0, 2, 4, 7, 9, 11, 12, 14, 16, 19, 21, 24, 26, 28]
     private let scaleBP:      [Int] = [-1]
-    // Overtone series use giscale_type 2 and 3 in the CSD.
     private let scaleOTLow:   [Int] = [-2]
     private let scaleOTHigh:  [Int] = [-3]
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // Audio session is configured by SplitSynthViewController on iPad; configure here for iPhone entry point.
-        if UIDevice.current.userInterfaceIdiom == .phone {
-            configureAudioSession()
-        }
-
         surface.delegate = self
         surface.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(surface)
+        // Surface extends behind the translucent toolbar so the blur has content to sample.
         NSLayoutConstraint.activate([
-            surface.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            surface.topAnchor.constraint(equalTo: view.topAnchor),
             surface.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             surface.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             surface.bottomAnchor.constraint(equalTo: view.bottomAnchor),
@@ -62,15 +60,8 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
             name: AVAudioSession.interruptionNotification, object: nil)
     }
 
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        navigationController?.setNavigationBarHidden(true, animated: false)
-    }
-
     override var prefersStatusBarHidden: Bool { true }
     override var prefersHomeIndicatorAutoHidden: Bool { true }
-
-    // Edge touches belong to the synth, not the system swipe-up gestures.
     override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge { .all }
 
     deinit {
@@ -79,15 +70,16 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
         engine.stop()
     }
 
-    private func configureAudioSession() {
-        do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
-            try session.setPreferredIOBufferDuration(0.005)  // ~5 ms
-            try session.setActive(true)
-        } catch {
-            print("[Etherpad] Audio session setup failed: \(error)")
-        }
+    func touchBegan(slot: Int, x: Float, y: Float) {
+        engine.noteOn(slot: slot, x: x, y: y)
+    }
+
+    func touchMoved(slot: Int, x: Float, y: Float) {
+        engine.updatePosition(slot: slot, x: x, y: y)
+    }
+
+    func touchEnded(slot: Int) {
+        engine.noteOff(slot: slot)
     }
 
     @objc private func appWillResignActive() {
@@ -105,50 +97,74 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
             surface.cancelAllTouches()
             engine.allNotesOff()
         }
-        // On .ended, AVAudioSession resumes automatically for .playback category.
-    }
-
-    func touchBegan(slot: Int, x: Float, y: Float) {
-        engine.noteOn(slot: slot, x: x, y: y)
-    }
-
-    func touchMoved(slot: Int, x: Float, y: Float) {
-        engine.updatePosition(slot: slot, x: x, y: y)
-    }
-
-    func touchEnded(slot: Int) {
-        engine.noteOff(slot: slot)
     }
 
     private func configureToolbar() {
-        let toolbar = UIToolbar()
-        toolbar.barStyle = .black
-        toolbar.isTranslucent = false
-        toolbar.barTintColor = UIColor(red: 0x3b/255, green: 0x44/255, blue: 0x4b/255, alpha: 1)
-        toolbar.tintColor = .white
-        toolbar.translatesAutoresizingMaskIntoConstraints = false
+        // Clip so toolbar can't overflow this panel's bounds in split mode.
+        view.clipsToBounds = true
 
-        view.addSubview(toolbar)
+        let effect: UIVisualEffect
+        if #available(iOS 26.0, *) {
+            effect = UIGlassEffect()
+        } else {
+            effect = UIBlurEffect(style: .systemThinMaterial)
+        }
+        let bar = UIVisualEffectView(effect: effect)
+        bar.clipsToBounds = true
+        bar.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(bar)
         NSLayoutConstraint.activate([
-            toolbar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            toolbar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            toolbar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            bar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            bar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            bar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            bar.heightAnchor.constraint(equalToConstant: 44),
         ])
 
-        let flex = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        scaleBtn = makeBarButton(title: "Scale",  menu: buildScaleMenu())
+        keyBtn   = makeBarButton(title: "Key",    menu: buildKeyMenu())
+        octBtn   = makeBarButton(title: "Octave", menu: buildOctaveMenu())
+        sizeBtn  = makeBarButton(title: "Size",   menu: buildSizeMenu())
+        soundBtn = makeBarButton(title: "Sound",  menu: buildSoundMenu())
 
-        scaleBtn  = UIBarButtonItem(title: "Scale",  menu: buildScaleMenu())
-        keyBtn    = UIBarButtonItem(title: "Key",    menu: buildKeyMenu())
-        octBtn    = UIBarButtonItem(title: "Octave", menu: buildOctaveMenu())
-        sizeBtn   = UIBarButtonItem(title: "Size",   menu: buildSizeMenu())
-        soundBtn  = UIBarButtonItem(title: "Sound",  menu: buildSoundMenu())
-        let aboutBtn = UIBarButtonItem(title: "About", style: .plain, target: self,
-                                       action: #selector(showAbout))
+        var buttons: [UIButton] = [scaleBtn, keyBtn, octBtn, sizeBtn, soundBtn]
+        if showsAboutButton {
+            let gear = UIButton(type: .system)
+            let cfg = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
+            gear.setImage(UIImage(systemName: "gearshape", withConfiguration: cfg), for: .normal)
+            gear.tintColor = .white
+            gear.addTarget(self, action: #selector(showSettings), for: .touchUpInside)
+            settingsBtn = gear
+            buttons.append(gear)
+        }
 
-        toolbar.items = [scaleBtn, flex, keyBtn, flex, octBtn, flex, sizeBtn, flex, soundBtn, flex, aboutBtn]
+        let stack = UIStackView(arrangedSubviews: buttons)
+        stack.axis = .horizontal
+        stack.distribution = .fillEqually
+        stack.alignment = .fill
+        stack.spacing = 0
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        bar.contentView.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: bar.contentView.topAnchor),
+            stack.bottomAnchor.constraint(equalTo: bar.contentView.bottomAnchor),
+            stack.leadingAnchor.constraint(equalTo: bar.contentView.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: bar.contentView.trailingAnchor),
+        ])
     }
 
-    // Leading bullet marks the CSD's default value — UIMenu rows don't support attributed underlines.
+    private func makeBarButton(title: String, menu: UIMenu) -> UIButton {
+        let b = UIButton(type: .system)
+        b.setTitle(title, for: .normal)
+        b.setTitleColor(.white, for: .normal)
+        b.titleLabel?.font = .systemFont(ofSize: 14)
+        b.titleLabel?.adjustsFontSizeToFitWidth = true
+        b.titleLabel?.minimumScaleFactor = 0.6
+        b.titleLabel?.lineBreakMode = .byClipping
+        b.menu = menu
+        b.showsMenuAsPrimaryAction = true
+        return b
+    }
+
     private func makeAction(title: String, isSelected: Bool, isDefault: Bool = false,
                             handler: @escaping () -> Void) -> UIAction {
         let displayTitle = isDefault ? "• \(title)" : title
@@ -185,7 +201,6 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
                 guard let self = self else { return }
                 self.selectedScale = opt.name
                 self.engine.setScale(opt.steps)
-                self.scaleBtn.title = "Scale: \(opt.name)"
                 self.scaleBtn.menu = self.buildScaleMenu()
             }
         }
@@ -200,14 +215,12 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
                 guard let self = self else { return }
                 self.selectedKey = i
                 self.engine.setKey(i)
-                self.keyBtn.title = "Key: \(name)"
                 self.keyBtn.menu = self.buildKeyMenu()
             }
         }
         return UIMenu(title: "Key", children: actions)
     }
 
-    // Display labels 2..-2 map to Csound values 6..2.
     private let octaveLabels = ["2", "1", "0", "-1", "-2"]
     private let octaveValues = [6, 5, 4, 3, 2]
 
@@ -217,7 +230,6 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
                 guard let self = self else { return }
                 self.selectedOctave = val
                 self.engine.setOctave(val)
-                self.octBtn.title = "Octave: \(label)"
                 self.octBtn.menu = self.buildOctaveMenu()
             }
         }
@@ -231,7 +243,6 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
                 self.selectedSize = n
                 self.engine.setSize(n)
                 self.surface.numberOfNotes = Double(n)
-                self.sizeBtn.title = "Size: \(n)"
                 self.sizeBtn.menu = self.buildSizeMenu()
             }
         }
@@ -246,16 +257,32 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
                 guard let self = self else { return }
                 self.selectedSound = i
                 self.engine.setSound(i)
-                self.soundBtn.title = "Sound: \(name)"
                 self.soundBtn.menu = self.buildSoundMenu()
             }
         }
         return UIMenu(title: "Sound", children: actions)
     }
 
-    @objc private func showAbout() {
-        let aboutVC = AboutViewController()
-        aboutVC.modalPresentationStyle = .pageSheet
-        present(aboutVC, animated: true)
+    @objc private func showSettings() {
+        let settings = AboutViewController()
+        settings.modalPresentationStyle = .popover
+        settings.preferredContentSize = CGSize(width: 520, height: 560)
+        if let pop = settings.popoverPresentationController {
+            pop.sourceView = settingsBtn
+            pop.sourceRect = settingsBtn?.bounds ?? .zero
+            pop.permittedArrowDirections = .up
+            pop.delegate = self
+        }
+        present(settings, animated: true)
+    }
+}
+
+extension SynthPanelViewController: UIPopoverPresentationControllerDelegate {
+    // Keep popover style even on compact-width iPhones (prevents full-screen sheet).
+    func adaptivePresentationStyle(
+        for controller: UIPresentationController,
+        traitCollection: UITraitCollection
+    ) -> UIModalPresentationStyle {
+        .none
     }
 }

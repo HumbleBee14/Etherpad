@@ -7,7 +7,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -25,11 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.humblebee.etherpad.engine.Synth
 import com.humblebee.etherpad.synth.Presets
 
-/**
- * Top action bar. Each parameter button (Octave / Scale / Key / Size / Sound)
- * is wrapped in its own [Box] so a [ChoiceDropdown] can anchor directly
- * beneath the button.
- */
+// Each button is wrapped in its own Box so its ChoiceDropdown anchors directly beneath it.
 @Composable
 internal fun TopMenuBar(synth: Synth, touchState: TouchState, onAboutClick: () -> Unit) {
     var sizeIdx   by remember { mutableIntStateOf(Presets.DefaultSizeIdx) }
@@ -44,7 +45,7 @@ internal fun TopMenuBar(synth: Synth, touchState: TouchState, onAboutClick: () -
         modifier = Modifier
             .fillMaxWidth()
             .height(40.dp)
-            .background(EtherColors.TopBar)
+            .background(EtherColors.TopBar.copy(alpha = 0.55f))
             .padding(horizontal = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -125,15 +126,19 @@ internal fun TopMenuBar(synth: Synth, touchState: TouchState, onAboutClick: () -
             },
         )
         Spacer(Modifier.padding(start = 20.dp))
-        MenuButton("About", onClick = onAboutClick)
+        IconButton(
+            onClick = onAboutClick,
+            modifier = Modifier.size(40.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Settings,
+                contentDescription = "Settings",
+                tint = Color.White,
+            )
+        }
     }
 }
 
-/**
- * A menu-bar entry that owns its own dropdown. The [ChoiceDropdown] is
- * placed inside the same [Box] as the button so it anchors directly under
- * the label, just like the original 2014 dropdowns.
- */
 @Composable
 private fun DropdownButton(
     label: String,
@@ -158,7 +163,6 @@ private fun DropdownButton(
     }
 }
 
-/** Single top-bar entry. Plain text button on the dark grey background. */
 @Composable
 private fun MenuButton(label: String, onClick: () -> Unit) {
     Box(
