@@ -63,20 +63,18 @@ final class AboutViewController: UIViewController {
 
         stack.addArrangedSubview(makeSpacer(20))
 
-        // iPad split-mode toggle (iPad only)
-        if UIDevice.current.userInterfaceIdiom == .pad {
-            let splitHeader = UILabel()
-            splitHeader.text = "Split Mode"
-            splitHeader.font = .systemFont(ofSize: 15, weight: .semibold)
-            splitHeader.textColor = textColor
-            splitHeader.textAlignment = .center
-            stack.addArrangedSubview(splitHeader)
+        // Split-mode toggle (available on all devices)
+        let splitHeader = UILabel()
+        splitHeader.text = "Split Mode"
+        splitHeader.font = .systemFont(ofSize: 15, weight: .semibold)
+        splitHeader.textColor = textColor
+        splitHeader.textAlignment = .center
+        stack.addArrangedSubview(splitHeader)
 
-            let splitToggle = makeSplitModeToggle()
-            stack.addArrangedSubview(splitToggle)
+        let splitToggle = makeSplitModeToggle()
+        stack.addArrangedSubview(splitToggle)
 
-            stack.addArrangedSubview(makeSpacer(20))
-        }
+        stack.addArrangedSubview(makeSpacer(20))
 
         // Performance tip
         let tip = UILabel()
