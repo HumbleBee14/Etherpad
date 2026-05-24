@@ -1,35 +1,20 @@
-// SplitSynthViewController.swift — iPad split-screen dual-synth container
-//
-// On iPad: manages two SynthPanelViewController instances (left/right) with shared About sheet.
-// Configures AVAudioSession once. Listens to SplitModeController changes and transitions
-// between split layout and single-synth full-screen.
-//
-// On iPhone: this VC should not be instantiated (SceneDelegate routes to EtherpadViewController instead).
-
 import UIKit
 import AVFoundation
 
 final class SplitSynthViewController: UIViewController {
 
-    // MARK: - Child view controllers
-
     private var leftPanel:  SynthPanelViewController?
     private var rightPanel: SynthPanelViewController?
-
-    // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
         configureAudioSession()
 
-        // Only iPad should use this controller, but add safety check
         if UIDevice.current.userInterfaceIdiom != .pad {
             fatalError("SplitSynthViewController is iPad-only")
         }
 
-        // On first launch, split mode is OFF — show single synth
-        // When user toggles split mode ON in About, we rebuild the layout
         rebuildLayout()
 
         NotificationCenter.default.addObserver(
@@ -45,8 +30,6 @@ final class SplitSynthViewController: UIViewController {
         NotificationCenter.default.removeObserver(self)
     }
 
-    // MARK: - Audio session
-
     private func configureAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
@@ -58,14 +41,11 @@ final class SplitSynthViewController: UIViewController {
         }
     }
 
-    // MARK: - Layout rebuild
-
     @objc private func splitModeDidChange() {
         rebuildLayout()
     }
 
     private func rebuildLayout() {
-        // Remove old child VCs
         leftPanel?.removeFromParent()
         rightPanel?.removeFromParent()
         leftPanel?.view.removeFromSuperview()
@@ -80,7 +60,6 @@ final class SplitSynthViewController: UIViewController {
         }
     }
 
-    // Split mode: two panels side-by-side
     private func layoutSplitMode() {
         let left = SynthPanelViewController()
         let right = SynthPanelViewController()
@@ -98,13 +77,11 @@ final class SplitSynthViewController: UIViewController {
         view.addSubview(right.view)
 
         NSLayoutConstraint.activate([
-            // Left panel: left 50% of screen
             left.view.topAnchor.constraint(equalTo: view.topAnchor),
             left.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             left.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             left.view.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.5),
 
-            // Right panel: right 50% of screen
             right.view.topAnchor.constraint(equalTo: view.topAnchor),
             right.view.leadingAnchor.constraint(equalTo: left.view.trailingAnchor),
             right.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
@@ -114,7 +91,6 @@ final class SplitSynthViewController: UIViewController {
         left.didMove(toParent: self)
         right.didMove(toParent: self)
 
-        // Add a divider line between them
         let divider = UIView()
         divider.backgroundColor = UIColor(red: 0x50/255, green: 0x72/255, blue: 0xA7/255, alpha: 0.5)
         divider.translatesAutoresizingMaskIntoConstraints = false
@@ -126,7 +102,6 @@ final class SplitSynthViewController: UIViewController {
             divider.widthAnchor.constraint(equalToConstant: 2),
         ])
 
-        // Add centered info button at top
         let infoBtn = UIButton(type: .infoLight)
         infoBtn.translatesAutoresizingMaskIntoConstraints = false
         infoBtn.addTarget(self, action: #selector(showAbout), for: .touchUpInside)
@@ -139,7 +114,6 @@ final class SplitSynthViewController: UIViewController {
         print("[Etherpad] Split mode: 2 synths side-by-side")
     }
 
-    // Single mode: one panel full-screen
     private func layoutSingleMode() {
         let panel = SynthPanelViewController()
         leftPanel = panel
@@ -160,8 +134,6 @@ final class SplitSynthViewController: UIViewController {
 
         print("[Etherpad] Single mode: 1 synth full-screen")
     }
-
-    // MARK: - About
 
     @objc private func showAbout() {
         let aboutVC = AboutViewController()

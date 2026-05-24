@@ -30,38 +30,14 @@ private const val TRAIL_DURATION_S     = 1.2f
 internal data class Ripple(val origin: Offset, val startNs: Long)
 internal data class TrailPoint(val pos: Offset, val startNs: Long)
 
-/**
- * State holder for the touch surface. Holds the visible per-slot finger
- * positions, the live note count, and the ephemeral animation buffers
- * (ripples, trails) shared with the renderer.
- */
 internal class TouchState {
-    /** Visible finger positions, indexed by slot. Compose-observable so the
-     *  Canvas redraws when they change. */
     val live: SnapshotStateMap<Int, Offset> = SnapshotStateMap()
-    /** Number of pitch columns currently drawn (updated by Size menu). */
     val numberOfNotes = mutableIntStateOf(Presets.SizeLabels[Presets.DefaultSizeIdx].toInt())
-    /** Ripples currently animating; populated on touch-down when the Ripple
-     *  effect is on. Pruned each frame in the animation loop. */
     val ripples = mutableStateListOf<Ripple>()
-    /** Per-slot fading trail dots; populated on touch-down/move when the
-     *  Trail effect is on. Pruned each frame. */
     val trails: SnapshotStateMap<Int, MutableList<TrailPoint>> = SnapshotStateMap()
 }
 
-/**
- * The instrument's main playing surface. Renders the slate background, the
- * pitch column glow (if enabled), the vertical pitch grid, finger trails,
- * ripples, and a translucent yellow disc under each active finger.
- *
- * Forwards every touch transition to the [Synth] so the engine spawns /
- * updates / ends notes.
- *
- * Multi-touch model: each Compose pointer id is mapped to a slot index in
- * [0, Presets.MAX_TOUCHES). Csound's instr 1 reads `touch.<slot>.x|y`
- * channels at audio rate, so per-frame UI updates push the latest value via
- * the [Synth] facade — no per-frame event scheduling needed.
- */
+// Each Compose pointer id maps to a slot in [0, Presets.MAX_TOUCHES).
 @Composable
 internal fun TouchSurface(
     synth: Synth,

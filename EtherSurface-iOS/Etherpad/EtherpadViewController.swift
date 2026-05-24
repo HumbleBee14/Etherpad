@@ -1,23 +1,11 @@
-// EtherpadViewController.swift — main view controller
-//
-// Faithful port of MainActivity.java: full-screen touch surface with a
-// toolbar row of five popup menus (Scale, Key, Octave, Size, Sound, About).
-// Every option, every scale array, every Csound score message is identical
-// to the Android version.
-
 import UIKit
 import AVFoundation
 
 final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
 
-    // MARK: - Sub-components
-
+    // Kept so we can rebuild menus on selection change — UIMenu is immutable.
     private let engine  = CsoundEngine()
     private let surface = TouchSurfaceView()
-
-    // MARK: - Toolbar buttons (kept so we can refresh their menus when
-    // selection changes — UIMenu is immutable, so to update the
-    // checkmark we have to rebuild and reassign the whole menu.)
 
     private var scaleBtn:  UIBarButtonItem!
     private var keyBtn:    UIBarButtonItem!
@@ -25,15 +13,11 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
     private var sizeBtn:   UIBarButtonItem!
     private var soundBtn:  UIBarButtonItem!
 
-    // MARK: - Current selections (mirror the CSD's init defaults)
-
-    private var selectedScale:  String = "Default"          // matches scaleDefault + giscale_type=0
-    private var selectedKey:    Int    = 0                  // C
-    private var selectedOctave: Int    = 4                  // 0 (middle) — Csound value 4
-    private var selectedSize:   Int    = 8                  // matches gisize init 8
-    private var selectedSound:  Int    = 0                  // Ether Pad
-
-    // MARK: - Scales (exact copies from MainActivity.java)
+    private var selectedScale:  String = "Default"
+    private var selectedKey:    Int    = 0
+    private var selectedOctave: Int    = 4
+    private var selectedSize:   Int    = 8
+    private var selectedSound:  Int    = 0
 
     private let scaleMajor:   [Int] = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19, 21, 23]
     private let scaleMinor:   [Int] = [0, 2, 3, 5, 7, 8, 11, 12, 14, 15, 17, 19, 20, 23]
@@ -45,17 +29,14 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
     private let scaleFlam:    [Int] = [0, 1, 4, 5, 7, 8, 11, 12, 13, 16, 17, 19, 21, 22]
     private let scaleDefault: [Int] = [0, 2, 4, 7, 9, 11, 12, 14, 16, 19, 21, 24, 26, 28]
     private let scaleBP:      [Int] = [-1]
-    // Overtone series use giscale_type 2 and 3 in the CSD
-    private let scaleOTLow:   [Int] = [-2]  // sentinel: giscale_type = 2
-    private let scaleOTHigh:  [Int] = [-3]  // sentinel: giscale_type = 3
-
-    // MARK: - Lifecycle
+    // Overtone series use giscale_type 2 and 3 in the CSD.
+    private let scaleOTLow:   [Int] = [-2]
+    private let scaleOTHigh:  [Int] = [-3]
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // Audio session is configured in SceneDelegate for iPad (SplitSynthViewController)
-        // or here for iPhone. Configure only if not already done (for iPhone entry point).
+        // Audio session is configured by SplitSynthViewController on iPad; configure here for iPhone entry point.
         if UIDevice.current.userInterfaceIdiom == .phone {
             configureAudioSession()
         }
@@ -98,8 +79,6 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
         engine.stop()
     }
 
-    // MARK: - Audio session
-
     private func configureAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
@@ -129,8 +108,6 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
         // On .ended, AVAudioSession resumes automatically for .playback category.
     }
 
-    // MARK: - TouchSurfaceDelegate
-
     func touchBegan(slot: Int, x: Float, y: Float) {
         engine.noteOn(slot: slot, x: x, y: y)
     }
@@ -142,8 +119,6 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
     func touchEnded(slot: Int) {
         engine.noteOff(slot: slot)
     }
-
-    // MARK: - Toolbar (mirrors Android ActionBar with 5 popup buttons + About)
 
     private func configureToolbar() {
         let toolbar = UIToolbar()
@@ -173,26 +148,12 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
         toolbar.items = [scaleBtn, flex, keyBtn, flex, octBtn, flex, sizeBtn, flex, soundBtn, flex, aboutBtn]
     }
 
-    /// Build a UIAction with a checkmark when `isSelected` is true.
-    /// If `isDefault`, prepend a small bullet so the user can identify
-    /// the CSD's original default value at a glance. (UIAction titles
-    /// are plain strings; iOS does not render attributed-string underlines
-    /// inside UIMenu rows, so a leading glyph is the cleanest equivalent.)
+    // Leading bullet marks the CSD's default value — UIMenu rows don't support attributed underlines.
     private func makeAction(title: String, isSelected: Bool, isDefault: Bool = false,
                             handler: @escaping () -> Void) -> UIAction {
         let displayTitle = isDefault ? "• \(title)" : title
         return UIAction(title: displayTitle, state: isSelected ? .on : .off) { _ in handler() }
     }
-
-    // MARK: - Menus
-    //
-    // Each menu shows a checkmark next to the currently selected option.
-    // After a selection, we update the stored state, push the value to
-    // Csound, refresh the button title to show the choice inline (e.g.
-    // "Scale: Major"), and rebuild the menu so the checkmark moves to
-    // the new row.
-
-    // Scale (12 items — exact match of scales.xml)
 
     private struct ScaleOption {
         let name: String
@@ -231,8 +192,6 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
         return UIMenu(title: "Scale", children: actions)
     }
 
-    // Key (C through B — 12 chromatic roots)
-
     private let keyNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
     private func buildKeyMenu() -> UIMenu {
@@ -248,8 +207,7 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
         return UIMenu(title: "Key", children: actions)
     }
 
-    // Octave (labels 2..-2 → Csound values 6..2)
-
+    // Display labels 2..-2 map to Csound values 6..2.
     private let octaveLabels = ["2", "1", "0", "-1", "-2"]
     private let octaveValues = [6, 5, 4, 3, 2]
 
@@ -266,8 +224,6 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
         return UIMenu(title: "Octave", children: actions)
     }
 
-    // Size (4 through 14)
-
     private func buildSizeMenu() -> UIMenu {
         let actions = (4...14).map { n in
             makeAction(title: "\(n)", isSelected: n == selectedSize, isDefault: n == 8) { [weak self] in
@@ -281,8 +237,6 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
         }
         return UIMenu(title: "Size", children: actions)
     }
-
-    // Sound (5 sounds — exact match of sounds.xml)
 
     private let soundNames = ["Ether Pad", "Distorted Dreams", "Xanpalamin", "Give it a Tri", "Digital Monk"]
 
@@ -298,8 +252,6 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
         }
         return UIMenu(title: "Sound", children: actions)
     }
-
-    // MARK: - About
 
     @objc private func showAbout() {
         let aboutVC = AboutViewController()

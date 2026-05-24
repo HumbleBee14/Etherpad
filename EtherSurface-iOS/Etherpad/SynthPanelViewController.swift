@@ -1,23 +1,10 @@
-// SynthPanelViewController.swift — one independent synth panel (engine + surface + toolbar)
-//
-// A reusable view controller that owns one CsoundEngine, one TouchSurfaceView, and one
-// toolbar with five control buttons (Scale, Key, Octave, Size, Sound). Used twice in
-// SplitSynthViewController (left and right panels on iPad) or once in SceneDelegate
-// (full-screen on iPhone / split mode OFF on iPad).
-//
-// Each panel maintains its own parameter state independently.
-
 import UIKit
 import AVFoundation
 
 final class SynthPanelViewController: UIViewController, TouchSurfaceDelegate {
 
-    // MARK: - Components
-
     private let engine  = CsoundEngine()
     private let surface = TouchSurfaceView()
-
-    // MARK: - Toolbar buttons
 
     private var scaleBtn:  UIBarButtonItem!
     private var keyBtn:    UIBarButtonItem!
@@ -25,15 +12,11 @@ final class SynthPanelViewController: UIViewController, TouchSurfaceDelegate {
     private var sizeBtn:   UIBarButtonItem!
     private var soundBtn:  UIBarButtonItem!
 
-    // MARK: - State (mirrors CSD defaults)
-
     private var selectedScale:  String = "Default"
     private var selectedKey:    Int    = 0
     private var selectedOctave: Int    = 4
     private var selectedSize:   Int    = 8
     private var selectedSound:  Int    = 0
-
-    // MARK: - Scales
 
     private let scaleMajor:   [Int] = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19, 21, 23]
     private let scaleMinor:   [Int] = [0, 2, 3, 5, 7, 8, 11, 12, 14, 15, 17, 19, 20, 23]
@@ -47,8 +30,6 @@ final class SynthPanelViewController: UIViewController, TouchSurfaceDelegate {
     private let scaleBP:      [Int] = [-1]
     private let scaleOTLow:   [Int] = [-2]
     private let scaleOTHigh:  [Int] = [-3]
-
-    // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -84,8 +65,6 @@ final class SynthPanelViewController: UIViewController, TouchSurfaceDelegate {
         engine.stop()
     }
 
-    // MARK: - TouchSurfaceDelegate
-
     func touchBegan(slot: Int, x: Float, y: Float) {
         engine.noteOn(slot: slot, x: x, y: y)
     }
@@ -97,8 +76,6 @@ final class SynthPanelViewController: UIViewController, TouchSurfaceDelegate {
     func touchEnded(slot: Int) {
         engine.noteOff(slot: slot)
     }
-
-    // MARK: - Lifecycle notifications
 
     @objc private func appWillResignActive() {
         surface.cancelAllTouches()
@@ -116,8 +93,6 @@ final class SynthPanelViewController: UIViewController, TouchSurfaceDelegate {
             engine.allNotesOff()
         }
     }
-
-    // MARK: - Toolbar
 
     private func configureToolbar() {
         let toolbar = UIToolbar()
@@ -152,8 +127,6 @@ final class SynthPanelViewController: UIViewController, TouchSurfaceDelegate {
         let displayTitle = isDefault ? "• \(title)" : title
         return UIAction(title: displayTitle, state: isSelected ? .on : .off) { _ in handler() }
     }
-
-    // MARK: - Menu builders
 
     private struct ScaleOption {
         let name: String
@@ -251,8 +224,6 @@ final class SynthPanelViewController: UIViewController, TouchSurfaceDelegate {
         }
         return UIMenu(title: "Sound", children: actions)
     }
-
-    // MARK: - About
 
     @objc private func showAbout() {
         let aboutVC = AboutViewController()

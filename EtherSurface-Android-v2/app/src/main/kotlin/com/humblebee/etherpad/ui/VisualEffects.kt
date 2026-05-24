@@ -3,14 +3,7 @@ package com.humblebee.etherpad.ui
 import android.content.Context
 import android.content.SharedPreferences
 
-/**
- * User-selectable touch-surface visualizations. 1:1 port of the iOS
- * `VisualEffects` option set (see EtherSurface-iOS/Etherpad/Views/VisualEffects.swift).
- *
- * Stored as a bitmask in [SharedPreferences] so the choice survives app
- * restarts. Multiple effects can be active at once; passing the empty set
- * selects "None".
- */
+// Persisted as a bitmask in SharedPreferences; empty set selects "None".
 enum class VisualEffect(val mask: Int, val label: String) {
     Ripple(1 shl 0, "Ripple"),
     Trail(1 shl 1, "Trail"),

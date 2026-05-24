@@ -4,19 +4,7 @@ import android.content.res.Resources
 import com.humblebee.etherpad.R
 import com.humblebee.etherpad.synth.Presets
 
-/**
- * Typed facade over [EtherEngine] that owns every Csound score-message string
- * the synth understands. The UI layer talks to this class in terms the
- * instrument cares about (`touchDown(slot, x, y)`, `setScale(idx)`, etc.) and
- * never builds raw "i1.0 0 -2 0" strings itself.
- *
- * Keeping all message formatting in one place means a future change to the
- * .csd's score conventions only touches this file.
- *
- * Thread-safety: every method here may be called from the UI thread. The
- * underlying JNI calls forward into Csound's lock-free input ring buffer, so
- * concurrency with the audio thread is safe.
- */
+// Centralises Csound score-message formatting. UI-thread safe (JNI calls feed Csound's lock-free input ring buffer).
 internal class Synth(resources: Resources) {
 
     init {
@@ -26,8 +14,7 @@ internal class Synth(resources: Resources) {
         check(EtherEngine.nativeStart())        { "Oboe stream failed to start" }
     }
 
-    /** Stop audio rendering. Csound itself is intentionally kept alive
-     *  (see engine.cpp for the reason) — only the Oboe stream closes. */
+    // Only the Oboe stream closes; Csound is intentionally kept alive (see engine.cpp).
     fun stop() = EtherEngine.nativeStop()
 
     // ── touch events ─────────────────────────────────────────────────────
@@ -73,7 +60,7 @@ internal class Synth(resources: Resources) {
         EtherEngine.nativeInputMessage("i104 0 0.5 $idx")
     }
 
-    /** Apply a 14-step scale table (or pass the Bohlen-Pierce sentinel). */
+    // Leading -1 in steps selects the Bohlen-Pierce sentinel path.
     fun setScale(steps: IntArray) {
         val msg = if (steps[0] == -1) {
             "i103 0 0.5 -1"

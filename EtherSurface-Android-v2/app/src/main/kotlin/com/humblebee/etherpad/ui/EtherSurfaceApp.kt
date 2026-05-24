@@ -1,6 +1,6 @@
 package com.humblebee.etherpad.ui
 
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -14,15 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.humblebee.etherpad.engine.Synth
 
-/**
- * Top-level composable. Wraps the touch surface and menu bar in a Material 3
- * dark colour scheme that uses the EtherSurface slate palette.
- *
- * No state of its own — every piece of state lives in either the [Synth]
- * (engine-side) or the child composables ([TouchState] for visible finger
- * positions and live note count; [TopMenuBar]'s `remember` blocks for the
- * selected indices).
- */
 @Composable
 internal fun EtherSurfaceApp(synth: Synth) {
     val ctx = LocalContext.current
@@ -32,9 +23,11 @@ internal fun EtherSurfaceApp(synth: Synth) {
 
     MaterialTheme(colorScheme = darkColorScheme(background = EtherColors.Background)) {
         Surface(modifier = Modifier.fillMaxSize(), color = EtherColors.Background) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                TopMenuBar(synth, touchState, onAboutClick = { showAbout = true })
+            Box(modifier = Modifier.fillMaxSize()) {
+                // Surface fills the screen; the menu bar overlays its top edge
+                // so the bar's translucent background reveals the columns behind it.
                 TouchSurface(synth, touchState, effects, modifier = Modifier.fillMaxSize())
+                TopMenuBar(synth, touchState, onAboutClick = { showAbout = true })
             }
             if (showAbout) {
                 AboutSheet(

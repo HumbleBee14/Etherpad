@@ -19,9 +19,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 
-/**
- * Compact dropdown picker shown directly under the tapped menu button 
- */
 @Composable
 internal fun ChoiceDropdown(
     expanded: Boolean,
