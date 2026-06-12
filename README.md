@@ -10,8 +10,8 @@ No setup, no MIDI, no music theory required. Open and play.
 
 ## Get the app
 
-- **Google Play (Android)** — *(Under review)* — [PlayStore](https://play.google.com/store/apps/details?id=com.humblebee.etherpad)
-- **App Store (iOS / iPadOS)** — *(Under review)*
+- **Google Play (Android)** — [Google PlayStore](https://play.google.com/store/apps/details?id=com.humblebee.etherpad)
+- **App Store (iOS / iPadOS)** — [Apple Store App](https://apps.apple.com/us/app/etherpad/id6772439909)
 
 ## Features
 
