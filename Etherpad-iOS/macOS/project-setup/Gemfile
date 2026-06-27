@@ -1,9 +1,4 @@
-# Pinned tooling for (re)generating the Etherpad-macOS Xcode target.
-# Usage (reproducible on any machine):
-#   cd Etherpad-iOS/macOS/project-setup
-#   bundle install
-#   bundle exec ruby setup_macos_target.rb
-# (Or, if xcodeproj is already installed system/user-wide: `ruby setup_macos_target.rb`.)
+# Tooling for setup_macos_target.rb. Run: bundle install && bundle exec ruby setup_macos_target.rb
 source "https://rubygems.org"
 
 gem "xcodeproj", "1.25.0"

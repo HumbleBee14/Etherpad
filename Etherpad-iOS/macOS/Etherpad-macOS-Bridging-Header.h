@@ -1,3 +1,2 @@
-// Exposes the macOS Csound 6.18.1 C API to the Etherpad-macOS Swift target.
-// (iOS uses a different framework, CsoundiOS.xcframework, via its own bridging header.)
+// macOS Csound 6.18.1 C API for the Etherpad-macOS target.
 #import <CsoundLib64/csound.h>

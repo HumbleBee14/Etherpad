@@ -1,8 +1,7 @@
 import Foundation
 
-// macOS-only copy of the synth value tables. Deliberately duplicated from the iOS
-// EtherpadViewController so the shipping iOS source is never touched and the two
-// platforms stay fully decoupled. If iOS ever changes a scale/sound, mirror it here.
+// macOS copy of the synth tables (mirrors iOS EtherpadViewController; kept separate
+// so iOS source is untouched). Mirror any iOS scale/sound change here.
 
 struct MacScaleOption { let name: String; let steps: [Int] }
 
@@ -37,7 +36,7 @@ enum MacSynthTables {
         ]
     }
     static let keyNames = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"]
-    // Display labels 2..-2 map to Csound octave values 6..2.
+    // Labels 2..-2 map to Csound octave values 6..2.
     static let octaveLabels = ["2","1","0","-1","-2"]
     static let octaveValues = [6, 5, 4, 3, 2]
     static let soundNames = ["Ether Pad","Distorted Dreams","Xanpalamin","Give it a Tri","Digital Monk"]

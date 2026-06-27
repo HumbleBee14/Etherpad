@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "D7C528B341FD95466873DDCA"
-               BuildableName = "Etherpad-macOS.app"
+               BuildableName = "Etherpad.app"
                BlueprintName = "Etherpad-macOS"
                ReferencedContainer = "container:Etherpad.xcodeproj">
             </BuildableReference>
@@ -31,7 +31,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "D7C528B341FD95466873DDCA"
-            BuildableName = "Etherpad-macOS.app"
+            BuildableName = "Etherpad.app"
             BlueprintName = "Etherpad-macOS"
             ReferencedContainer = "container:Etherpad.xcodeproj">
          </BuildableReference>
@@ -54,7 +54,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "D7C528B341FD95466873DDCA"
-            BuildableName = "Etherpad-macOS.app"
+            BuildableName = "Etherpad.app"
             BlueprintName = "Etherpad-macOS"
             ReferencedContainer = "container:Etherpad.xcodeproj">
          </BuildableReference>
@@ -71,7 +71,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "D7C528B341FD95466873DDCA"
-            BuildableName = "Etherpad-macOS.app"
+            BuildableName = "Etherpad.app"
             BlueprintName = "Etherpad-macOS"
             ReferencedContainer = "container:Etherpad.xcodeproj">
          </BuildableReference>
