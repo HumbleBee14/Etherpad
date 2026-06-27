@@ -1,0 +1,60 @@
+name: macOS Build
+
+on:
+  push:
+    branches:
+      - main
+      - macOS-Xperiment-multitouch
+    paths:
+      - 'Etherpad-iOS/**'
+      - '.github/workflows/macos-build.yml'
+  pull_request:
+    paths:
+      - 'Etherpad-iOS/**'
+      - '.github/workflows/macos-build.yml'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build:
+    name: Build macOS App
+    runs-on: macos-15  # arm64; CsoundLib64.framework in repo is arm64/universal
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Xcode
+        run: |
+          sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+          xcodebuild -version
+
+      - name: Check CSD drift (warn only)
+        working-directory: Etherpad-iOS
+        run: |
+          if ! diff -q Etherpad/Resources/etherpad.csd macOS/etherpad.csd >/dev/null; then
+            echo "::warning::iOS and macOS etherpad.csd differ — confirm this is intentional."
+          else
+            echo "etherpad.csd in sync across iOS and macOS."
+          fi
+
+      - name: Build macOS (no signing)
+        working-directory: Etherpad-iOS
+        run: |
+          xcodebuild \
+            -project Etherpad.xcodeproj \
+            -scheme Etherpad-macOS \
+            -configuration Release \
+            -destination 'platform=macOS' \
+            -derivedDataPath build/DerivedDataMac \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Result
+        if: success()
+        run: |
+          echo "macOS build succeeded."
+          echo "For App Store release: add signing (Developer ID / App Store cert),"
+          echo "then archive + notarize the Etherpad-macOS scheme."

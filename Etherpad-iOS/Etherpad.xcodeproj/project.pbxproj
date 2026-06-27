@@ -7,16 +7,26 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		16B0FFF1CD60E99928421CD9 /* MacSynthTables.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00C76DA0D09E5F638D001B8E /* MacSynthTables.swift */; };
+		1E3BC21BA05650AE9F102D35 /* CsoundLib64.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 176818AD3FD3732D4500313A /* CsoundLib64.framework */; };
 		23B6B950C905CD0E24563037 /* etherpad.csd in Resources */ = {isa = PBXBuildFile; fileRef = 2AAFC2E3511EC1E15B11152C /* etherpad.csd */; };
+		2D60643AEC3AAD91877E9739 /* MacSurfaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 927946F772CF3097D3332248 /* MacSurfaceView.swift */; };
 		37C6ABF76E4DAF623B8CF569 /* logo_shadow.png in Resources */ = {isa = PBXBuildFile; fileRef = 4A5BB333ECC9469751EBCA26 /* logo_shadow.png */; };
 		40E3D365C18539F2FEDB3949 /* CsoundObj.m in Sources */ = {isa = PBXBuildFile; fileRef = 9F27D8CE40A002F33AE5D371 /* CsoundObj.m */; };
 		5E2F8DAAF338A0A386BAA573 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BF59E8C574D9F23440EEAA6 /* AppDelegate.swift */; };
 		5E2F8DAAF338A0A386BAA574 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BF59E8C574D9F23440EEAA6E /* SceneDelegate.swift */; };
+		728ECDE38DF9A0D336478031 /* etherpad.csd in Resources */ = {isa = PBXBuildFile; fileRef = E4ED418A67903CEC1D0D2EB8 /* etherpad.csd */; };
+		79A40EDDBA1BD25E43A83622 /* MacSynthViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FD858A422F262A004AEC8C8 /* MacSynthViewController.swift */; };
+		7EF0F207BFF6CA803E7DFEB3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0459D88593563AE08363B271 /* Assets.xcassets */; };
 		A6220EE26DF77B1F7BB07A5B /* EtherpadViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D45A6FC8E72E5F76D667776A /* EtherpadViewController.swift */; };
 		AA7EEBC00F809FAA163EA3C0 /* logo.png in Resources */ = {isa = PBXBuildFile; fileRef = FB6D6CFF09FC4FFF00173174 /* logo.png */; };
 		B5485E7CEEF6E31ED6EA3E5D /* TouchSurfaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBCDF72A7572D182527EB70C /* TouchSurfaceView.swift */; };
 		B5485E7CEEF6E31ED6EA3E5E /* VisualEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBCDF72A7572D182527EB70D /* VisualEffects.swift */; };
+		B905C3D9DC41551A8CA521EE /* MacCsoundEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4B3718CF3F4FDD6D28F930F /* MacCsoundEngine.swift */; };
+		BB64D9E13C4799D5A9ECF2F6 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB0EBE82D314A2BBE30DCF88 /* Cocoa.framework */; };
+		C2E556B16E10DE98E161D317 /* CsoundLib64.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 176818AD3FD3732D4500313A /* CsoundLib64.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C397246D22AFB03BCAD1F348 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7F596F37EDCAD3A5897614F3 /* Assets.xcassets */; };
+		E0283414C0932713ADF3B3A1 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11587677099646A8784B8D95 /* main.swift */; };
 		E930DABC2FC2BBC40083C323 /* SplitModeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E930DAB92FC2BBC40083C323 /* SplitModeController.swift */; };
 		E930DABD2FC2BBC40083C323 /* SplitSynthViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E930DABA2FC2BBC40083C323 /* SplitSynthViewController.swift */; };
 		E930DABE2FC2BBC40083C323 /* SynthPanelViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E930DABB2FC2BBC40083C323 /* SynthPanelViewController.swift */; };
@@ -28,21 +38,48 @@
 		FF365A60A91F3EA0C24E056E /* AboutViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97A0816C020BF0ABC8D41B1C /* AboutViewController.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		0C1EF1E5E974A282F5E4AC41 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C2E556B16E10DE98E161D317 /* CsoundLib64.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		00C76DA0D09E5F638D001B8E /* MacSynthTables.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacSynthTables.swift; path = macOS/MacSynthTables.swift; sourceTree = "<group>"; };
+		0459D88593563AE08363B271 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = macOS/Assets.xcassets; sourceTree = "<group>"; };
 		1108A6C03B3C37B0106521D5 /* CsoundObj.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CsoundObj.h; sourceTree = "<group>"; };
+		11587677099646A8784B8D95 /* main.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = main.swift; path = macOS/main.swift; sourceTree = "<group>"; };
+		176818AD3FD3732D4500313A /* CsoundLib64.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CsoundLib64.framework; sourceTree = "<group>"; };
 		2AAFC2E3511EC1E15B11152C /* etherpad.csd */ = {isa = PBXFileReference; lastKnownFileType = text; path = etherpad.csd; sourceTree = "<group>"; };
+		312F55F2E10D297204649FF1 /* Etherpad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Etherpad.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4A5BB333ECC9469751EBCA26 /* logo_shadow.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = logo_shadow.png; sourceTree = "<group>"; };
+		5FD858A422F262A004AEC8C8 /* MacSynthViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacSynthViewController.swift; path = macOS/MacSynthViewController.swift; sourceTree = "<group>"; };
 		71D16BE37D41AA9E7D6B781A /* CsoundEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CsoundEngine.swift; sourceTree = "<group>"; };
 		7BF59E8C574D9F23440EEAA6 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7BF59E8C574D9F23440EEAA6E /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		7D6713FA6F75EF5F1CE2A741 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		7F596F37EDCAD3A5897614F3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		88447A549336C5D83A603A38 /* Info-macOS.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = "Info-macOS.plist"; path = "macOS/Info-macOS.plist"; sourceTree = "<group>"; };
+		927946F772CF3097D3332248 /* MacSurfaceView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacSurfaceView.swift; path = macOS/MacSurfaceView.swift; sourceTree = "<group>"; };
 		97A0816C020BF0ABC8D41B1C /* AboutViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutViewController.swift; sourceTree = "<group>"; };
 		9F27D8CE40A002F33AE5D371 /* CsoundObj.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CsoundObj.m; sourceTree = "<group>"; };
+		A15C0DB4757777B15891FE17 /* Etherpad-macOS.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; name = "Etherpad-macOS.entitlements"; path = "macOS/Etherpad-macOS.entitlements"; sourceTree = "<group>"; };
+		BB0EBE82D314A2BBE30DCF88 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk/System/Library/Frameworks/Cocoa.framework; sourceTree = DEVELOPER_DIR; };
 		BBCDF72A7572D182527EB70C /* TouchSurfaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchSurfaceView.swift; sourceTree = "<group>"; };
 		BBCDF72A7572D182527EB70D /* VisualEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualEffects.swift; sourceTree = "<group>"; };
+		C0F14925AF2F6250D58D1AF3 /* Etherpad-macOS-Bridging-Header.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = "Etherpad-macOS-Bridging-Header.h"; path = "macOS/Etherpad-macOS-Bridging-Header.h"; sourceTree = "<group>"; };
 		CC90D15AF8CA6F08D2A79874 /* Etherpad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Etherpad.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D45A6FC8E72E5F76D667776A /* EtherpadViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EtherpadViewController.swift; sourceTree = "<group>"; };
+		D4B3718CF3F4FDD6D28F930F /* MacCsoundEngine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacCsoundEngine.swift; path = macOS/MacCsoundEngine.swift; sourceTree = "<group>"; };
+		E4ED418A67903CEC1D0D2EB8 /* etherpad.csd */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = etherpad.csd; path = macOS/etherpad.csd; sourceTree = "<group>"; };
 		E57CB3960F46B4B9EBF73C39 /* Etherpad-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Etherpad-Bridging-Header.h"; sourceTree = "<group>"; };
 		E930DAB92FC2BBC40083C323 /* SplitModeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitModeController.swift; sourceTree = "<group>"; };
 		E930DABA2FC2BBC40083C323 /* SplitSynthViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitSynthViewController.swift; sourceTree = "<group>"; };
@@ -56,6 +93,15 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		6744E3DABE326AB56BDBD469 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB64D9E13C4799D5A9ECF2F6 /* Cocoa.framework in Frameworks */,
+				1E3BC21BA05650AE9F102D35 /* CsoundLib64.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E9D3E6CF2FC13CFB005E6DA3 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -88,8 +134,26 @@
 				E9D3E6CA2FC13C2D005E6DA3 /* CsoundiOS.xcframework */,
 				E9D3E6CB2FC13C38005E6DA3 /* libSndfileiOS.xcframework */,
 				E9D3E6CC2FC13CFB005E6DA3 /* Frameworks */,
+				49097174E271B19BE30BA102 /* macOS */,
 			);
 			sourceTree = "<group>";
+		};
+		49097174E271B19BE30BA102 /* macOS */ = {
+			isa = PBXGroup;
+			children = (
+				11587677099646A8784B8D95 /* main.swift */,
+				00C76DA0D09E5F638D001B8E /* MacSynthTables.swift */,
+				88447A549336C5D83A603A38 /* Info-macOS.plist */,
+				C0F14925AF2F6250D58D1AF3 /* Etherpad-macOS-Bridging-Header.h */,
+				D4B3718CF3F4FDD6D28F930F /* MacCsoundEngine.swift */,
+				E4ED418A67903CEC1D0D2EB8 /* etherpad.csd */,
+				927946F772CF3097D3332248 /* MacSurfaceView.swift */,
+				5FD858A422F262A004AEC8C8 /* MacSynthViewController.swift */,
+				A15C0DB4757777B15891FE17 /* Etherpad-macOS.entitlements */,
+				0459D88593563AE08363B271 /* Assets.xcassets */,
+			);
+			name = macOS;
+			sourceTree = SOURCE_ROOT;
 		};
 		64B5B26DB148A762B90F836A /* Etherpad */ = {
 			isa = PBXGroup;
@@ -118,6 +182,14 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
+		81EA77DB4F240FCA5130E015 /* OS X */ = {
+			isa = PBXGroup;
+			children = (
+				BB0EBE82D314A2BBE30DCF88 /* Cocoa.framework */,
+			);
+			name = "OS X";
+			sourceTree = "<group>";
+		};
 		CCE3527AC4F29A1FB109BB68 /* Engine */ = {
 			isa = PBXGroup;
 			children = (
@@ -141,6 +213,7 @@
 			isa = PBXGroup;
 			children = (
 				CC90D15AF8CA6F08D2A79874 /* Etherpad.app */,
+				312F55F2E10D297204649FF1 /* Etherpad.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -148,6 +221,8 @@
 		E9D3E6CC2FC13CFB005E6DA3 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				81EA77DB4F240FCA5130E015 /* OS X */,
+				176818AD3FD3732D4500313A /* CsoundLib64.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -178,10 +253,27 @@
 			dependencies = (
 			);
 			name = Etherpad;
-			packageProductDependencies = (
-			);
 			productName = Etherpad;
 			productReference = CC90D15AF8CA6F08D2A79874 /* Etherpad.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D7C528B341FD95466873DDCA /* Etherpad-macOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 00E1A2C5C7DEAA687492F7FC /* Build configuration list for PBXNativeTarget "Etherpad-macOS" */;
+			buildPhases = (
+				08EF403B06395C1DFC3C3E5C /* Sources */,
+				6744E3DABE326AB56BDBD469 /* Frameworks */,
+				4283E1BF9A0ED0B1AF819BBE /* Resources */,
+				0C1EF1E5E974A282F5E4AC41 /* Embed Frameworks */,
+				DD022EB931DD299B221F0364 /* Sign embedded Csound libraries */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Etherpad-macOS";
+			productName = "Etherpad-macOS";
+			productReference = 312F55F2E10D297204649FF1 /* Etherpad.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -191,7 +283,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 2650;
+				LastUpgradeCheck = 2660;
 				TargetAttributes = {
 					047C424D2DD3FCE6AACF5A23 = {
 						ProvisioningStyle = Automatic;
@@ -207,17 +299,26 @@
 			);
 			mainGroup = 3D7980E591E911F6833DE9F8;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
 			productRefGroup = E8E9C118AF0EF0C30AFD340C /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				047C424D2DD3FCE6AACF5A23 /* Etherpad */,
+				D7C528B341FD95466873DDCA /* Etherpad-macOS */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		4283E1BF9A0ED0B1AF819BBE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				728ECDE38DF9A0D336478031 /* etherpad.csd in Resources */,
+				7EF0F207BFF6CA803E7DFEB3 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		95FE03720187EB3B6DF2FC9E /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -232,7 +333,41 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		DD022EB931DD299B221F0364 /* Sign embedded Csound libraries */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Sign embedded Csound libraries";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Csound's nested audio dylibs (libsndfile + codecs) live in\n# CsoundLib64.framework/Versions/Current/libs and ship UNSIGNED. Xcode's Embed &\n# Sign signs the framework bundle + main binary but NOT these loose dylibs, so\n# hardened runtime rejects them at launch (\"Trying to load an unsigned library\").\n# Sign each one with the build identity, then re-seal the framework so its seal\n# includes the now-signed dylibs.\nset -e\n[ \"${CODE_SIGNING_ALLOWED}\" = \"YES\" ] || { echo \"code signing not allowed; skipping\"; exit 0; }\n[ -n \"${EXPANDED_CODE_SIGN_IDENTITY}\" ] || { echo \"no signing identity; skipping\"; exit 0; }\nFW=\"${CODESIGNING_FOLDER_PATH}/Contents/Frameworks/CsoundLib64.framework\"\n[ -d \"$FW\" ] || { echo \"framework not embedded; skipping\"; exit 0; }\nLIBS=\"$FW/Versions/Current/libs\"\nfor dylib in \"$LIBS\"/*.dylib; do\n  [ -f \"$dylib\" ] || continue\n  codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --options runtime \"$dylib\"\ndone\ncodesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --options runtime \"$FW/Versions/Current/CsoundLib64\"\ncodesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --options runtime \"$FW\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
+		08EF403B06395C1DFC3C3E5C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E0283414C0932713ADF3B3A1 /* main.swift in Sources */,
+				16B0FFF1CD60E99928421CD9 /* MacSynthTables.swift in Sources */,
+				B905C3D9DC41551A8CA521EE /* MacCsoundEngine.swift in Sources */,
+				2D60643AEC3AAD91877E9739 /* MacSurfaceView.swift in Sources */,
+				79A40EDDBA1BD25E43A83622 /* MacSynthViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		432CD3C97FD8785748B02E00 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -259,6 +394,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -330,6 +466,38 @@
 			};
 			name = Debug;
 		};
+		529D72F427F3A27BE715B9D7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = "macOS/Etherpad-macOS.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 252N2WS4Y3;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "macOS/Info-macOS.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.humblebee.etherpad;
+				PRODUCT_NAME = Etherpad;
+				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "macOS/Etherpad-macOS-Bridging-Header.h";
+				SWIFT_VERSION = 5.10;
+			};
+			name = Release;
+		};
 		71B35166E99BB82BA468493B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -378,6 +546,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -442,9 +611,50 @@
 			};
 			name = Release;
 		};
+		C1C97A7D3132E2E8ADC74D21 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = "macOS/Etherpad-macOS.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 252N2WS4Y3;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "macOS/Info-macOS.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.humblebee.etherpad;
+				PRODUCT_NAME = Etherpad;
+				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "macOS/Etherpad-macOS-Bridging-Header.h";
+				SWIFT_VERSION = 5.10;
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		00E1A2C5C7DEAA687492F7FC /* Build configuration list for PBXNativeTarget "Etherpad-macOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				529D72F427F3A27BE715B9D7 /* Release */,
+				C1C97A7D3132E2E8ADC74D21 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		45CF1265DB5E17E1B0A16F38 /* Build configuration list for PBXNativeTarget "Etherpad" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
