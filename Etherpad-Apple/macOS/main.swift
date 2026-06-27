@@ -56,6 +56,13 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate {
             keyEquivalent: "m")
         multitouchItem.keyEquivalentModifierMask = [.option]
         modeMenu.addItem(multitouchItem)
+
+        let immersiveItem = NSMenuItem(
+            title: "Toggle Immersive Mode",
+            action: #selector(MacSynthViewController.toggleImmersive),
+            keyEquivalent: "h")
+        immersiveItem.keyEquivalentModifierMask = [.option]
+        modeMenu.addItem(immersiveItem)
         modeItem.submenu = modeMenu
 
         NSApp.mainMenu = mainMenu

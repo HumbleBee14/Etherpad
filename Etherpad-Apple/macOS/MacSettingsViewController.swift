@@ -15,6 +15,10 @@ final class MacSettingsViewController: NSViewController {
     private var visMasterToggle: NSSwitch!
     private var chips: [(NSButton, VisualEffects)] = []
     private var themeSwatches: [(NSButton, MacTheme)] = []
+    private var holdSustainSwitch: NSSwitch!
+    private var holdTimeoutContainer: NSView!
+    private var holdSlider: NSSlider!
+    private var holdValueLabel: NSTextField!
     private var escMonitor: Any?
 
     override func loadView() {
@@ -48,6 +52,11 @@ final class MacSettingsViewController: NSViewController {
 
         stack.addArrangedSubview(makeThemeHeader())
         stack.addArrangedSubview(makeThemeContainer())
+
+        stack.addArrangedSubview(makeSustainHeader())
+        holdTimeoutContainer = makeSustainTimeoutRow()
+        holdTimeoutContainer.isHidden = TouchHoldSettings.mode == .native
+        stack.addArrangedSubview(holdTimeoutContainer)
 
         stack.addArrangedSubview(makeDeveloperLink())
         stack.addArrangedSubview(makeCreditsLabel())
@@ -284,6 +293,107 @@ final class MacSettingsViewController: NSViewController {
         guard let theme = themeSwatches.first(where: { $0.0 == sender })?.1 else { return }
         MacTheme.current = theme
         for (btn, t) in themeSwatches { applyThemeSwatchStyle(btn, theme: t) }
+    }
+
+    // MARK: - Note Sustain
+
+    private func makeSustainHeader() -> NSView {
+        let container = NSStackView()
+        container.orientation = .vertical
+        container.alignment = .leading
+        container.spacing = 4
+        container.translatesAutoresizingMaskIntoConstraints = false
+
+        let row = NSView()
+        row.translatesAutoresizingMaskIntoConstraints = false
+
+        let label = makeLabel("Note Sustain", size: 15, weight: .semibold)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        row.addSubview(label)
+
+        holdSustainSwitch = NSSwitch()
+        holdSustainSwitch.target = self
+        holdSustainSwitch.action = #selector(sustainModeToggled(_:))
+        holdSustainSwitch.state = TouchHoldSettings.mode == .native ? .on : .off
+        holdSustainSwitch.translatesAutoresizingMaskIntoConstraints = false
+        row.addSubview(holdSustainSwitch)
+
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: row.leadingAnchor),
+            label.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            holdSustainSwitch.trailingAnchor.constraint(equalTo: row.trailingAnchor),
+            holdSustainSwitch.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            row.heightAnchor.constraint(equalToConstant: 24),
+        ])
+
+        let caption = makeLabel(
+            "On: a note holds until you lift your finger (uses the trackpad's own touch). "
+            + "Off: the note auto-releases after a set time.",
+            size: 12, weight: .regular)
+        caption.textColor = subtleColor
+        caption.lineBreakMode = .byWordWrapping
+        caption.maximumNumberOfLines = 0
+        caption.preferredMaxLayoutWidth = innerWidth
+
+        container.addArrangedSubview(row)
+        container.addArrangedSubview(caption)
+        row.widthAnchor.constraint(equalToConstant: innerWidth).isActive = true
+        return container
+    }
+
+    private func makeSustainTimeoutRow() -> NSView {
+        let container = NSStackView()
+        container.orientation = .vertical
+        container.alignment = .leading
+        container.spacing = 6
+        container.translatesAutoresizingMaskIntoConstraints = false
+
+        let labelRow = NSView()
+        labelRow.translatesAutoresizingMaskIntoConstraints = false
+
+        let caption = makeLabel("Release after", size: 13, weight: .regular)
+        caption.textColor = subtleColor
+        caption.translatesAutoresizingMaskIntoConstraints = false
+        labelRow.addSubview(caption)
+
+        holdValueLabel = makeLabel(formatTimeout(TouchHoldSettings.timeout), size: 13, weight: .semibold)
+        holdValueLabel.textColor = textColor
+        holdValueLabel.translatesAutoresizingMaskIntoConstraints = false
+        labelRow.addSubview(holdValueLabel)
+
+        NSLayoutConstraint.activate([
+            caption.leadingAnchor.constraint(equalTo: labelRow.leadingAnchor),
+            caption.centerYAnchor.constraint(equalTo: labelRow.centerYAnchor),
+            holdValueLabel.trailingAnchor.constraint(equalTo: labelRow.trailingAnchor),
+            holdValueLabel.centerYAnchor.constraint(equalTo: labelRow.centerYAnchor),
+            labelRow.heightAnchor.constraint(equalToConstant: 18),
+        ])
+
+        holdSlider = NSSlider(value: TouchHoldSettings.timeout,
+                              minValue: TouchHoldSettings.minTimeout,
+                              maxValue: TouchHoldSettings.maxTimeout,
+                              target: self, action: #selector(sustainTimeoutChanged(_:)))
+        holdSlider.translatesAutoresizingMaskIntoConstraints = false
+
+        container.addArrangedSubview(labelRow)
+        container.addArrangedSubview(holdSlider)
+        labelRow.widthAnchor.constraint(equalToConstant: innerWidth).isActive = true
+        holdSlider.widthAnchor.constraint(equalToConstant: innerWidth).isActive = true
+        return container
+    }
+
+    @objc private func sustainModeToggled(_ sender: NSSwitch) {
+        TouchHoldSettings.mode = sender.state == .on ? .native : .timed
+        holdTimeoutContainer.isHidden = sender.state == .on
+    }
+
+    @objc private func sustainTimeoutChanged(_ sender: NSSlider) {
+        TouchHoldSettings.timeout = sender.doubleValue
+        holdValueLabel.stringValue = formatTimeout(sender.doubleValue)
+    }
+
+    private func formatTimeout(_ t: TimeInterval) -> String {
+        String(format: "%.1f s", t)
     }
 
     // MARK: - Credits

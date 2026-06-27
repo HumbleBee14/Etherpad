@@ -47,6 +47,8 @@ final class MacSurfaceView: NSView {
     private var touchSlots: [NSObject: Int] = [:]
     private var lastTouchEvent: TimeInterval = 0
     private var safetyTimer: Timer?
+    private var holdMode: TouchHoldMode = TouchHoldSettings.mode
+    private var holdTimeout: TimeInterval = TouchHoldSettings.timeout
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -58,13 +60,17 @@ final class MacSurfaceView: NSView {
     }
     private func commonInit() {
         allowedTouchTypes = [.indirect]
-        wantsRestingTouches = false
+        // Keep stationary fingers reported as active touches so held notes don't drop.
+        wantsRestingTouches = true
         NotificationCenter.default.addObserver(
             self, selector: #selector(effectsChanged),
             name: .visualEffectsChanged, object: nil)
         NotificationCenter.default.addObserver(
             self, selector: #selector(themeChanged),
             name: .themeChanged, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(holdSettingsChanged),
+            name: .touchHoldChanged, object: nil)
     }
 
     deinit {
@@ -81,6 +87,12 @@ final class MacSurfaceView: NSView {
     @objc private func themeChanged() {
         theme = .current
         needsDisplay = true
+    }
+
+    @objc private func holdSettingsChanged() {
+        holdMode = TouchHoldSettings.mode
+        holdTimeout = TouchHoldSettings.timeout
+        if multitouchActive { startSafetySweep() }
     }
 
     private func updateDisplayLink() {
@@ -332,9 +344,13 @@ final class MacSurfaceView: NSView {
 
     private func startSafetySweep() {
         stopSafetySweep()
-        safetyTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
+        // Native mode trusts the trackpad's lift detection — no auto-release timer.
+        guard holdMode == .timed else { return }
+        let timeout = holdTimeout
+        let interval = min(0.2, max(0.05, timeout / 4))
+        safetyTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             guard let self = self, !self.touchSlots.isEmpty else { return }
-            if ProcessInfo.processInfo.systemUptime - self.lastTouchEvent > 0.3 {
+            if ProcessInfo.processInfo.systemUptime - self.lastTouchEvent > timeout {
                 self.cancelAllTouches()
             }
         }

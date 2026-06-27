@@ -12,6 +12,14 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     private let bannerBlur = NSVisualEffectView()
     private let bannerLabel = NSTextField(labelWithString: "Multitouch Mode On — Press Esc to Exit")
 
+    private var controlBar: NSView!
+    private var immersiveButton: NSButton!
+    private var immersiveMode = false
+    private var barShown = true
+    private var barHideWork: DispatchWorkItem?
+    /// Distance from the top edge within which mouse movement reveals the hidden bar.
+    private let revealZoneHeight: CGFloat = 56
+
     private var scalePopup: NSPopUpButton!
     private var keyPopup: NSPopUpButton!
     private var octavePopup: NSPopUpButton!
@@ -28,7 +36,9 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     }
 
     override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 1200, height: 790))
+        let container = ImmersiveContainerView(frame: NSRect(x: 0, y: 0, width: 1200, height: 790))
+        container.onMouseMoved = { [weak self] point in self?.handleMouseMoved(point) }
+        view = container
     }
 
     override func viewDidLoad() {
@@ -70,6 +80,14 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         barSpacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         bar.addArrangedSubview(barSpacer)
 
+        let immersiveImg = NSImage(systemSymbolName: "arrow.up.left.and.arrow.down.right",
+                                   accessibilityDescription: "Immersive mode")!
+        immersiveButton = NSButton(image: immersiveImg, target: self, action: #selector(toggleImmersive))
+        immersiveButton.imagePosition = .imageOnly
+        immersiveButton.bezelStyle = .accessoryBar
+        immersiveButton.toolTip = "Immersive mode — hide controls (⌥H)"
+        bar.addArrangedSubview(immersiveButton)
+
         let gear = NSImage(systemSymbolName: "gearshape", accessibilityDescription: "Settings")!
         let settings = NSButton(image: gear, target: self, action: #selector(showSettings))
         settings.imagePosition = .imageOnly
@@ -80,7 +98,7 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         surface.delegate = self
         surface.translatesAutoresizingMaskIntoConstraints = false
 
-        let controlBar = makeGlassBar(content: bar)
+        controlBar = makeGlassBar(content: bar)
         view.addSubview(surface)
         view.addSubview(controlBar)
 
@@ -268,6 +286,73 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         engine.allNotesOff()
     }
 
+    // MARK: - Immersive mode
+    // Auto-hides the control bar for distraction-free play; reveals it when the
+    // cursor nears the top edge, then re-hides after a short idle period.
+    @objc func toggleImmersive() { setImmersive(!immersiveMode) }
+
+    func setImmersive(_ on: Bool) {
+        guard on != immersiveMode else { return }
+        immersiveMode = on
+        let symbol = on ? "arrow.down.right.and.arrow.up.left"
+                        : "arrow.up.left.and.arrow.down.right"
+        immersiveButton.image = NSImage(systemSymbolName: symbol,
+                                        accessibilityDescription: "Immersive mode")
+        immersiveButton.toolTip = on ? "Exit immersive mode (⌥H)"
+                                     : "Immersive mode — hide controls (⌥H)"
+        if on {
+            scheduleBarAutoHide()
+        } else {
+            barHideWork?.cancel(); barHideWork = nil
+            setBarVisible(true, animated: true)
+        }
+    }
+
+    private func handleMouseMoved(_ point: NSPoint) {
+        guard immersiveMode else { return }
+        if view.bounds.maxY - point.y <= revealZoneHeight {
+            setBarVisible(true, animated: true)
+        }
+        scheduleBarAutoHide()
+    }
+
+    private func scheduleBarAutoHide() {
+        barHideWork?.cancel()
+        guard immersiveMode else { return }
+        let work = DispatchWorkItem { [weak self] in self?.autoHideBarIfAppropriate() }
+        barHideWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: work)
+    }
+
+    private func autoHideBarIfAppropriate() {
+        guard immersiveMode else { return }
+        // Keep the bar up while the cursor is parked in the top reveal zone.
+        if let p = currentPointInView(), view.bounds.maxY - p.y <= revealZoneHeight {
+            scheduleBarAutoHide()
+            return
+        }
+        setBarVisible(false, animated: true)
+    }
+
+    private func currentPointInView() -> NSPoint? {
+        guard let window = view.window else { return nil }
+        let winPoint = window.convertPoint(fromScreen: NSEvent.mouseLocation)
+        return view.convert(winPoint, from: nil)
+    }
+
+    private func setBarVisible(_ visible: Bool, animated: Bool) {
+        guard barShown != visible else { return }
+        barShown = visible
+        if visible { controlBar.isHidden = false }
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = animated ? 0.22 : 0
+            controlBar.animator().alphaValue = visible ? 1 : 0
+        }, completionHandler: { [weak self] in
+            guard let self = self else { return }
+            if !self.barShown { self.controlBar.isHidden = true }
+        })
+    }
+
     // MARK: - Controls
     private func labeled(_ title: String, _ control: NSView) -> NSView {
         let stack = NSStackView(views: [makeLabel(title), control])
@@ -410,5 +495,28 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     private func presentSettings() {
         let settings = MacSettingsViewController()
         presentAsModalWindow(settings)
+    }
+}
+
+/// Container that reports mouse movement so the controller can reveal/hide the
+/// control bar in immersive mode.
+private final class ImmersiveContainerView: NSView {
+    var onMouseMoved: ((NSPoint) -> Void)?
+    private var moveTracking: NSTrackingArea?
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let existing = moveTracking { removeTrackingArea(existing) }
+        let area = NSTrackingArea(
+            rect: bounds,
+            options: [.mouseMoved, .activeInKeyWindow, .inVisibleRect],
+            owner: self, userInfo: nil)
+        addTrackingArea(area)
+        moveTracking = area
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        super.mouseMoved(with: event)
+        onMouseMoved?(convert(event.locationInWindow, from: nil))
     }
 }
