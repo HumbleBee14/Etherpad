@@ -2,6 +2,7 @@ import AppKit
 
 final class MacAppDelegate: NSObject, NSApplicationDelegate {
     private var window: NSWindow!
+    private var testEngine: MacCsoundEngine?   // TEMP (Task 4 audio self-test)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let vc = MacSynthViewController()
@@ -14,6 +15,17 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate {
         window.center()
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+
+        // TEMP audio self-test: play a pad note at 0.3s, release at 2.0s.
+        let e = MacCsoundEngine(); testEngine = e
+        e.start()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            e.noteOn(slot: 0, x: 0.5, y: 0.7)
+            NSLog("[Etherpad-mac] TEST noteOn fired")
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            e.noteOff(slot: 0); NSLog("[Etherpad-mac] TEST noteOff fired")
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ app: NSApplication) -> Bool { true }
