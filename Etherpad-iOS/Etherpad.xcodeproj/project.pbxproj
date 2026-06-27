@@ -69,6 +69,7 @@
 		927946F772CF3097D3332248 /* MacSurfaceView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacSurfaceView.swift; path = macOS/MacSurfaceView.swift; sourceTree = "<group>"; };
 		97A0816C020BF0ABC8D41B1C /* AboutViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutViewController.swift; sourceTree = "<group>"; };
 		9F27D8CE40A002F33AE5D371 /* CsoundObj.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CsoundObj.m; sourceTree = "<group>"; };
+		A15C0DB4757777B15891FE17 /* Etherpad-macOS.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; name = "Etherpad-macOS.entitlements"; path = "macOS/Etherpad-macOS.entitlements"; sourceTree = "<group>"; };
 		BB0EBE82D314A2BBE30DCF88 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk/System/Library/Frameworks/Cocoa.framework; sourceTree = DEVELOPER_DIR; };
 		BBCDF72A7572D182527EB70C /* TouchSurfaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchSurfaceView.swift; sourceTree = "<group>"; };
 		BBCDF72A7572D182527EB70D /* VisualEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualEffects.swift; sourceTree = "<group>"; };
@@ -146,6 +147,7 @@
 				E4ED418A67903CEC1D0D2EB8 /* etherpad.csd */,
 				927946F772CF3097D3332248 /* MacSurfaceView.swift */,
 				5FD858A422F262A004AEC8C8 /* MacSynthViewController.swift */,
+				A15C0DB4757777B15891FE17 /* Etherpad-macOS.entitlements */,
 			);
 			name = macOS;
 			sourceTree = SOURCE_ROOT;
@@ -294,7 +296,6 @@
 			);
 			mainGroup = 3D7980E591E911F6833DE9F8;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
 			productRefGroup = E8E9C118AF0EF0C30AFD340C /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -467,6 +468,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = "macOS/Etherpad-macOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = YES;
@@ -611,6 +613,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = "macOS/Etherpad-macOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = YES;

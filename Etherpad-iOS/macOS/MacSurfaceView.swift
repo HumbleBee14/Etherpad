@@ -27,11 +27,13 @@ final class MacSurfaceView: NSView {
 
     var multitouchActive = false {
         didSet {
-            if !multitouchActive { cancelAllTouches() }
+            if multitouchActive { startSafetySweep() } else { stopSafetySweep(); cancelAllTouches() }
             needsDisplay = true
         }
     }
     private var touchSlots: [NSObject: Int] = [:]
+    private var lastTouchEvent: TimeInterval = 0
+    private var safetyTimer: Timer?
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -138,6 +140,7 @@ final class MacSurfaceView: NSView {
 
     override func touchesBegan(with event: NSEvent) {
         guard multitouchActive else { return }
+        lastTouchEvent = event.timestamp
         for t in event.touches(matching: .began, in: self) {
             guard let id = t.identity as? NSObject, touchSlots[id] == nil,
                   let slot = nextFreeSlot() else { continue }
@@ -159,6 +162,7 @@ final class MacSurfaceView: NSView {
                                  x: Float(t.normalizedPosition.x),
                                  y: Float(t.normalizedPosition.y))
         }
+        reconcileActiveTouches(event)
         needsDisplay = true
     }
 
@@ -169,17 +173,41 @@ final class MacSurfaceView: NSView {
             activePoints[slot] = nil
             delegate?.touchEnded(slot: slot)
         }
+        reconcileActiveTouches(event)
         needsDisplay = true
     }
 
     override func touchesCancelled(with event: NSEvent) {
-        for t in event.touches(matching: .cancelled, in: self) {
-            guard let id = t.identity as? NSObject, let slot = touchSlots.removeValue(forKey: id)
-            else { continue }
+        // A system gesture can steal a sequence; release everything to avoid stuck voices.
+        cancelAllTouches()
+    }
+
+    // Releases any tracked touch whose identity is no longer in the live touching set.
+    // Gestures can make a finger stop reporting without an .ended/.cancelled event,
+    // which otherwise leaves its voice and circle stuck.
+    private func reconcileActiveTouches(_ event: NSEvent) {
+        lastTouchEvent = event.timestamp
+        let live = Set(event.touches(matching: .touching, in: self).compactMap { $0.identity as? NSObject })
+        for (id, slot) in touchSlots where !live.contains(id) {
+            touchSlots.removeValue(forKey: id)
             activePoints[slot] = nil
             delegate?.touchEnded(slot: slot)
         }
-        needsDisplay = true
+    }
+
+    // If a gesture steals the whole sequence, no further touch events arrive; release
+    // active voices when nothing has been reported for a short window.
+    private func startSafetySweep() {
+        stopSafetySweep()
+        safetyTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
+            guard let self = self, !self.touchSlots.isEmpty else { return }
+            if ProcessInfo.processInfo.systemUptime - self.lastTouchEvent > 0.3 {
+                self.cancelAllTouches()
+            }
+        }
+    }
+    private func stopSafetySweep() {
+        safetyTimer?.invalidate(); safetyTimer = nil
     }
 }
 

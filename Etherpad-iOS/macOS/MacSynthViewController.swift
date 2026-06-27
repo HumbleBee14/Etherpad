@@ -273,7 +273,17 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     private func presentAbout() {
         let a = NSAlert()
         a.messageText = "Etherpad"
-        a.informativeText = "Multi-touch synthesizer.\n\nNormal mode: click-drag to play one voice.\nMultitouch mode (⌘M): the whole trackpad plays up to 10 voices. Press Esc to exit."
+        a.informativeText = """
+        Multi-touch synthesizer.
+
+        Normal mode: click-drag to play one voice.
+        Multitouch mode (⌘M): the whole trackpad plays up to 10 voices. Press Esc to exit.
+
+        For uninterrupted multi-finger play, disable system trackpad gestures in
+        System Settings ▸ Trackpad ▸ More Gestures (Mission Control, App Exposé,
+        Notification Centre). macOS handles those before the app, so they can briefly
+        interrupt notes.
+        """
         a.runModal()
     }
 }
