@@ -12,6 +12,15 @@ protocol MacTouchDelegate: AnyObject {
 final class MacSurfaceView: NSView {
     weak var delegate: MacTouchDelegate?
 
+    // The surface is the first responder in Multitouch mode, so key events arrive
+    // here. Return true if handled (so we don't beep / pass it on).
+    var keyHandler: ((NSEvent) -> Bool)?
+
+    override func keyDown(with event: NSEvent) {
+        if keyHandler?(event) == true { return }
+        super.keyDown(with: event)
+    }
+
     var numberOfNotes: Double = 8.0 {
         didSet { if numberOfNotes != oldValue { needsDisplay = true } }
     }
@@ -125,6 +134,19 @@ final class MacSurfaceView: NSView {
         delegate?.touchEnded(slot: 0)
         needsDisplay = true
     }
+
+    // MARK: - Swallow gesture events in Multitouch mode
+    // macOS turns some multi-finger movement into gesture events (magnify/rotate/
+    // swipe/scroll). While in Multitouch mode we consume them here so they do NOT
+    // trigger app/system gesture actions and so they don't compete with raw NSTouch
+    // note generation. (NOTE: OS-level gestures handled entirely by WindowServer —
+    // e.g. 3-finger Mission Control swipe — may still fire; those can only be turned
+    // off in System Settings ▸ Trackpad. We suppress everything that reaches the app.)
+    override func magnify(with event: NSEvent)  { if !multitouchActive { super.magnify(with: event) } }
+    override func rotate(with event: NSEvent)   { if !multitouchActive { super.rotate(with: event) } }
+    override func swipe(with event: NSEvent)    { if !multitouchActive { super.swipe(with: event) } }
+    override func scrollWheel(with event: NSEvent) { if !multitouchActive { super.scrollWheel(with: event) } }
+    override func smartMagnify(with event: NSEvent) { if !multitouchActive { super.smartMagnify(with: event) } }
 
     // MARK: - Trackpad multitouch (Multitouch mode: up to maxSlots voices)
     private func nextFreeSlot() -> Int? {

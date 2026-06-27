@@ -11,7 +11,8 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     private var selectedSize = 8
     private var multitouchOn = false
     private var multitouchButton: NSButton!
-    private let banner = NSTextField(labelWithString: "Multitouch ON — 1–5 open menus · Esc to exit")
+    private let bannerBlur = NSVisualEffectView()
+    private let bannerLabel = NSTextField(labelWithString: "Multitouch Mode On — Press Esc to Exit")
 
     // Popups kept so number keys (1–5) can open them during Multitouch mode.
     private var scalePopup: NSPopUpButton!
@@ -55,22 +56,32 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
 
         // --- Surface ---
         surface.delegate = self
+        surface.keyHandler = { [weak self] in self?.handleKey($0) ?? false }
         surface.translatesAutoresizingMaskIntoConstraints = false
 
         view.addSubview(bar)
         view.addSubview(surface)
 
-        // --- Banner (hidden until Multitouch mode) ---
-        banner.textColor = .white
-        banner.backgroundColor = NSColor(white: 0, alpha: 0.6)
-        banner.drawsBackground = true
-        banner.alignment = .center
-        banner.font = .systemFont(ofSize: 15, weight: .semibold)
-        banner.wantsLayer = true
-        banner.layer?.cornerRadius = 6
-        banner.isHidden = true
-        banner.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(banner)
+        // --- Glassmorphic toast (hidden until Multitouch mode) ---
+        bannerBlur.material = .hudWindow            // modern translucent glass
+        bannerBlur.blendingMode = .withinWindow
+        bannerBlur.state = .active
+        bannerBlur.wantsLayer = true
+        bannerBlur.layer?.cornerRadius = 14
+        bannerBlur.layer?.cornerCurve = .continuous
+        bannerBlur.layer?.borderWidth = 0.5
+        bannerBlur.layer?.borderColor = NSColor(white: 1, alpha: 0.15).cgColor
+        bannerBlur.layer?.masksToBounds = true
+        bannerBlur.isHidden = true
+        bannerBlur.translatesAutoresizingMaskIntoConstraints = false
+
+        bannerLabel.textColor = .labelColor
+        bannerLabel.alignment = .center
+        bannerLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        bannerLabel.translatesAutoresizingMaskIntoConstraints = false
+        bannerBlur.addSubview(bannerLabel)
+
+        view.addSubview(bannerBlur)
 
         NSLayoutConstraint.activate([
             bar.topAnchor.constraint(equalTo: view.topAnchor),
@@ -83,20 +94,23 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
             surface.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             surface.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-            banner.centerXAnchor.constraint(equalTo: surface.centerXAnchor),
-            banner.topAnchor.constraint(equalTo: surface.topAnchor, constant: 16),
-            banner.widthAnchor.constraint(equalToConstant: 300),
-            banner.heightAnchor.constraint(equalToConstant: 34),
+            bannerBlur.centerXAnchor.constraint(equalTo: surface.centerXAnchor),
+            bannerBlur.topAnchor.constraint(equalTo: surface.topAnchor, constant: 18),
+            bannerBlur.heightAnchor.constraint(equalToConstant: 40),
+
+            bannerLabel.leadingAnchor.constraint(equalTo: bannerBlur.leadingAnchor, constant: 20),
+            bannerLabel.trailingAnchor.constraint(equalTo: bannerBlur.trailingAnchor, constant: -20),
+            bannerLabel.centerYAnchor.constraint(equalTo: bannerBlur.centerYAnchor),
         ])
 
         engine.start()
         surface.numberOfNotes = Double(selectedSize)
         engine.setSize(selectedSize)
 
-        // Exit Multitouch safely if the window/app loses focus.
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(windowResigned),
-            name: NSWindow.didResignKeyNotification, object: nil)
+        // Safety net only on TRUE app deactivation (⌘-Tab / app hidden), handled by
+        // MacAppDelegate.applicationWillResignActive. NOTE: we deliberately do NOT
+        // observe didResignKeyNotification — it fires when a popup menu opens, which
+        // would kick the user out of Multitouch mode the instant they press 1–5.
     }
 
     deinit {
@@ -122,13 +136,14 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         engine.allNotesOff()
 
         if on {
+            bannerLabel.stringValue = "Multitouch Mode On — Press Esc to Exit"
             showBannerBriefly()
             view.window?.makeFirstResponder(surface)
             CGAssociateMouseAndMouseCursorPosition(boolean_t(0))   // detach pointer
             CGDisplayHideCursor(CGMainDisplayID())
         } else {
-            banner.isHidden = true
-            bannerHideWork?.cancel()
+            bannerLabel.stringValue = "Multitouch Mode Off"
+            showBannerBriefly()
             CGAssociateMouseAndMouseCursorPosition(boolean_t(1))   // reattach
             CGDisplayShowCursor(CGMainDisplayID())
         }
@@ -137,27 +152,30 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     private var bannerHideWork: DispatchWorkItem?
     private func showBannerBriefly() {
         bannerHideWork?.cancel()
-        banner.isHidden = false
-        let work = DispatchWorkItem { [weak self] in self?.banner.isHidden = true }
+        bannerBlur.isHidden = false
+        let work = DispatchWorkItem { [weak self] in self?.bannerBlur.isHidden = true }
         bannerHideWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: work)
     }
 
-    // While in Multitouch mode the cursor is detached, so menus are opened with
-    // number keys 1–5 (then native arrow keys navigate / Return selects / Esc closes
-    // the popup). Esc with no popup open exits Multitouch mode.
-    override func keyDown(with event: NSEvent) {
-        if event.keyCode == 53 {       // Esc
-            if multitouchOn { setMultitouch(false); return }
+    // Key handling runs on the SURFACE (the first responder in Multitouch mode) via
+    // surface.keyHandler, so ordinary keys NEVER fall through to AppKit defaults that
+    // could drop us out of mode. Returns true when handled.
+    // - Esc: exit Multitouch mode.
+    // - 1–5: open Scale/Key/Octave/Size/Sound (native arrow-nav + Return; Esc closes
+    //   just the popup). All other keys are swallowed so Multitouch mode is preserved.
+    private func handleKey(_ event: NSEvent) -> Bool {
+        guard multitouchOn else { return false }
+        if event.keyCode == 53 {                 // Esc → exit mode
+            setMultitouch(false)
+            return true
         }
-        if multitouchOn, let chars = event.charactersIgnoringModifiers,
+        if let chars = event.charactersIgnoringModifiers,
            let popup = popupForNumberKey(chars) {
-            // Refresh the banner so the user sees the hint while interacting.
-            showBannerBriefly()
-            popup.performClick(nil)    // opens the menu with keyboard focus
-            return
+            popup.performClick(nil)              // opens menu with keyboard focus
+            return true
         }
-        super.keyDown(with: event)
+        return true                              // swallow everything else; stay in mode
     }
     override var acceptsFirstResponder: Bool { true }
 
@@ -172,11 +190,6 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         }
     }
 
-    @objc private func windowResigned() {
-        setMultitouch(false)
-        engine.allNotesOff()
-        surface.cancelAllTouches()
-    }
 
     // Called by the app on terminate for a clean shutdown.
     func shutdown() {
