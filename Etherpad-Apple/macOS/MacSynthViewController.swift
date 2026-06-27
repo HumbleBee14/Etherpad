@@ -60,7 +60,7 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         }
 
         bar.addArrangedSubview(barSeparator())
-        multitouchButton = NSButton(title: "Multitouch", target: self,
+        multitouchButton = NSButton(title: "Multitouch (⌥M)", target: self,
                                     action: #selector(toggleMultitouch))
         multitouchButton.toolTip = "Toggle touchpad mode (⌥M)"
         bar.addArrangedSubview(multitouchButton)
@@ -148,7 +148,6 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         soundPopup.selectItem(at: savedIndex(Key.sound, default: 0, count: soundPopup.numberOfItems))
         scaleChanged(scalePopup); keyChanged(keyPopup); octaveChanged(octavePopup)
         sizeChanged(sizePopup);  soundChanged(soundPopup)
-        syncAllPopupButtonTitles()
     }
 
     deinit {
@@ -169,12 +168,16 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         guard on != multitouchOn else { return }
         multitouchOn = on
         surface.multitouchActive = on
-        multitouchButton.title = on ? "Exit Multitouch" : "Multitouch"
+        multitouchButton.title = on ? "Exit Multitouch (Esc)" : "Multitouch (⌥M)"
         engine.allNotesOff()
 
         if on {
             bannerLabel.stringValue = "Multitouch Mode On — Press Esc to Exit"
             showBannerBriefly()
+            // Indirect trackpad touches route to the view under the (frozen) cursor.
+            // Park the cursor over the synth before decoupling so touches land there
+            // no matter where it was when multitouch was toggled (button, menu, etc.).
+            warpCursorToSurfaceCenter()
             view.window?.makeFirstResponder(surface)
             installKeyMonitor()
             CGAssociateMouseAndMouseCursorPosition(boolean_t(0))
@@ -186,6 +189,18 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
             CGAssociateMouseAndMouseCursorPosition(boolean_t(1))
             CGDisplayShowCursor(CGMainDisplayID())
         }
+    }
+
+    private func warpCursorToSurfaceCenter() {
+        guard let window = view.window,
+              let mainScreen = NSScreen.screens.first else { return }
+        let center = CGPoint(x: surface.bounds.midX, y: surface.bounds.midY)
+        let windowPoint = surface.convert(center, to: nil)
+        // Cocoa screen coords (bottom-left origin) → CoreGraphics global (top-left origin).
+        let cocoa = window.convertPoint(toScreen: windowPoint)
+        let cgPoint = CGPoint(x: cocoa.x, y: mainScreen.frame.maxY - cocoa.y)
+        CGWarpMouseCursorPosition(cgPoint)
+        CGAssociateMouseAndMouseCursorPosition(boolean_t(1))   // flush warp before re-freezing
     }
 
     // Monitor intercepts keys before the responder chain; otherwise number keys reach
@@ -315,31 +330,17 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         return l
     }
 
-    private func menuItemTitle(_ title: String, isDefault: Bool) -> String {
-        isDefault ? "• \(title)" : title
-    }
-
-    private func baseTitle(from menuTitle: String) -> String {
-        menuTitle.hasPrefix("• ") ? String(menuTitle.dropFirst(2)) : menuTitle
-    }
-
+    // Marks the CSD default by making that menu item bold (matches iOS' default hint).
     private func populatePopup(_ pop: NSPopUpButton, titles: [String], defaultIndex: Int) {
         pop.removeAllItems()
         for (i, title) in titles.enumerated() {
-            pop.addItem(withTitle: menuItemTitle(title, isDefault: i == defaultIndex))
+            pop.addItem(withTitle: title)
+            if i == defaultIndex, let item = pop.item(at: i) {
+                item.attributedTitle = NSAttributedString(
+                    string: title,
+                    attributes: [.font: NSFont.boldSystemFont(ofSize: NSFont.systemFontSize)])
+            }
         }
-    }
-
-    private func syncPopupButtonTitle(_ pop: NSPopUpButton) {
-        pop.title = baseTitle(from: pop.titleOfSelectedItem ?? pop.title)
-    }
-
-    private func syncAllPopupButtonTitles() {
-        syncPopupButtonTitle(scalePopup)
-        syncPopupButtonTitle(keyPopup)
-        syncPopupButtonTitle(octavePopup)
-        syncPopupButtonTitle(sizePopup)
-        syncPopupButtonTitle(soundPopup)
     }
 
     private func makeScalePopup() -> NSPopUpButton {
@@ -352,7 +353,6 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     @objc private func scaleChanged(_ s: NSPopUpButton) {
         engine.setScale(MacSynthTables.scaleOptions[s.indexOfSelectedItem].steps)
         UserDefaults.standard.set(s.indexOfSelectedItem, forKey: Key.scale)
-        syncPopupButtonTitle(s)
     }
 
     private func makeKeyPopup() -> NSPopUpButton {
@@ -364,7 +364,6 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     @objc private func keyChanged(_ s: NSPopUpButton) {
         engine.setKey(s.indexOfSelectedItem)
         UserDefaults.standard.set(s.indexOfSelectedItem, forKey: Key.key)
-        syncPopupButtonTitle(s)
     }
 
     private func makeOctavePopup() -> NSPopUpButton {
@@ -377,7 +376,6 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     @objc private func octaveChanged(_ s: NSPopUpButton) {
         engine.setOctave(MacSynthTables.octaveValues[s.indexOfSelectedItem])
         UserDefaults.standard.set(s.indexOfSelectedItem, forKey: Key.octave)
-        syncPopupButtonTitle(s)
     }
 
     private func makeSizePopup() -> NSPopUpButton {
@@ -389,12 +387,11 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         return pop
     }
     @objc private func sizeChanged(_ s: NSPopUpButton) {
-        let n = Int(baseTitle(from: s.titleOfSelectedItem ?? "8")) ?? 8
+        let n = Int(s.titleOfSelectedItem ?? "8") ?? 8
         selectedSize = n
         engine.setSize(n)
         surface.numberOfNotes = Double(n)
         UserDefaults.standard.set(s.indexOfSelectedItem, forKey: Key.size)
-        syncPopupButtonTitle(s)
     }
 
     private func makeSoundPopup() -> NSPopUpButton {
@@ -406,7 +403,6 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     @objc private func soundChanged(_ s: NSPopUpButton) {
         engine.setSound(s.indexOfSelectedItem)
         UserDefaults.standard.set(s.indexOfSelectedItem, forKey: Key.sound)
-        syncPopupButtonTitle(s)
     }
 
     @objc private func showSettings() { presentSettings() }

@@ -545,7 +545,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
+				CURRENT_PROJECT_VERSION = 1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.humblebee.etherpad;
 				PRODUCT_NAME = Etherpad;
 				SDKROOT = iphoneos;
@@ -573,7 +574,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
+				CURRENT_PROJECT_VERSION = 1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.humblebee.etherpad;
 				PRODUCT_NAME = Etherpad;
 				SDKROOT = iphoneos;
