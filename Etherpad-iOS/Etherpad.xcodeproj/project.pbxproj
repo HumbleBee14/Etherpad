@@ -22,7 +22,7 @@
 		BB64D9E13C4799D5A9ECF2F6 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB0EBE82D314A2BBE30DCF88 /* Cocoa.framework */; };
 		C2E556B16E10DE98E161D317 /* CsoundLib64.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 176818AD3FD3732D4500313A /* CsoundLib64.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C397246D22AFB03BCAD1F348 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7F596F37EDCAD3A5897614F3 /* Assets.xcassets */; };
-		E0283414C0932713ADF3B3A1 /* MacAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11587677099646A8784B8D95 /* MacAppDelegate.swift */; };
+		E0283414C0932713ADF3B3A1 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11587677099646A8784B8D95 /* main.swift */; };
 		E930DABC2FC2BBC40083C323 /* SplitModeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E930DAB92FC2BBC40083C323 /* SplitModeController.swift */; };
 		E930DABD2FC2BBC40083C323 /* SplitSynthViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E930DABA2FC2BBC40083C323 /* SplitSynthViewController.swift */; };
 		E930DABE2FC2BBC40083C323 /* SynthPanelViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E930DABB2FC2BBC40083C323 /* SynthPanelViewController.swift */; };
@@ -51,7 +51,7 @@
 /* Begin PBXFileReference section */
 		00C76DA0D09E5F638D001B8E /* MacSynthTables.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacSynthTables.swift; path = macOS/MacSynthTables.swift; sourceTree = "<group>"; };
 		1108A6C03B3C37B0106521D5 /* CsoundObj.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CsoundObj.h; sourceTree = "<group>"; };
-		11587677099646A8784B8D95 /* MacAppDelegate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacAppDelegate.swift; path = macOS/MacAppDelegate.swift; sourceTree = "<group>"; };
+		11587677099646A8784B8D95 /* main.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = main.swift; path = macOS/main.swift; sourceTree = "<group>"; };
 		176818AD3FD3732D4500313A /* CsoundLib64.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CsoundLib64.framework; sourceTree = "<group>"; };
 		2AAFC2E3511EC1E15B11152C /* etherpad.csd */ = {isa = PBXFileReference; lastKnownFileType = text; path = etherpad.csd; sourceTree = "<group>"; };
 		312F55F2E10D297204649FF1 /* Etherpad-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Etherpad-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -131,7 +131,7 @@
 		49097174E271B19BE30BA102 /* macOS */ = {
 			isa = PBXGroup;
 			children = (
-				11587677099646A8784B8D95 /* MacAppDelegate.swift */,
+				11587677099646A8784B8D95 /* main.swift */,
 				00C76DA0D09E5F638D001B8E /* MacSynthTables.swift */,
 				88447A549336C5D83A603A38 /* Info-macOS.plist */,
 				C0F14925AF2F6250D58D1AF3 /* Etherpad-macOS-Bridging-Header.h */,
@@ -249,6 +249,7 @@
 				6744E3DABE326AB56BDBD469 /* Frameworks */,
 				4283E1BF9A0ED0B1AF819BBE /* Resources */,
 				0C1EF1E5E974A282F5E4AC41 /* Embed Frameworks */,
+				DD022EB931DD299B221F0364 /* Sign embedded Csound libraries */,
 			);
 			buildRules = (
 			);
@@ -316,12 +317,34 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		DD022EB931DD299B221F0364 /* Sign embedded Csound libraries */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Sign embedded Csound libraries";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Csound's nested audio dylibs (libsndfile + codecs) live in\n# CsoundLib64.framework/Versions/Current/libs and ship UNSIGNED. Xcode's Embed &\n# Sign signs the framework bundle + main binary but NOT these loose dylibs, so\n# hardened runtime rejects them at launch (\"Trying to load an unsigned library\").\n# Sign each one with the build identity, then re-seal the framework so its seal\n# includes the now-signed dylibs.\nset -e\n[ \"${CODE_SIGNING_ALLOWED}\" = \"YES\" ] || { echo \"code signing not allowed; skipping\"; exit 0; }\n[ -n \"${EXPANDED_CODE_SIGN_IDENTITY}\" ] || { echo \"no signing identity; skipping\"; exit 0; }\nFW=\"${CODESIGNING_FOLDER_PATH}/Contents/Frameworks/CsoundLib64.framework\"\n[ -d \"$FW\" ] || { echo \"framework not embedded; skipping\"; exit 0; }\nLIBS=\"$FW/Versions/Current/libs\"\nfor dylib in \"$LIBS\"/*.dylib; do\n  [ -f \"$dylib\" ] || continue\n  codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --options runtime \"$dylib\"\ndone\ncodesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --options runtime \"$FW/Versions/Current/CsoundLib64\"\ncodesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --options runtime \"$FW\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		08EF403B06395C1DFC3C3E5C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E0283414C0932713ADF3B3A1 /* MacAppDelegate.swift in Sources */,
+				E0283414C0932713ADF3B3A1 /* main.swift in Sources */,
 				16B0FFF1CD60E99928421CD9 /* MacSynthTables.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

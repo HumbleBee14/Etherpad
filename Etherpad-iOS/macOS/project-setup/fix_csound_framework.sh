@@ -65,13 +65,15 @@ if [ ! -e "$FW/libs" ]; then
   echo "Added root symlink libs -> Versions/Current/libs"
 fi
 
-# --- Step 4: strip stale adhoc signatures so Xcode re-signs cleanly ----------
-# (Embed & Sign will re-sign with your team; removing the adhoc/codesign dirs
-#  avoids "resource fork / Finder info" and seal conflicts.)
-echo "Stripping stale signatures (Xcode Embed & Sign will re-sign with your team)"
-find "$VERS/libs" -name '*.dylib' -exec codesign --remove-signature {} + 2>/dev/null || true
-codesign --remove-signature "$BIN" 2>/dev/null || true
-rm -rf "$VERS/_CodeSignature"
+# --- Step 4: leave signatures intact ----------------------------------------
+# NOTE: do NOT strip the nested dylib signatures here. They ship adhoc-signed;
+# the "Sign embedded Csound libraries" build phase re-signs every nested dylib
+# (and re-seals the framework) with YOUR identity at build time. Stripping them
+# would leave them unsigned, and hardened runtime rejects unsigned libraries at
+# launch ("Trying to load an unsigned library"). The main binary's signature was
+# already invalidated by the install_name_tool change above; the build phase
+# re-signs it too. Nothing to strip.
+echo "Leaving signatures as-is; the build phase re-signs nested dylibs + framework."
 
 echo
 echo "Verifying structure:"
