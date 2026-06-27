@@ -88,7 +88,7 @@ final class MacSurfaceView: NSView {
         needsDisplay = true
     }
 
-    // MARK: - Mouse (normal mode, single voice on slot 0)
+    // MARK: - Mouse (normal mode)
     private var mouseActive = false
 
     override func mouseDown(with event: NSEvent) {
@@ -118,9 +118,8 @@ final class MacSurfaceView: NSView {
         needsDisplay = true
     }
 
-    // Swallow gesture events while in Multitouch mode so they don't fire app/system
-    // actions. OS-level gestures (e.g. Mission Control) are handled by WindowServer
-    // first and can only be disabled in System Settings ▸ Trackpad.
+    // Swallowing these only blocks app-level gestures; OS gestures are consumed by
+    // WindowServer first and can't be disabled from here.
     override func magnify(with event: NSEvent)  { if !multitouchActive { super.magnify(with: event) } }
     override func rotate(with event: NSEvent)   { if !multitouchActive { super.rotate(with: event) } }
     override func swipe(with event: NSEvent)    { if !multitouchActive { super.swipe(with: event) } }
@@ -178,13 +177,11 @@ final class MacSurfaceView: NSView {
     }
 
     override func touchesCancelled(with event: NSEvent) {
-        // A system gesture can steal a sequence; release everything to avoid stuck voices.
         cancelAllTouches()
     }
 
-    // Releases any tracked touch whose identity is no longer in the live touching set.
-    // Gestures can make a finger stop reporting without an .ended/.cancelled event,
-    // which otherwise leaves its voice and circle stuck.
+    // Release touches no longer in the live set (a stolen gesture can stop a finger
+    // reporting without an .ended event, leaving it stuck).
     private func reconcileActiveTouches(_ event: NSEvent) {
         lastTouchEvent = event.timestamp
         let live = Set(event.touches(matching: .touching, in: self).compactMap { $0.identity as? NSObject })
@@ -195,8 +192,7 @@ final class MacSurfaceView: NSView {
         }
     }
 
-    // If a gesture steals the whole sequence, no further touch events arrive; release
-    // active voices when nothing has been reported for a short window.
+    // Release voices if touch reporting stops entirely (whole sequence stolen).
     private func startSafetySweep() {
         stopSafetySweep()
         safetyTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in

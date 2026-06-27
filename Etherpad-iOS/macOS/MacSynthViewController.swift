@@ -97,8 +97,29 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         ])
 
         engine.start()
-        surface.numberOfNotes = Double(selectedSize)
-        engine.setSize(selectedSize)
+        restoreSettings()
+    }
+
+    private enum Key {
+        static let scale = "scaleIndex", key = "keyIndex", octave = "octaveIndex"
+        static let size = "sizeIndex", sound = "soundIndex"
+    }
+
+    private func savedIndex(_ k: String, default def: Int, count: Int) -> Int {
+        let d = UserDefaults.standard
+        guard d.object(forKey: k) != nil else { return def }
+        let i = d.integer(forKey: k)
+        return (0..<count).contains(i) ? i : def
+    }
+
+    private func restoreSettings() {
+        scalePopup.selectItem(at: savedIndex(Key.scale, default: 0, count: scalePopup.numberOfItems))
+        keyPopup.selectItem(at: savedIndex(Key.key, default: 0, count: keyPopup.numberOfItems))
+        octavePopup.selectItem(at: savedIndex(Key.octave, default: 2, count: octavePopup.numberOfItems))
+        sizePopup.selectItem(at: savedIndex(Key.size, default: 4, count: sizePopup.numberOfItems))
+        soundPopup.selectItem(at: savedIndex(Key.sound, default: 0, count: soundPopup.numberOfItems))
+        scaleChanged(scalePopup); keyChanged(keyPopup); octaveChanged(octavePopup)
+        sizeChanged(sizePopup);  soundChanged(soundPopup)
     }
 
     deinit {
@@ -138,8 +159,8 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         }
     }
 
-    // Local monitor swallows keys before the responder chain so number keys can't
-    // drop out of Multitouch mode.
+    // Monitor intercepts keys before the responder chain; otherwise number keys reach
+    // the popups and drop out of Multitouch mode.
     private var keyMonitor: Any?
     private func installKeyMonitor() {
         guard keyMonitor == nil else { return }
@@ -225,6 +246,7 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     }
     @objc private func scaleChanged(_ s: NSPopUpButton) {
         engine.setScale(MacSynthTables.scaleOptions[s.indexOfSelectedItem].steps)
+        UserDefaults.standard.set(s.indexOfSelectedItem, forKey: Key.scale)
     }
 
     private func makeKeyPopup() -> NSPopUpButton {
@@ -233,7 +255,10 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         pop.target = self; pop.action = #selector(keyChanged(_:))
         return pop
     }
-    @objc private func keyChanged(_ s: NSPopUpButton) { engine.setKey(s.indexOfSelectedItem) }
+    @objc private func keyChanged(_ s: NSPopUpButton) {
+        engine.setKey(s.indexOfSelectedItem)
+        UserDefaults.standard.set(s.indexOfSelectedItem, forKey: Key.key)
+    }
 
     private func makeOctavePopup() -> NSPopUpButton {
         let pop = NSPopUpButton(frame: .zero, pullsDown: false)
@@ -244,6 +269,7 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     }
     @objc private func octaveChanged(_ s: NSPopUpButton) {
         engine.setOctave(MacSynthTables.octaveValues[s.indexOfSelectedItem])
+        UserDefaults.standard.set(s.indexOfSelectedItem, forKey: Key.octave)
     }
 
     private func makeSizePopup() -> NSPopUpButton {
@@ -258,6 +284,7 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         selectedSize = n
         engine.setSize(n)
         surface.numberOfNotes = Double(n)
+        UserDefaults.standard.set(s.indexOfSelectedItem, forKey: Key.size)
     }
 
     private func makeSoundPopup() -> NSPopUpButton {
@@ -266,7 +293,10 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         pop.target = self; pop.action = #selector(soundChanged(_:))
         return pop
     }
-    @objc private func soundChanged(_ s: NSPopUpButton) { engine.setSound(s.indexOfSelectedItem) }
+    @objc private func soundChanged(_ s: NSPopUpButton) {
+        engine.setSound(s.indexOfSelectedItem)
+        UserDefaults.standard.set(s.indexOfSelectedItem, forKey: Key.sound)
+    }
 
     @objc private func showAbout() { presentAbout() }
     @objc func showAboutMenu() { presentAbout() }
