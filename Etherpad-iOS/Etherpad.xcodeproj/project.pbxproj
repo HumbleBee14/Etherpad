@@ -57,7 +57,7 @@
 		11587677099646A8784B8D95 /* main.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = main.swift; path = macOS/main.swift; sourceTree = "<group>"; };
 		176818AD3FD3732D4500313A /* CsoundLib64.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CsoundLib64.framework; sourceTree = "<group>"; };
 		2AAFC2E3511EC1E15B11152C /* etherpad.csd */ = {isa = PBXFileReference; lastKnownFileType = text; path = etherpad.csd; sourceTree = "<group>"; };
-		312F55F2E10D297204649FF1 /* Etherpad-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Etherpad-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		312F55F2E10D297204649FF1 /* Etherpad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Etherpad.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4A5BB333ECC9469751EBCA26 /* logo_shadow.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = logo_shadow.png; sourceTree = "<group>"; };
 		5FD858A422F262A004AEC8C8 /* MacSynthViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacSynthViewController.swift; path = macOS/MacSynthViewController.swift; sourceTree = "<group>"; };
 		71D16BE37D41AA9E7D6B781A /* CsoundEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CsoundEngine.swift; sourceTree = "<group>"; };
@@ -76,7 +76,7 @@
 		CC90D15AF8CA6F08D2A79874 /* Etherpad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Etherpad.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D45A6FC8E72E5F76D667776A /* EtherpadViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EtherpadViewController.swift; sourceTree = "<group>"; };
 		D4B3718CF3F4FDD6D28F930F /* MacCsoundEngine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacCsoundEngine.swift; path = macOS/MacCsoundEngine.swift; sourceTree = "<group>"; };
-		E4ED418A67903CEC1D0D2EB8 /* etherpad.csd */ = {isa = PBXFileReference; includeInIndex = 1; name = etherpad.csd; path = macOS/etherpad.csd; sourceTree = "<group>"; };
+		E4ED418A67903CEC1D0D2EB8 /* etherpad.csd */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = etherpad.csd; path = macOS/etherpad.csd; sourceTree = "<group>"; };
 		E57CB3960F46B4B9EBF73C39 /* Etherpad-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Etherpad-Bridging-Header.h"; sourceTree = "<group>"; };
 		E930DAB92FC2BBC40083C323 /* SplitModeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitModeController.swift; sourceTree = "<group>"; };
 		E930DABA2FC2BBC40083C323 /* SplitSynthViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitSynthViewController.swift; sourceTree = "<group>"; };
@@ -208,7 +208,7 @@
 			isa = PBXGroup;
 			children = (
 				CC90D15AF8CA6F08D2A79874 /* Etherpad.app */,
-				312F55F2E10D297204649FF1 /* Etherpad-macOS.app */,
+				312F55F2E10D297204649FF1 /* Etherpad.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -268,7 +268,7 @@
 			);
 			name = "Etherpad-macOS";
 			productName = "Etherpad-macOS";
-			productReference = 312F55F2E10D297204649FF1 /* Etherpad-macOS.app */;
+			productReference = 312F55F2E10D297204649FF1 /* Etherpad.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -278,7 +278,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 2650;
+				LastUpgradeCheck = 2660;
 				TargetAttributes = {
 					047C424D2DD3FCE6AACF5A23 = {
 						ProvisioningStyle = Automatic;
@@ -294,6 +294,7 @@
 			);
 			mainGroup = 3D7980E591E911F6833DE9F8;
 			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
 			productRefGroup = E8E9C118AF0EF0C30AFD340C /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -388,6 +389,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -467,6 +469,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 252N2WS4Y3;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -537,6 +540,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -609,6 +613,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 252N2WS4Y3;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;

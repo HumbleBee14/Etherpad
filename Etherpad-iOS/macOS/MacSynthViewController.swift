@@ -11,7 +11,14 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     private var selectedSize = 8
     private var multitouchOn = false
     private var multitouchButton: NSButton!
-    private let banner = NSTextField(labelWithString: "Multitouch ON — Esc to exit")
+    private let banner = NSTextField(labelWithString: "Multitouch ON — 1–5 open menus · Esc to exit")
+
+    // Popups kept so number keys (1–5) can open them during Multitouch mode.
+    private var scalePopup: NSPopUpButton!
+    private var keyPopup: NSPopUpButton!
+    private var octavePopup: NSPopUpButton!
+    private var sizePopup: NSPopUpButton!
+    private var soundPopup: NSPopUpButton!
 
     override func loadView() {
         view = NSView(frame: NSRect(x: 0, y: 0, width: 1024, height: 790))
@@ -28,11 +35,16 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         bar.edgeInsets = NSEdgeInsets(top: 4, left: 8, bottom: 4, right: 8)
         bar.translatesAutoresizingMaskIntoConstraints = false
 
-        bar.addArrangedSubview(labeled("Scale", makeScalePopup()))
-        bar.addArrangedSubview(labeled("Key", makeKeyPopup()))
-        bar.addArrangedSubview(labeled("Octave", makeOctavePopup()))
-        bar.addArrangedSubview(labeled("Size", makeSizePopup()))
-        bar.addArrangedSubview(labeled("Sound", makeSoundPopup()))
+        scalePopup = makeScalePopup()
+        keyPopup = makeKeyPopup()
+        octavePopup = makeOctavePopup()
+        sizePopup = makeSizePopup()
+        soundPopup = makeSoundPopup()
+        bar.addArrangedSubview(labeled("1 Scale", scalePopup))
+        bar.addArrangedSubview(labeled("2 Key", keyPopup))
+        bar.addArrangedSubview(labeled("3 Octave", octavePopup))
+        bar.addArrangedSubview(labeled("4 Size", sizePopup))
+        bar.addArrangedSubview(labeled("5 Sound", soundPopup))
 
         multitouchButton = NSButton(title: "Multitouch", target: self,
                                     action: #selector(toggleMultitouch))
@@ -106,28 +118,59 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         guard on != multitouchOn else { return }
         multitouchOn = on
         surface.multitouchActive = on
-        banner.isHidden = !on
         multitouchButton.title = on ? "Exit Multitouch" : "Multitouch"
         engine.allNotesOff()
 
         if on {
+            showBannerBriefly()
             view.window?.makeFirstResponder(surface)
             CGAssociateMouseAndMouseCursorPosition(boolean_t(0))   // detach pointer
             CGDisplayHideCursor(CGMainDisplayID())
         } else {
+            banner.isHidden = true
+            bannerHideWork?.cancel()
             CGAssociateMouseAndMouseCursorPosition(boolean_t(1))   // reattach
             CGDisplayShowCursor(CGMainDisplayID())
         }
     }
 
-    // Esc exits Multitouch mode. (⌘M handled by menu in main.swift.)
+    private var bannerHideWork: DispatchWorkItem?
+    private func showBannerBriefly() {
+        bannerHideWork?.cancel()
+        banner.isHidden = false
+        let work = DispatchWorkItem { [weak self] in self?.banner.isHidden = true }
+        bannerHideWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: work)
+    }
+
+    // While in Multitouch mode the cursor is detached, so menus are opened with
+    // number keys 1–5 (then native arrow keys navigate / Return selects / Esc closes
+    // the popup). Esc with no popup open exits Multitouch mode.
     override func keyDown(with event: NSEvent) {
         if event.keyCode == 53 {       // Esc
             if multitouchOn { setMultitouch(false); return }
         }
+        if multitouchOn, let chars = event.charactersIgnoringModifiers,
+           let popup = popupForNumberKey(chars) {
+            // Refresh the banner so the user sees the hint while interacting.
+            showBannerBriefly()
+            popup.performClick(nil)    // opens the menu with keyboard focus
+            return
+        }
         super.keyDown(with: event)
     }
     override var acceptsFirstResponder: Bool { true }
+
+    private func popupForNumberKey(_ chars: String) -> NSPopUpButton? {
+        switch chars {
+        case "1": return scalePopup
+        case "2": return keyPopup
+        case "3": return octavePopup
+        case "4": return sizePopup
+        case "5": return soundPopup
+        default:  return nil
+        }
+    }
 
     @objc private func windowResigned() {
         setMultitouch(false)
