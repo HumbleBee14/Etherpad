@@ -219,29 +219,34 @@ final class MacSettingsViewController: NSViewController {
 
     // MARK: - Credits
 
-    private func makeDeveloperLink() -> NSView {
-        let tf = NSTextField(labelWithString: "")
-        tf.isSelectable = true
-        tf.isEditable = false
-        tf.drawsBackground = false
-        tf.isBordered = false
-        tf.font = .systemFont(ofSize: 14)
-        tf.textColor = textColor
-        tf.alignment = .left
+    private static let developerURL = URL(string: "https://dineshy.com")!
 
-        let attrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 14),
-            .foregroundColor: textColor,
-        ]
-        let attr = NSMutableAttributedString(string: "Developer: ", attributes: attrs)
-        attr.append(NSAttributedString(string: "Dinesh", attributes: [
-            .font: NSFont.systemFont(ofSize: 14),
+    private func makeDeveloperLink() -> NSView {
+        let row = NSStackView()
+        row.orientation = .horizontal
+        row.spacing = 0
+        row.alignment = .centerY
+
+        let prefix = makeLabel("Developer: ", size: 14, weight: .regular)
+        prefix.textColor = textColor
+
+        let link = NSButton(title: "Dinesh", target: self, action: #selector(openDeveloperSite))
+        link.bezelStyle = .inline
+        link.isBordered = false
+        link.font = .systemFont(ofSize: 14)
+        link.contentTintColor = linkColor
+        link.attributedTitle = NSAttributedString(string: "Dinesh", attributes: [
             .foregroundColor: linkColor,
-            .link: URL(string: "https://dineshy.com")!,
             .cursor: NSCursor.pointingHand,
-        ]))
-        tf.attributedStringValue = attr
-        return tf
+        ])
+
+        row.addArrangedSubview(prefix)
+        row.addArrangedSubview(link)
+        return row
+    }
+
+    @objc private func openDeveloperSite() {
+        NSWorkspace.shared.open(Self.developerURL)
     }
 
     private func makeCreditsLabel() -> NSTextField {
@@ -274,9 +279,9 @@ final class MacSettingsViewController: NSViewController {
         lineStack.spacing = 8
         lineStack.translatesAutoresizingMaskIntoConstraints = false
 
-        let shortcut = makeTipLine("Press ⌘M for Touchpad mode (Esc to exit).")
+        let shortcut = makeTipLine("Press ⌥M for touchpad mode (Esc to exit).")
         let gestures = makeTipLine(
-            "For smooth multi-finger play, turn off gestures in "
+            "For smooth multi-finger play, turn off gestures (Mission Control & App Exposé) in "
             + "System Settings ▸ Trackpad ▸ More Gestures.")
         lineStack.addArrangedSubview(shortcut)
         lineStack.addArrangedSubview(gestures)

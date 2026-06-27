@@ -43,6 +43,14 @@ final class MacCsoundEngine {
         noteOnScores = on; noteOffScores = off
     }
 
+    /// Bundled Csound looks for Opcodes64 under the embedded framework, not /Library/Frameworks.
+    private static func configureBundledOpcodesDir() {
+        let dir = Bundle.main.bundleURL
+            .appendingPathComponent("Contents/Frameworks/CsoundLib64.framework/Versions/Current/Resources/Opcodes64", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        csoundSetOpcodedir(dir.path)
+    }
+
     private static func hardwareOutputSampleRate() -> Double {
         var deviceID = AudioDeviceID(0)
         var size = UInt32(MemoryLayout<AudioDeviceID>.size)
@@ -71,6 +79,7 @@ final class MacCsoundEngine {
             print("[Etherpad-mac] etherpad.csd not found in bundle")
             return
         }
+        Self.configureBundledOpcodesDir()
         guard let c = csoundCreate(nil) else {
             print("[Etherpad-mac] csoundCreate failed")
             return

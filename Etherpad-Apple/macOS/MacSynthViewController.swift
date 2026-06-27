@@ -18,6 +18,15 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     private var sizePopup: NSPopUpButton!
     private var soundPopup: NSPopUpButton!
 
+    /// CSD defaults — leading bullet in menus marks these (matches iOS).
+    private enum DefaultIndex {
+        static let scale = 0
+        static let key = 0
+        static let octave = 2   // label "0", value 4
+        static let size = 4     // "8" in 4…14
+        static let sound = 0
+    }
+
     override func loadView() {
         view = NSView(frame: NSRect(x: 0, y: 0, width: 1024, height: 790))
     }
@@ -37,24 +46,43 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         octavePopup = makeOctavePopup()
         sizePopup = makeSizePopup()
         soundPopup = makeSoundPopup()
-        bar.addArrangedSubview(labeled("1 Scale", scalePopup))
-        bar.addArrangedSubview(labeled("2 Key", keyPopup))
-        bar.addArrangedSubview(labeled("3 Octave", octavePopup))
-        bar.addArrangedSubview(labeled("4 Size", sizePopup))
-        bar.addArrangedSubview(labeled("5 Sound", soundPopup))
 
+        let popups: [(String, NSPopUpButton)] = [
+            ("Scale", scalePopup),
+            ("Key", keyPopup),
+            ("Octave", octavePopup),
+            ("Size", sizePopup),
+            ("Sound", soundPopup),
+        ]
+        for (i, item) in popups.enumerated() {
+            bar.addArrangedSubview(labeled(item.0, item.1))
+            if i < popups.count - 1 { bar.addArrangedSubview(barSeparator()) }
+        }
+
+        bar.addArrangedSubview(barSeparator())
         multitouchButton = NSButton(title: "Multitouch", target: self,
                                     action: #selector(toggleMultitouch))
+        multitouchButton.toolTip = "Toggle touchpad mode (⌥M)"
         bar.addArrangedSubview(multitouchButton)
 
-        let settings = NSButton(title: "Settings", target: self, action: #selector(showSettings))
+        let barSpacer = NSView()
+        barSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        barSpacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        bar.addArrangedSubview(barSpacer)
+
+        let gear = NSImage(systemSymbolName: "gearshape", accessibilityDescription: "Settings")!
+        let settings = NSButton(image: gear, target: self, action: #selector(showSettings))
+        settings.imagePosition = .imageOnly
+        settings.bezelStyle = .accessoryBar
+        settings.toolTip = "Settings"
         bar.addArrangedSubview(settings)
 
         surface.delegate = self
         surface.translatesAutoresizingMaskIntoConstraints = false
 
-        view.addSubview(bar)
+        let controlBar = makeGlassBar(content: bar)
         view.addSubview(surface)
+        view.addSubview(controlBar)
 
         bannerBlur.material = .hudWindow
         bannerBlur.blendingMode = .withinWindow
@@ -77,18 +105,18 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         view.addSubview(bannerBlur)
 
         NSLayoutConstraint.activate([
-            bar.topAnchor.constraint(equalTo: view.topAnchor),
-            bar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            bar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            bar.heightAnchor.constraint(equalToConstant: 40),
+            controlBar.topAnchor.constraint(equalTo: view.topAnchor),
+            controlBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            controlBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            controlBar.heightAnchor.constraint(equalToConstant: 40),
 
-            surface.topAnchor.constraint(equalTo: bar.bottomAnchor),
+            surface.topAnchor.constraint(equalTo: view.topAnchor),
             surface.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             surface.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             surface.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
             bannerBlur.centerXAnchor.constraint(equalTo: surface.centerXAnchor),
-            bannerBlur.topAnchor.constraint(equalTo: surface.topAnchor, constant: 18),
+            bannerBlur.topAnchor.constraint(equalTo: controlBar.bottomAnchor, constant: 18),
             bannerBlur.heightAnchor.constraint(equalToConstant: 40),
 
             bannerLabel.leadingAnchor.constraint(equalTo: bannerBlur.leadingAnchor, constant: 20),
@@ -120,6 +148,7 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         soundPopup.selectItem(at: savedIndex(Key.sound, default: 0, count: soundPopup.numberOfItems))
         scaleChanged(scalePopup); keyChanged(keyPopup); octaveChanged(octavePopup)
         sizeChanged(sizePopup);  soundChanged(soundPopup)
+        syncAllPopupButtonTitles()
     }
 
     deinit {
@@ -231,6 +260,54 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         stack.spacing = 4
         return stack
     }
+
+    private func barSeparator() -> NSView {
+        let line = NSView()
+        line.translatesAutoresizingMaskIntoConstraints = false
+        line.wantsLayer = true
+        line.layer?.backgroundColor = NSColor.separatorColor.withAlphaComponent(0.45).cgColor
+        NSLayoutConstraint.activate([
+            line.widthAnchor.constraint(equalToConstant: 1),
+            line.heightAnchor.constraint(equalToConstant: 18),
+        ])
+        return line
+    }
+
+    /// Liquid glass on macOS 26+; frosted header vibrancy on earlier releases.
+    private func makeGlassBar(content: NSView) -> NSView {
+        let host = NSView()
+        host.translatesAutoresizingMaskIntoConstraints = false
+        host.addSubview(content)
+        NSLayoutConstraint.activate([
+            content.leadingAnchor.constraint(equalTo: host.leadingAnchor),
+            content.trailingAnchor.constraint(equalTo: host.trailingAnchor),
+            content.topAnchor.constraint(equalTo: host.topAnchor),
+            content.bottomAnchor.constraint(equalTo: host.bottomAnchor),
+        ])
+
+        if #available(macOS 26.0, *) {
+            let glass = NSGlassEffectView()
+            glass.translatesAutoresizingMaskIntoConstraints = false
+            glass.cornerRadius = 0
+            glass.contentView = host
+            return glass
+        }
+
+        let effect = NSVisualEffectView()
+        effect.material = .headerView
+        effect.blendingMode = .withinWindow
+        effect.state = .active
+        effect.translatesAutoresizingMaskIntoConstraints = false
+        effect.addSubview(host)
+        NSLayoutConstraint.activate([
+            host.leadingAnchor.constraint(equalTo: effect.leadingAnchor),
+            host.trailingAnchor.constraint(equalTo: effect.trailingAnchor),
+            host.topAnchor.constraint(equalTo: effect.topAnchor),
+            host.bottomAnchor.constraint(equalTo: effect.bottomAnchor),
+        ])
+        return effect
+    }
+
     private func makeLabel(_ s: String) -> NSTextField {
         let l = NSTextField(labelWithString: s)
         l.font = .systemFont(ofSize: 11)
@@ -238,64 +315,98 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         return l
     }
 
+    private func menuItemTitle(_ title: String, isDefault: Bool) -> String {
+        isDefault ? "• \(title)" : title
+    }
+
+    private func baseTitle(from menuTitle: String) -> String {
+        menuTitle.hasPrefix("• ") ? String(menuTitle.dropFirst(2)) : menuTitle
+    }
+
+    private func populatePopup(_ pop: NSPopUpButton, titles: [String], defaultIndex: Int) {
+        pop.removeAllItems()
+        for (i, title) in titles.enumerated() {
+            pop.addItem(withTitle: menuItemTitle(title, isDefault: i == defaultIndex))
+        }
+    }
+
+    private func syncPopupButtonTitle(_ pop: NSPopUpButton) {
+        pop.title = baseTitle(from: pop.titleOfSelectedItem ?? pop.title)
+    }
+
+    private func syncAllPopupButtonTitles() {
+        syncPopupButtonTitle(scalePopup)
+        syncPopupButtonTitle(keyPopup)
+        syncPopupButtonTitle(octavePopup)
+        syncPopupButtonTitle(sizePopup)
+        syncPopupButtonTitle(soundPopup)
+    }
+
     private func makeScalePopup() -> NSPopUpButton {
         let pop = NSPopUpButton(frame: .zero, pullsDown: false)
-        pop.addItems(withTitles: MacSynthTables.scaleOptions.map { $0.name })
+        populatePopup(pop, titles: MacSynthTables.scaleOptions.map(\.name),
+                      defaultIndex: DefaultIndex.scale)
         pop.target = self; pop.action = #selector(scaleChanged(_:))
         return pop
     }
     @objc private func scaleChanged(_ s: NSPopUpButton) {
         engine.setScale(MacSynthTables.scaleOptions[s.indexOfSelectedItem].steps)
         UserDefaults.standard.set(s.indexOfSelectedItem, forKey: Key.scale)
+        syncPopupButtonTitle(s)
     }
 
     private func makeKeyPopup() -> NSPopUpButton {
         let pop = NSPopUpButton(frame: .zero, pullsDown: false)
-        pop.addItems(withTitles: MacSynthTables.keyNames)
+        populatePopup(pop, titles: MacSynthTables.keyNames, defaultIndex: DefaultIndex.key)
         pop.target = self; pop.action = #selector(keyChanged(_:))
         return pop
     }
     @objc private func keyChanged(_ s: NSPopUpButton) {
         engine.setKey(s.indexOfSelectedItem)
         UserDefaults.standard.set(s.indexOfSelectedItem, forKey: Key.key)
+        syncPopupButtonTitle(s)
     }
 
     private func makeOctavePopup() -> NSPopUpButton {
         let pop = NSPopUpButton(frame: .zero, pullsDown: false)
-        pop.addItems(withTitles: MacSynthTables.octaveLabels)
-        pop.selectItem(at: 2)
+        populatePopup(pop, titles: MacSynthTables.octaveLabels, defaultIndex: DefaultIndex.octave)
+        pop.selectItem(at: DefaultIndex.octave)
         pop.target = self; pop.action = #selector(octaveChanged(_:))
         return pop
     }
     @objc private func octaveChanged(_ s: NSPopUpButton) {
         engine.setOctave(MacSynthTables.octaveValues[s.indexOfSelectedItem])
         UserDefaults.standard.set(s.indexOfSelectedItem, forKey: Key.octave)
+        syncPopupButtonTitle(s)
     }
 
     private func makeSizePopup() -> NSPopUpButton {
         let pop = NSPopUpButton(frame: .zero, pullsDown: false)
-        pop.addItems(withTitles: (4...14).map(String.init))
-        pop.selectItem(withTitle: "8")
+        let titles = (4...14).map(String.init)
+        populatePopup(pop, titles: titles, defaultIndex: DefaultIndex.size)
+        pop.selectItem(at: DefaultIndex.size)
         pop.target = self; pop.action = #selector(sizeChanged(_:))
         return pop
     }
     @objc private func sizeChanged(_ s: NSPopUpButton) {
-        let n = Int(s.titleOfSelectedItem ?? "8") ?? 8
+        let n = Int(baseTitle(from: s.titleOfSelectedItem ?? "8")) ?? 8
         selectedSize = n
         engine.setSize(n)
         surface.numberOfNotes = Double(n)
         UserDefaults.standard.set(s.indexOfSelectedItem, forKey: Key.size)
+        syncPopupButtonTitle(s)
     }
 
     private func makeSoundPopup() -> NSPopUpButton {
         let pop = NSPopUpButton(frame: .zero, pullsDown: false)
-        pop.addItems(withTitles: MacSynthTables.soundNames)
+        populatePopup(pop, titles: MacSynthTables.soundNames, defaultIndex: DefaultIndex.sound)
         pop.target = self; pop.action = #selector(soundChanged(_:))
         return pop
     }
     @objc private func soundChanged(_ s: NSPopUpButton) {
         engine.setSound(s.indexOfSelectedItem)
         UserDefaults.standard.set(s.indexOfSelectedItem, forKey: Key.sound)
+        syncPopupButtonTitle(s)
     }
 
     @objc private func showSettings() { presentSettings() }

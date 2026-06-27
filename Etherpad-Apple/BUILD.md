@@ -59,7 +59,7 @@ First device install may require trusting the developer profile under
 2. Scheme **Etherpad-macOS**, destination **My Mac**.
 3. **⌘R**.
 
-Normal mode: click-drag to play one voice. **⌘M** enters Multitouch trackpad
+Normal mode: click-drag to play one voice. **⌥M** enters Multitouch trackpad
 mode; **Esc** exits.
 
 ---

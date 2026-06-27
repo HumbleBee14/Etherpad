@@ -273,6 +273,7 @@
 				4283E1BF9A0ED0B1AF819BBE /* Resources */,
 				0C1EF1E5E974A282F5E4AC41 /* Embed Frameworks */,
 				DD022EB931DD299B221F0364 /* Sign embedded Csound libraries */,
+				A1F2E3D4C5B6A79887766554 /* Generate Csound dSYMs */,
 			);
 			buildRules = (
 			);
@@ -360,6 +361,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "# Csound's nested audio dylibs (libsndfile + codecs) live in\n# CsoundLib64.framework/Versions/Current/libs and ship UNSIGNED. Xcode's Embed &\n# Sign signs the framework bundle + main binary but NOT these loose dylibs, so\n# hardened runtime rejects them at launch (\"Trying to load an unsigned library\").\n# Sign each one with the build identity, then re-seal the framework so its seal\n# includes the now-signed dylibs.\nset -e\n[ \"${CODE_SIGNING_ALLOWED}\" = \"YES\" ] || { echo \"code signing not allowed; skipping\"; exit 0; }\n[ -n \"${EXPANDED_CODE_SIGN_IDENTITY}\" ] || { echo \"no signing identity; skipping\"; exit 0; }\nFW=\"${CODESIGNING_FOLDER_PATH}/Contents/Frameworks/CsoundLib64.framework\"\n[ -d \"$FW\" ] || { echo \"framework not embedded; skipping\"; exit 0; }\nLIBS=\"$FW/Versions/Current/libs\"\nfor dylib in \"$LIBS\"/*.dylib; do\n  [ -f \"$dylib\" ] || continue\n  codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --options runtime \"$dylib\"\ndone\ncodesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --options runtime \"$FW/Versions/Current/CsoundLib64\"\ncodesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --options runtime \"$FW\"\n";
+		};
+		A1F2E3D4C5B6A79887766554 /* Generate Csound dSYMs */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Generate Csound dSYMs";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Vendored Csound ships without dSYMs; Xcode 16 warns on App Store upload.\n# dsymutil creates stub dSYMs (correct UUIDs, no debug info) to silence those warnings.\n# Archive-only so local Debug runs do not get empty-dSYM LLDB noise.\nset -e\n[ \"${ACTION}\" = \"install\" ] || exit 0\n[ \"${CONFIGURATION}\" = \"Release\" ] || exit 0\nFW=\"${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}/CsoundLib64.framework\"\n[ -d \"$FW\" ] || exit 0\nOUT=\"${DWARF_DSYM_FOLDER_PATH}\"\nMAIN=\"${FW}/Versions/Current/CsoundLib64\"\nif [ -f \"$MAIN\" ]; then\n  dsymutil \"$MAIN\" -o \"${OUT}/CsoundLib64.framework.dSYM\"\nfi\nfor dylib in \"${FW}/Versions/Current/libs/\"*.dylib; do\n  [ -f \"$dylib\" ] || continue\n  dsymutil \"$dylib\" -o \"${OUT}/$(basename \"$dylib\").dSYM\"\ndone\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

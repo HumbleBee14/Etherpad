@@ -129,6 +129,30 @@ unless target.shell_script_build_phases.any? { |p| p.name == SIGN_PHASE }
   log.call("added signing phase")
 end
 
+DSYM_PHASE = "Generate Csound dSYMs"
+unless target.shell_script_build_phases.any? { |p| p.name == DSYM_PHASE }
+  phase = target.new_shell_script_build_phase(DSYM_PHASE)
+  phase.shell_path = "/bin/sh"
+  phase.always_out_of_date = "1"
+  phase.shell_script = <<~SH
+    set -e
+    [ "${ACTION}" = "install" ] || exit 0
+    [ "${CONFIGURATION}" = "Release" ] || exit 0
+    FW="${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}/CsoundLib64.framework"
+    [ -d "$FW" ] || exit 0
+    OUT="${DWARF_DSYM_FOLDER_PATH}"
+    MAIN="${FW}/Versions/Current/CsoundLib64"
+    if [ -f "$MAIN" ]; then
+      dsymutil "$MAIN" -o "${OUT}/CsoundLib64.framework.dSYM"
+    fi
+    for dylib in "${FW}/Versions/Current/libs/"*.dylib; do
+      [ -f "$dylib" ] || continue
+      dsymutil "$dylib" -o "${OUT}/$(basename "$dylib").dSYM"
+    done
+  SH
+  log.call("added dSYM generation phase")
+end
+
 csd_ref = project.files.find { |f| (f.path || "").end_with?("macOS/#{CSD_BASENAME}") }
 abort("Could not find macOS/#{CSD_BASENAME} reference") unless csd_ref
 unless target.resources_build_phase.files.any? { |f| f.file_ref == csd_ref }

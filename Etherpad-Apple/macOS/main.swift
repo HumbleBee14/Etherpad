@@ -12,6 +12,7 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate {
             contentRect: NSRect(x: 0, y: 0, width: 1024, height: 790),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered, defer: false)
+        window.isRestorable = false
         window.title = "Etherpad"
         window.contentViewController = synthVC
         window.center()
@@ -20,6 +21,8 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ app: NSApplication) -> Bool { true }
+
+    func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }
 
     func applicationWillResignActive(_ notification: Notification) {
         synthVC?.handleAppDeactivation()
@@ -47,9 +50,12 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate {
         let modeItem = NSMenuItem()
         mainMenu.addItem(modeItem)
         let modeMenu = NSMenu(title: "Mode")
-        modeMenu.addItem(withTitle: "Toggle Multitouch",
-                         action: #selector(MacSynthViewController.toggleMultitouch),
-                         keyEquivalent: "m")
+        let multitouchItem = NSMenuItem(
+            title: "Toggle Touchpad Mode",
+            action: #selector(MacSynthViewController.toggleMultitouch),
+            keyEquivalent: "m")
+        multitouchItem.keyEquivalentModifierMask = [.option]
+        modeMenu.addItem(multitouchItem)
         modeItem.submenu = modeMenu
 
         NSApp.mainMenu = mainMenu

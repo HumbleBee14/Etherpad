@@ -5,7 +5,7 @@ the surface to play — horizontal position picks pitch, vertical position
 controls intensity and timbre.
 
 - **iOS / iPadOS** — up to 5 voices on iPhone, 10+ on iPad; UIKit + Csound 7
-- **macOS** — click-drag or trackpad Multitouch mode (⌘M); AppKit + Csound 6.18.1
+- **macOS** — click-drag or trackpad Multitouch mode (⌥M); AppKit + Csound 6.18.1
 
 Both targets live in one Xcode project (`Etherpad-iOS` and `Etherpad-macOS`
 schemes). They share the bundle ID and ship as **Etherpad** on device and in
