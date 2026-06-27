@@ -59,7 +59,8 @@ target.build_configurations.each do |config|
   bs["ENABLE_HARDENED_RUNTIME"]    = "YES"
   bs["ENABLE_USER_SCRIPT_SANDBOXING"] = "NO"   # signing phase reads build products
   bs["COMBINE_HIDPI_IMAGES"]       = "YES"
-  bs["ASSETCATALOG_COMPILER_APPICON_NAME"] = ""
+  bs["ASSETCATALOG_COMPILER_APPICON_NAME"] = "AppIcon"
+  bs["CODE_SIGN_ENTITLEMENTS"]     = "macOS/Etherpad-macOS.entitlements"
   bs["CLANG_ENABLE_MODULES"]       = "YES"
 end
 log.call("build settings applied (bundle id #{BUNDLE_ID})")
@@ -83,8 +84,17 @@ swift_files.each do |path|
 end
 
 # Non-compiled files visible in the project
-[MACOS_DIR.join("Info-macOS.plist"), MACOS_DIR.join("Etherpad-macOS-Bridging-Header.h")].each do |p|
+[MACOS_DIR.join("Info-macOS.plist"),
+ MACOS_DIR.join("Etherpad-macOS-Bridging-Header.h"),
+ MACOS_DIR.join("Etherpad-macOS.entitlements")].each do |p|
   file_ref_for(project, group, p.to_s) if File.exist?(p)
+end
+
+# App icon asset catalog
+assets = MACOS_DIR.join("Assets.xcassets").to_s
+if File.exist?(assets)
+  ref = file_ref_for(project, group, assets)
+  target.resources_build_phase.add_file_reference(ref) unless target.resources_build_phase.files.any? { |f| f.file_ref == ref }
 end
 
 # Link + embed CsoundLib64.framework (Embed & Sign)
@@ -104,31 +114,29 @@ unless embed.files.any? { |f| f.file_ref == fw_ref }
 end
 log.call("framework linked + embedded")
 
-# Re-sign the framework's nested libs/ dylibs with the build identity. Xcode seals
-# them as resources (keeping their original Team ID), which fails hardened-runtime
-# library validation at launch; signing them with the build identity fixes it.
+# Csound's nested dylibs ship unsigned and Embed & Sign skips them, so hardened
+# runtime rejects them at launch; re-sign each with the build identity.
 SIGN_PHASE = "Sign embedded Csound libraries"
 unless target.shell_script_build_phases.any? { |p| p.name == SIGN_PHASE }
   phase = target.new_shell_script_build_phase(SIGN_PHASE)
   phase.shell_path = "/bin/sh"
   phase.always_out_of_date = "1"
   phase.shell_script = <<~SH
+    set -e
     [ "${CODE_SIGNING_ALLOWED}" = "YES" ] || exit 0
     [ -n "${EXPANDED_CODE_SIGN_IDENTITY}" ] || exit 0
     FW="${CODESIGNING_FOLDER_PATH}/Contents/Frameworks/CsoundLib64.framework"
     [ -d "$FW" ] || exit 0
-    find "$FW/libs" -type f -name '*.dylib' -exec \\
-      codesign --force --sign "${EXPANDED_CODE_SIGN_IDENTITY}" --options runtime --timestamp=none {} +
-    codesign --force --sign "${EXPANDED_CODE_SIGN_IDENTITY}" --options runtime --timestamp=none "$FW"
+    for dylib in "$FW/Versions/Current/libs"/*.dylib; do
+      [ -f "$dylib" ] || continue
+      codesign --force --sign "${EXPANDED_CODE_SIGN_IDENTITY}" --options runtime "$dylib"
+    done
+    codesign --force --sign "${EXPANDED_CODE_SIGN_IDENTITY}" --options runtime "$FW/Versions/Current/CsoundLib64"
+    codesign --force --sign "${EXPANDED_CODE_SIGN_IDENTITY}" --options runtime "$FW"
   SH
   log.call("added signing phase")
 end
 
-# macOS resource: the macOS target uses its OWN copy at macOS/etherpad.csd
-# (NOT the iOS Etherpad/Resources/etherpad.csd — the targets are fully separate).
-# Match the macOS path explicitly; matching by basename alone would grab the iOS
-# ref and add a second CSD to the macOS target -> "multiple commands produce" build
-# failure on re-run.
 csd_ref = project.files.find { |f| (f.path || "").end_with?("macOS/#{CSD_BASENAME}") }
 abort("Could not find macOS/#{CSD_BASENAME} reference") unless csd_ref
 unless target.resources_build_phase.files.any? { |f| f.file_ref == csd_ref }
