@@ -1,6 +1,6 @@
 # Etherpad
 
-An expressive multi-touch synthesizer for iPhone, iPad, and Android. Touch anywhere to make sound — every finger is an independent voice, driven by a professional [Csound](https://www.csound.com) synthesis engine. Slide, hold, lift; the music follows your gesture in real time.
+An expressive multi-touch synthesizer for iPhone, iPad, Mac, and Android. Touch anywhere to make sound — every finger is an independent voice, driven by a professional [Csound](https://www.csound.com) synthesis engine. Slide, hold, lift; the music follows your gesture in real time.
 
 No setup, no MIDI, no music theory required. Open and play.
 
@@ -11,7 +11,7 @@ No setup, no MIDI, no music theory required. Open and play.
 ## Get the app
 
 - **Google Play (Android)** — [Google PlayStore](https://play.google.com/store/apps/details?id=com.humblebee.etherpad)
-- **App Store (iOS / iPadOS)** — [Apple Store App](https://apps.apple.com/us/app/etherpad/id6772439909)
+- **App Store (iOS / iPadOS / macOS)** — [Apple Store App](https://apps.apple.com/us/app/etherpad/id6772439909)
 
 ## Features
 
@@ -26,19 +26,23 @@ No setup, no MIDI, no music theory required. Open and play.
 
 ## Repository layout
 
-This repo is open source and contains three implementations sharing the same `etherpad.csd` synth definition:
+This repo is open source and contains Apple (iOS + macOS) and Android implementations sharing the same `etherpad.csd` synth definition:
 
-- **[Etherpad-iOS](Etherpad-iOS/)** — iPhone & iPad app. Swift + UIKit, Csound 6 framework. See [`BUILD.md`](Etherpad-iOS/BUILD.md) for the Csound framework setup.
+- **[Etherpad-Apple](Etherpad-Apple/)** — iPhone, iPad, and native macOS apps. Swift + UIKit/AppKit, separate Csound builds per platform. See [`BUILD.md`](Etherpad-Apple/BUILD.md) for setup.
 - **[Etherpad-Android](Etherpad-Android/)** — Android app. Kotlin + Jetpack Compose UI, with a small C++ engine driving Csound through Oboe. See its [README](Etherpad-Android/README.md) for build instructions.
 
 The three apps share the Csound score (`etherpad.csd`) and the same sonic identity but otherwise have nothing in common code-wise — each is idiomatic to its platform.
 
 ## Credits
 
-Etherpad is inspired by **EtherSurface**, an Android app written by [**Paul Batchelor**](https://paulbatchelor.github.io/about/) in 2014.
+Etherpad is inspired by **EtherSurface**, an Android app written by [**Paul Batchelor**](https://paulbatchelor.github.io/about/) in 2014 (Original Creator). [Modernized and Upgraded]
 
 - Sound engine — [Csound](https://www.csound.com) by Barry Vercoe, Victor Lazzarini, et al.
 
-## License
+## License & attributions
 
-See [LICENSE](LICENSE) for details.
+Application code © Dinesh (HumbleBee). Etherpad is a rewrite of Paul Batchelor's
+GPLv3 **EtherSurface**, used with his permission, and is powered by
+[Csound](https://www.csound.com) (LGPL-2.1).
+
+See [NOTICE.md](NOTICE.md) for full credits and license details.

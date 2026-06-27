@@ -47,8 +47,8 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
                                     action: #selector(toggleMultitouch))
         bar.addArrangedSubview(multitouchButton)
 
-        let about = NSButton(title: "About", target: self, action: #selector(showAbout))
-        bar.addArrangedSubview(about)
+        let settings = NSButton(title: "Settings", target: self, action: #selector(showSettings))
+        bar.addArrangedSubview(settings)
 
         surface.delegate = self
         surface.translatesAutoresizingMaskIntoConstraints = false
@@ -298,22 +298,10 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         UserDefaults.standard.set(s.indexOfSelectedItem, forKey: Key.sound)
     }
 
-    @objc private func showAbout() { presentAbout() }
-    @objc func showAboutMenu() { presentAbout() }
-    private func presentAbout() {
-        let a = NSAlert()
-        a.messageText = "Etherpad"
-        a.informativeText = """
-        Multi-touch synthesizer.
-
-        Normal mode: click-drag to play one voice.
-        Multitouch mode (⌘M): the whole trackpad plays up to 10 voices. Press Esc to exit.
-
-        For uninterrupted multi-finger play, disable system trackpad gestures in
-        System Settings ▸ Trackpad ▸ More Gestures (Mission Control, App Exposé,
-        Notification Centre). macOS handles those before the app, so they can briefly
-        interrupt notes.
-        """
-        a.runModal()
+    @objc private func showSettings() { presentSettings() }
+    @objc func showSettingsMenu() { presentSettings() }
+    private func presentSettings() {
+        let settings = MacSettingsViewController()
+        presentAsModalWindow(settings)
     }
 }
