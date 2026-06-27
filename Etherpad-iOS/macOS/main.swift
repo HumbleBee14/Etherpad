@@ -2,7 +2,6 @@ import AppKit
 
 final class MacAppDelegate: NSObject, NSApplicationDelegate {
     private var window: NSWindow!
-    private var testEngine: MacCsoundEngine?   // TEMP (Task 4 audio self-test)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let vc = MacSynthViewController()
@@ -15,17 +14,6 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate {
         window.center()
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-
-        // TEMP audio self-test: play a pad note at 0.3s, release at 2.0s.
-        let e = MacCsoundEngine(); testEngine = e
-        e.start()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            e.noteOn(slot: 0, x: 0.5, y: 0.7)
-            NSLog("[Etherpad-mac] TEST noteOn fired")
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            e.noteOff(slot: 0); NSLog("[Etherpad-mac] TEST noteOff fired")
-        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ app: NSApplication) -> Bool { true }
@@ -41,7 +29,26 @@ app.delegate = delegate
 app.setActivationPolicy(.regular)
 app.run()
 
-// Temporary stub; replaced by MacSynthViewController.swift.
-final class MacSynthViewController: NSViewController {
-    override func loadView() { view = NSView(frame: NSRect(x: 0, y: 0, width: 1024, height: 790)) }
+// Interim VC: hosts the surface + engine. Full toolbar menus added in Task 6.
+final class MacSynthViewController: NSViewController, MacTouchDelegate {
+    private let engine = MacCsoundEngine()
+    private let surface = MacSurfaceView()
+
+    override func loadView() {
+        surface.frame = NSRect(x: 0, y: 0, width: 1024, height: 790)
+        surface.autoresizingMask = [.width, .height]
+        surface.delegate = self
+        view = surface
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        engine.start()
+        surface.numberOfNotes = 8
+        engine.setSize(8)
+    }
+
+    func touchBegan(slot: Int, x: Float, y: Float) { engine.noteOn(slot: slot, x: x, y: y) }
+    func touchMoved(slot: Int, x: Float, y: Float) { engine.updatePosition(slot: slot, x: x, y: y) }
+    func touchEnded(slot: Int) { engine.noteOff(slot: slot) }
 }
