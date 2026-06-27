@@ -143,11 +143,11 @@ unless target.shell_script_build_phases.any? { |p| p.name == DSYM_PHASE }
     OUT="${DWARF_DSYM_FOLDER_PATH}"
     MAIN="${FW}/Versions/Current/CsoundLib64"
     if [ -f "$MAIN" ]; then
-      dsymutil "$MAIN" -o "${OUT}/CsoundLib64.framework.dSYM"
+      dsymutil "$MAIN" -o "${OUT}/CsoundLib64.framework.dSYM" 2>/dev/null
     fi
     for dylib in "${FW}/Versions/Current/libs/"*.dylib; do
       [ -f "$dylib" ] || continue
-      dsymutil "$dylib" -o "${OUT}/$(basename "$dylib").dSYM"
+      dsymutil "$dylib" -o "${OUT}/$(basename "$dylib").dSYM" 2>/dev/null
     done
   SH
   log.call("added dSYM generation phase")
