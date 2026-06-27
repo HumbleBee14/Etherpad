@@ -1,0 +1,102 @@
+name: Apple Build
+
+# One App Store app (com.humblebee.etherpad), two native targets.
+# Any change under Etherpad-Apple runs both iOS and macOS builds in parallel.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Etherpad-Apple/**'
+      - '.github/workflows/apple-build.yml'
+  pull_request:
+    paths:
+      - 'Etherpad-Apple/**'
+      - '.github/workflows/apple-build.yml'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  validate:
+    name: Validate shared assets
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Check CSD drift (warn only)
+        working-directory: Etherpad-Apple
+        run: |
+          if ! diff -q iOS/Resources/etherpad.csd macOS/etherpad.csd >/dev/null; then
+            echo "::warning::iOS and macOS etherpad.csd differ — confirm this is intentional."
+          else
+            echo "etherpad.csd in sync across iOS and macOS."
+          fi
+
+  build-ios:
+    name: Build iOS
+    needs: validate
+    runs-on: macos-15  # arm64; libsndfile in repo is arm64-only
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Xcode
+        run: |
+          sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+          xcodebuild -version
+
+      - name: Build for Simulator (no signing)
+        working-directory: Etherpad-Apple
+        run: |
+          xcodebuild \
+            -project Etherpad.xcodeproj \
+            -scheme Etherpad-iOS \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -derivedDataPath build/DerivedData \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
+            build
+
+      - name: Result
+        if: success()
+        run: |
+          echo "iOS simulator build succeeded."
+          echo "For App Store / TestFlight: archive Etherpad-iOS with signing + export IPA."
+
+  build-macos:
+    name: Build macOS
+    needs: validate
+    runs-on: macos-15  # arm64; CsoundLib64.framework in repo is arm64/universal
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Xcode
+        run: |
+          sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+          xcodebuild -version
+
+      - name: Build macOS (no signing)
+        working-directory: Etherpad-Apple
+        run: |
+          xcodebuild \
+            -project Etherpad.xcodeproj \
+            -scheme Etherpad-macOS \
+            -configuration Release \
+            -destination 'platform=macOS' \
+            -derivedDataPath build/DerivedDataMac \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Result
+        if: success()
+        run: |
+          echo "macOS build succeeded."
+          echo "For Mac App Store: archive Etherpad-macOS with signing + notarize."

@@ -5,7 +5,7 @@ title: Etherpad
 
 # Etherpad
 
-Touch-based music synthesis app for iOS and iPad.
+Touch-based music synthesis app for iPhone, iPad, and Mac.
 
 ## Links
 

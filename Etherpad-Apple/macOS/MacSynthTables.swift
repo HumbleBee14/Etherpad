@@ -1,6 +1,5 @@
 import Foundation
 
-// Mirrors the iOS scale/sound tables; kept separate so iOS source is untouched.
 struct MacScaleOption { let name: String; let steps: [Int] }
 
 enum MacSynthTables {
@@ -34,7 +33,6 @@ enum MacSynthTables {
         ]
     }
     static let keyNames = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"]
-    // Labels 2..-2 map to Csound octave values 6..2.
     static let octaveLabels = ["2","1","0","-1","-2"]
     static let octaveValues = [6, 5, 4, 3, 2]
     static let soundNames = ["Ether Pad","Distorted Dreams","Xanpalamin","Give it a Tri","Digital Monk"]

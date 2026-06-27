@@ -113,13 +113,12 @@ final class AboutViewController: UIViewController {
         stack.addArrangedSubview(makeSpacer(12))
 
         stack.addArrangedSubview(makeLinkView(
-            leading: "Developer: Dinesh (",
-            linkText: "dineshy.com",
-            url: URL(string: "https://dineshy.com")!,
-            trailing: ")"))
+            leading: "Developer: ",
+            linkText: "Dinesh",
+            url: URL(string: "https://dineshy.com")!))
 
         let creditLabel = UILabel()
-        creditLabel.text = "Credits: Inspired by Paul Batchelor's EtherSurface Android app."
+        creditLabel.text = "Credits: Inspired by Paul Batchelor's EtherSurface app."
         creditLabel.font = .italicSystemFont(ofSize: 13)
         creditLabel.textColor = subtleColor
         creditLabel.textAlignment = .left

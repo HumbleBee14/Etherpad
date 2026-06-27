@@ -35,9 +35,9 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate {
         let appItem = NSMenuItem()
         mainMenu.addItem(appItem)
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "About Etherpad",
-                        action: #selector(MacSynthViewController.showAboutMenu),
-                        keyEquivalent: "")
+        appMenu.addItem(withTitle: "Settings…",
+                        action: #selector(MacSynthViewController.showSettingsMenu),
+                        keyEquivalent: ",")
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "Quit Etherpad",
                         action: #selector(NSApplication.terminate(_:)),

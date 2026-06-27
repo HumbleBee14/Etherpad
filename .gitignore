@@ -40,7 +40,7 @@ captures/
 .cxx/
 
 # ============================================================
-# iOS (Etherpad-iOS/)
+# iOS + macOS (Etherpad-Apple/)
 # ============================================================
 
 # Xcode user-specific state (window layout, breakpoints, scheme
@@ -55,6 +55,7 @@ xcuserdata/
 
 # Xcode build / derived data
 DerivedData/
+build/
 *.moved-aside
 *.hmap
 *.ipa
@@ -78,9 +79,6 @@ fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
 
-# Csound iOS xcframeworks ARE tracked (~12 MB) so the repo clones
-# and builds without an extra download dance.
-# Our patched Objective-C shim sources at Etherpad-iOS/Headers/
-# (CsoundObj.h/.m, CsoundMIDI.h/.m) are also tracked.
+# Csound xcframeworks and patched Obj-C shims (CsoundObj, CsoundMIDI) are tracked.
 /android-demo
 /docs/superpowers

@@ -1,24 +1,22 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 #
-# Idempotent generator for the native macOS app target. Re-run any time (after an
-# Xcode upgrade, on a fresh clone, or after adding macOS/*.swift) to recreate the
-# exact same "Etherpad-macOS" target without duplicating targets/build files.
-# The iOS "Etherpad" target is never modified (asserted before save).
+# Idempotent macOS target generator. Safe to re-run after Xcode upgrades or
+# when adding macOS/*.swift. Never modifies the iOS "Etherpad-iOS" target.
 
 require "xcodeproj"
 require "pathname"
 
 TARGET_NAME       = "Etherpad-macOS"
-BUNDLE_ID         = "com.humblebee.etherpad"   # must equal the iOS target's id
+BUNDLE_ID         = "com.humblebee.etherpad"
 DEPLOYMENT_TARGET = "13.0"
 SWIFT_VERSION     = "5.10"
 DEVELOPMENT_TEAM  = "252N2WS4Y3"
 FRAMEWORK_NAME    = "CsoundLib64.framework"
 CSD_BASENAME      = "etherpad.csd"
-IOS_TARGET_NAME   = "Etherpad"
+IOS_TARGET_NAME   = "Etherpad-iOS"
 
-PROJECT_DIR  = Pathname.new(File.expand_path("../..", __dir__))   # Etherpad-iOS/
+PROJECT_DIR  = Pathname.new(File.expand_path("../..", __dir__))
 PROJECT_PATH = PROJECT_DIR.join("Etherpad.xcodeproj").to_s
 MACOS_DIR    = PROJECT_DIR.join("macOS")
 
@@ -32,7 +30,6 @@ ios_target = project.targets.find { |t| t.name == IOS_TARGET_NAME }
 abort("iOS target '#{IOS_TARGET_NAME}' not found — aborting") unless ios_target
 ios_sources_before = ios_target.source_build_phase.files.map { |f| f.file_ref&.path }.compact.sort
 
-# Target
 target = project.targets.find { |t| t.name == TARGET_NAME }
 if target.nil?
   target = project.new_target(:application, TARGET_NAME, :osx, DEPLOYMENT_TARGET)
@@ -41,7 +38,6 @@ else
   log.call("target exists — reconciling")
 end
 
-# Build settings (overwrite => idempotent)
 target.build_configurations.each do |config|
   bs = config.build_settings
   bs["PRODUCT_NAME"]               = "Etherpad"
@@ -52,12 +48,12 @@ target.build_configurations.each do |config|
   bs["INFOPLIST_FILE"]             = "macOS/Info-macOS.plist"
   bs["GENERATE_INFOPLIST_FILE"]    = "NO"
   bs["SWIFT_OBJC_BRIDGING_HEADER"] = "macOS/Etherpad-macOS-Bridging-Header.h"
-  bs["FRAMEWORK_SEARCH_PATHS"]     = ["$(inherited)", "$(PROJECT_DIR)"]
+  bs["FRAMEWORK_SEARCH_PATHS"]     = ["$(inherited)", "$(PROJECT_DIR)/Frameworks"]
   bs["LD_RUNPATH_SEARCH_PATHS"]    = ["$(inherited)", "@executable_path/../Frameworks"]
   bs["DEVELOPMENT_TEAM"]           = DEVELOPMENT_TEAM
   bs["CODE_SIGN_STYLE"]            = "Automatic"
   bs["ENABLE_HARDENED_RUNTIME"]    = "YES"
-  bs["ENABLE_USER_SCRIPT_SANDBOXING"] = "NO"   # signing phase reads build products
+  bs["ENABLE_USER_SCRIPT_SANDBOXING"] = "NO"
   bs["COMBINE_HIDPI_IMAGES"]       = "YES"
   bs["ASSETCATALOG_COMPILER_APPICON_NAME"] = "AppIcon"
   bs["CODE_SIGN_ENTITLEMENTS"]     = "macOS/Etherpad-macOS.entitlements"
@@ -73,7 +69,6 @@ def file_ref_for(project, group, abs_path)
   project.files.find { |f| (rp = (f.real_path rescue nil)) && rp.to_s == abs } || group.new_reference(abs_path)
 end
 
-# Swift sources (every macOS/*.swift except this tool dir)
 swift_files = Dir.glob(MACOS_DIR.join("**", "*.swift")).reject { |p| p.include?("/project-setup/") }.sort
 existing_src = target.source_build_phase.files.map { |f| (f.file_ref&.real_path rescue nil)&.to_s }.compact
 swift_files.each do |path|
@@ -83,22 +78,19 @@ swift_files.each do |path|
   log.call("source + #{Pathname.new(path).basename}")
 end
 
-# Non-compiled files visible in the project
 [MACOS_DIR.join("Info-macOS.plist"),
  MACOS_DIR.join("Etherpad-macOS-Bridging-Header.h"),
  MACOS_DIR.join("Etherpad-macOS.entitlements")].each do |p|
   file_ref_for(project, group, p.to_s) if File.exist?(p)
 end
 
-# App icon asset catalog
 assets = MACOS_DIR.join("Assets.xcassets").to_s
 if File.exist?(assets)
   ref = file_ref_for(project, group, assets)
   target.resources_build_phase.add_file_reference(ref) unless target.resources_build_phase.files.any? { |f| f.file_ref == ref }
 end
 
-# Link + embed CsoundLib64.framework (Embed & Sign)
-fw_abs = PROJECT_DIR.join(FRAMEWORK_NAME).to_s
+fw_abs = PROJECT_DIR.join("Frameworks", FRAMEWORK_NAME).to_s
 abort("Missing #{FRAMEWORK_NAME} at #{fw_abs}") unless File.exist?(fw_abs)
 fw_group = project.main_group.find_subpath("Frameworks", true)
 fw_ref = file_ref_for(project, fw_group, fw_abs)
@@ -114,8 +106,8 @@ unless embed.files.any? { |f| f.file_ref == fw_ref }
 end
 log.call("framework linked + embedded")
 
-# Csound's nested dylibs ship unsigned and Embed & Sign skips them, so hardened
-# runtime rejects them at launch; re-sign each with the build identity.
+# Embed & Sign skips nested dylibs in CsoundLib64.framework/Versions/Current/libs;
+# hardened runtime rejects them unless re-signed with the build identity.
 SIGN_PHASE = "Sign embedded Csound libraries"
 unless target.shell_script_build_phases.any? { |p| p.name == SIGN_PHASE }
   phase = target.new_shell_script_build_phase(SIGN_PHASE)
@@ -144,7 +136,6 @@ unless target.resources_build_phase.files.any? { |f| f.file_ref == csd_ref }
   log.call("added macOS #{CSD_BASENAME}")
 end
 
-# Shared scheme
 scheme = Xcodeproj::XCScheme.new
 scheme.add_build_target(target)
 scheme.set_launch_target(target)
@@ -157,8 +148,7 @@ end
 
 project.save
 
-# Restore the Xcode-16+ attribute xcodeproj 1.25.0 drops, so the pbxproj stays
-# byte-stable vs Xcode (objectVersion is preserved either way).
+# xcodeproj 1.25.0 drops preferredProjectObjectVersion; restore for Xcode 16+.
 pbx_path = PROJECT_PATH + "/project.pbxproj"
 pbx = File.read(pbx_path)
 unless pbx.include?("preferredProjectObjectVersion")

@@ -328,15 +328,15 @@ The simplicity here is deliberate. There is no manual thread management, no `Med
 
 | File                                                                                              | Job                                                              |
 |---------------------------------------------------------------------------------------------------|------------------------------------------------------------------|
-| [Engine/CsoundEngine.swift](../Etherpad-iOS/Etherpad/Engine/CsoundEngine.swift)                   | Swift wrapper around `CsoundObj`; same score messages as Android |
-| [Views/TouchSurfaceView.swift](../Etherpad-iOS/Etherpad/Views/TouchSurfaceView.swift)             | `UIView` multi-touch surface, slot allocator, drawing             |
-| [SynthPanelViewController.swift](../Etherpad-iOS/Etherpad/SynthPanelViewController.swift)         | Top menu + visual settings sheet                                  |
+| [Engine/CsoundEngine.swift](../Etherpad-Apple/iOS/Engine/CsoundEngine.swift)                   | Swift wrapper around `CsoundObj`; same score messages as Android |
+| [Views/TouchSurfaceView.swift](../Etherpad-Apple/iOS/Views/TouchSurfaceView.swift)             | `UIView` multi-touch surface, slot allocator, drawing             |
+| [SynthPanelViewController.swift](../Etherpad-Apple/iOS/SynthPanelViewController.swift)         | Top menu + visual settings sheet                                  |
 
 ---
 
 ## 10. iOS comparison
 
-The bottom of the stack is identical. Both apps bundle the same [etherpad.csd](../Etherpad-Android/app/src/main/res/raw/etherpad.csd) (iOS keeps its own copy at `Etherpad-iOS/Etherpad/etherpad.csd`) and send the exact same score messages — note that [CsoundEngine.swift](../Etherpad-iOS/Etherpad/Engine/CsoundEngine.swift) builds `"i1.\(i) 0 -2 \(i)"` and `"i-1.\(i) 0 0 \(i)"` strings, the same shape used by Android's `Synth.touchDown` / `touchUp`.
+The bottom of the stack is identical. Both apps bundle the same [etherpad.csd](../Etherpad-Android/app/src/main/res/raw/etherpad.csd) (iOS keeps its own copy at `Etherpad-Apple/iOS/Resources/etherpad.csd`) and send the exact same score messages — note that [CsoundEngine.swift](../Etherpad-Apple/iOS/Engine/CsoundEngine.swift) builds `"i1.\(i) 0 -2 \(i)"` and `"i-1.\(i) 0 0 \(i)"` strings, the same shape used by Android's `Synth.touchDown` / `touchUp`.
 
 The top three layers differ:
 
