@@ -17,6 +17,7 @@
 		5E2F8DAAF338A0A386BAA574 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BF59E8C574D9F23440EEAA6E /* SceneDelegate.swift */; };
 		728ECDE38DF9A0D336478031 /* etherpad.csd in Resources */ = {isa = PBXBuildFile; fileRef = E4ED418A67903CEC1D0D2EB8 /* etherpad.csd */; };
 		79A40EDDBA1BD25E43A83622 /* MacSynthViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FD858A422F262A004AEC8C8 /* MacSynthViewController.swift */; };
+		7EF0F207BFF6CA803E7DFEB3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0459D88593563AE08363B271 /* Assets.xcassets */; };
 		A6220EE26DF77B1F7BB07A5B /* EtherpadViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D45A6FC8E72E5F76D667776A /* EtherpadViewController.swift */; };
 		AA7EEBC00F809FAA163EA3C0 /* logo.png in Resources */ = {isa = PBXBuildFile; fileRef = FB6D6CFF09FC4FFF00173174 /* logo.png */; };
 		B5485E7CEEF6E31ED6EA3E5D /* TouchSurfaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBCDF72A7572D182527EB70C /* TouchSurfaceView.swift */; };
@@ -53,6 +54,7 @@
 
 /* Begin PBXFileReference section */
 		00C76DA0D09E5F638D001B8E /* MacSynthTables.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacSynthTables.swift; path = macOS/MacSynthTables.swift; sourceTree = "<group>"; };
+		0459D88593563AE08363B271 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = macOS/Assets.xcassets; sourceTree = "<group>"; };
 		1108A6C03B3C37B0106521D5 /* CsoundObj.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CsoundObj.h; sourceTree = "<group>"; };
 		11587677099646A8784B8D95 /* main.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = main.swift; path = macOS/main.swift; sourceTree = "<group>"; };
 		176818AD3FD3732D4500313A /* CsoundLib64.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CsoundLib64.framework; sourceTree = "<group>"; };
@@ -148,6 +150,7 @@
 				927946F772CF3097D3332248 /* MacSurfaceView.swift */,
 				5FD858A422F262A004AEC8C8 /* MacSynthViewController.swift */,
 				A15C0DB4757777B15891FE17 /* Etherpad-macOS.entitlements */,
+				0459D88593563AE08363B271 /* Assets.xcassets */,
 			);
 			name = macOS;
 			sourceTree = SOURCE_ROOT;
@@ -312,6 +315,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				728ECDE38DF9A0D336478031 /* etherpad.csd in Resources */,
+				7EF0F207BFF6CA803E7DFEB3 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -465,7 +469,7 @@
 		529D72F427F3A27BE715B9D7 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "macOS/Etherpad-macOS.entitlements";
@@ -610,7 +614,7 @@
 		C1C97A7D3132E2E8ADC74D21 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "macOS/Etherpad-macOS.entitlements";
