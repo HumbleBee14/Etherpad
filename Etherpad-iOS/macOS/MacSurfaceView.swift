@@ -29,6 +29,29 @@ final class MacSurfaceView: NSView {
     override var isFlipped: Bool { false }            // keep AppKit bottom-left origin
     override var acceptsFirstResponder: Bool { true }
 
+    // MARK: - Multitouch (trackpad) state
+    var multitouchActive = false {
+        didSet {
+            if !multitouchActive { cancelAllTouches() }
+            needsDisplay = true
+        }
+    }
+    private var touchSlots: [NSObject: Int] = [:]     // NSTouch.identity -> slot
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        commonInit()
+    }
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        commonInit()
+    }
+    private func commonInit() {
+        // Receive raw trackpad (indirect) multitouch; ignore resting palms/thumbs.
+        allowedTouchTypes = [.indirect]
+        wantsRestingTouches = false
+    }
+
     override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
 
@@ -68,6 +91,8 @@ final class MacSurfaceView: NSView {
     func cancelAllTouches() {
         for (slot, _) in activePoints { delegate?.touchEnded(slot: slot) }
         activePoints.removeAll()
+        touchSlots.removeAll()
+        mouseActive = false
         needsDisplay = true
     }
 
@@ -75,6 +100,7 @@ final class MacSurfaceView: NSView {
     private var mouseActive = false
 
     override func mouseDown(with event: NSEvent) {
+        guard !multitouchActive else { return }       // trackpad owns input in MT mode
         let p = convert(event.locationInWindow, from: nil)
         mouseActive = true
         activePoints[0] = p
@@ -84,7 +110,7 @@ final class MacSurfaceView: NSView {
     }
 
     override func mouseDragged(with event: NSEvent) {
-        guard mouseActive else { return }
+        guard !multitouchActive, mouseActive else { return }
         let p = convert(event.locationInWindow, from: nil)
         activePoints[0] = p
         let (x, y) = normalised(p)
@@ -93,10 +119,68 @@ final class MacSurfaceView: NSView {
     }
 
     override func mouseUp(with event: NSEvent) {
-        guard mouseActive else { return }
+        guard !multitouchActive, mouseActive else { return }
         mouseActive = false
         activePoints[0] = nil
         delegate?.touchEnded(slot: 0)
+        needsDisplay = true
+    }
+
+    // MARK: - Trackpad multitouch (Multitouch mode: up to maxSlots voices)
+    private func nextFreeSlot() -> Int? {
+        let used = Set(touchSlots.values)
+        return (0..<maxSlots).first { !used.contains($0) }
+    }
+
+    // NSTouch.normalizedPosition is already 0..1, origin bottom-left → maps directly.
+    private func viewPoint(_ t: NSTouch) -> CGPoint {
+        CGPoint(x: CGFloat(t.normalizedPosition.x) * bounds.width,
+                y: CGFloat(t.normalizedPosition.y) * bounds.height)
+    }
+
+    override func touchesBegan(with event: NSEvent) {
+        guard multitouchActive else { return }
+        for t in event.touches(matching: .began, in: self) {
+            guard let id = t.identity as? NSObject, touchSlots[id] == nil,
+                  let slot = nextFreeSlot() else { continue }
+            touchSlots[id] = slot
+            activePoints[slot] = viewPoint(t)
+            delegate?.touchBegan(slot: slot,
+                                 x: Float(t.normalizedPosition.x),
+                                 y: Float(t.normalizedPosition.y))
+        }
+        needsDisplay = true
+    }
+
+    override func touchesMoved(with event: NSEvent) {
+        guard multitouchActive else { return }
+        for t in event.touches(matching: .moved, in: self) {
+            guard let id = t.identity as? NSObject, let slot = touchSlots[id] else { continue }
+            activePoints[slot] = viewPoint(t)
+            delegate?.touchMoved(slot: slot,
+                                 x: Float(t.normalizedPosition.x),
+                                 y: Float(t.normalizedPosition.y))
+        }
+        needsDisplay = true
+    }
+
+    override func touchesEnded(with event: NSEvent) {
+        for t in event.touches(matching: .ended, in: self) {
+            guard let id = t.identity as? NSObject, let slot = touchSlots.removeValue(forKey: id)
+            else { continue }
+            activePoints[slot] = nil
+            delegate?.touchEnded(slot: slot)
+        }
+        needsDisplay = true
+    }
+
+    override func touchesCancelled(with event: NSEvent) {
+        for t in event.touches(matching: .cancelled, in: self) {
+            guard let id = t.identity as? NSObject, let slot = touchSlots.removeValue(forKey: id)
+            else { continue }
+            activePoints[slot] = nil
+            delegate?.touchEnded(slot: slot)
+        }
         needsDisplay = true
     }
 }

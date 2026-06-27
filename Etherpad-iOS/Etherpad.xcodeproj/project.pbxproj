@@ -16,6 +16,7 @@
 		5E2F8DAAF338A0A386BAA573 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BF59E8C574D9F23440EEAA6 /* AppDelegate.swift */; };
 		5E2F8DAAF338A0A386BAA574 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BF59E8C574D9F23440EEAA6E /* SceneDelegate.swift */; };
 		728ECDE38DF9A0D336478031 /* etherpad.csd in Resources */ = {isa = PBXBuildFile; fileRef = E4ED418A67903CEC1D0D2EB8 /* etherpad.csd */; };
+		79A40EDDBA1BD25E43A83622 /* MacSynthViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FD858A422F262A004AEC8C8 /* MacSynthViewController.swift */; };
 		A6220EE26DF77B1F7BB07A5B /* EtherpadViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D45A6FC8E72E5F76D667776A /* EtherpadViewController.swift */; };
 		AA7EEBC00F809FAA163EA3C0 /* logo.png in Resources */ = {isa = PBXBuildFile; fileRef = FB6D6CFF09FC4FFF00173174 /* logo.png */; };
 		B5485E7CEEF6E31ED6EA3E5D /* TouchSurfaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBCDF72A7572D182527EB70C /* TouchSurfaceView.swift */; };
@@ -58,6 +59,7 @@
 		2AAFC2E3511EC1E15B11152C /* etherpad.csd */ = {isa = PBXFileReference; lastKnownFileType = text; path = etherpad.csd; sourceTree = "<group>"; };
 		312F55F2E10D297204649FF1 /* Etherpad-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Etherpad-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4A5BB333ECC9469751EBCA26 /* logo_shadow.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = logo_shadow.png; sourceTree = "<group>"; };
+		5FD858A422F262A004AEC8C8 /* MacSynthViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacSynthViewController.swift; path = macOS/MacSynthViewController.swift; sourceTree = "<group>"; };
 		71D16BE37D41AA9E7D6B781A /* CsoundEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CsoundEngine.swift; sourceTree = "<group>"; };
 		7BF59E8C574D9F23440EEAA6 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7BF59E8C574D9F23440EEAA6E /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -143,6 +145,7 @@
 				D4B3718CF3F4FDD6D28F930F /* MacCsoundEngine.swift */,
 				E4ED418A67903CEC1D0D2EB8 /* etherpad.csd */,
 				927946F772CF3097D3332248 /* MacSurfaceView.swift */,
+				5FD858A422F262A004AEC8C8 /* MacSynthViewController.swift */,
 			);
 			name = macOS;
 			sourceTree = SOURCE_ROOT;
@@ -355,6 +358,7 @@
 				16B0FFF1CD60E99928421CD9 /* MacSynthTables.swift in Sources */,
 				B905C3D9DC41551A8CA521EE /* MacCsoundEngine.swift in Sources */,
 				2D60643AEC3AAD91877E9739 /* MacSurfaceView.swift in Sources */,
+				79A40EDDBA1BD25E43A83622 /* MacSynthViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
