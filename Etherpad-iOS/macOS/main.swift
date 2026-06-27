@@ -22,8 +22,9 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ app: NSApplication) -> Bool { true }
 
     func applicationWillResignActive(_ notification: Notification) {
-        // Never leave the user with a hidden/detached cursor.
-        synthVC?.setMultitouch(false)
+        // Leaving the app: exit Multitouch (restore cursor) and release any held
+        // voices so nothing keeps sounding in the background.
+        synthVC?.handleAppDeactivation()
     }
 
     func applicationWillTerminate(_ notification: Notification) {

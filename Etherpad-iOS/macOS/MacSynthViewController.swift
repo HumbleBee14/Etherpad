@@ -219,6 +219,14 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         engine.stop()
     }
 
+    // App lost focus (⌘-Tab / hidden): restore cursor and silence any held voices
+    // so nothing keeps sounding in the background.
+    func handleAppDeactivation() {
+        setMultitouch(false)        // also re-associates + shows the cursor
+        surface.cancelAllTouches()
+        engine.allNotesOff()
+    }
+
     // MARK: - Controls
     private func labeled(_ title: String, _ control: NSView) -> NSView {
         let stack = NSStackView(views: [makeLabel(title), control])
