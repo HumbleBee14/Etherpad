@@ -14,6 +14,7 @@ final class MacSettingsViewController: NSViewController {
     private var effectContainer: NSStackView!
     private var visMasterToggle: NSSwitch!
     private var chips: [(NSButton, VisualEffects)] = []
+    private var themeSwatches: [(NSButton, MacTheme)] = []
     private var escMonitor: Any?
 
     override func loadView() {
@@ -44,6 +45,9 @@ final class MacSettingsViewController: NSViewController {
         effectContainer = makeEffectContainer()
         effectContainer.isHidden = visMasterToggle.state == .off
         stack.addArrangedSubview(effectContainer)
+
+        stack.addArrangedSubview(makeThemeHeader())
+        stack.addArrangedSubview(makeThemeContainer())
 
         stack.addArrangedSubview(makeDeveloperLink())
         stack.addArrangedSubview(makeCreditsLabel())
@@ -215,6 +219,71 @@ final class MacSettingsViewController: NSViewController {
             applyChipStyle(btn, isOn: isChipOn(effect))
         }
         visMasterToggle.state = VisualEffects.current.isEmpty ? .off : .on
+    }
+
+    // MARK: - Theme
+
+    private func makeThemeHeader() -> NSView {
+        let label = makeLabel("Theme", size: 15, weight: .semibold)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }
+
+    private func makeThemeContainer() -> NSStackView {
+        themeSwatches.removeAll()
+        let container = NSStackView()
+        container.orientation = .vertical
+        container.spacing = 10
+        container.alignment = .leading
+        container.translatesAutoresizingMaskIntoConstraints = false
+
+        let perRow = 3
+        let rows = stride(from: 0, to: MacTheme.all.count, by: perRow).map {
+            Array(MacTheme.all[$0..<min($0 + perRow, MacTheme.all.count)])
+        }
+        for themesInRow in rows {
+            let swatches = themesInRow.map { theme -> NSButton in
+                let swatch = makeThemeSwatch(theme)
+                themeSwatches.append((swatch, theme))
+                return swatch
+            }
+            let row = NSStackView(views: swatches)
+            row.orientation = .horizontal
+            row.distribution = .fillEqually
+            row.spacing = 10
+            row.translatesAutoresizingMaskIntoConstraints = false
+            container.addArrangedSubview(row)
+            row.widthAnchor.constraint(equalToConstant: innerWidth).isActive = true
+        }
+        return container
+    }
+
+    private func makeThemeSwatch(_ theme: MacTheme) -> NSButton {
+        let btn = NSButton(title: theme.name, target: self, action: #selector(selectTheme(_:)))
+        btn.isBordered = false
+        btn.wantsLayer = true
+        btn.layer?.cornerRadius = 8
+        btn.layer?.borderWidth = 2
+        btn.heightAnchor.constraint(equalToConstant: 40).isActive = true
+        applyThemeSwatchStyle(btn, theme: theme)
+        return btn
+    }
+
+    private func applyThemeSwatchStyle(_ btn: NSButton, theme: MacTheme) {
+        let selected = theme.id == MacTheme.current.id
+        btn.layer?.backgroundColor = theme.background.cgColor
+        btn.layer?.borderColor = (selected ? theme.accent
+                                            : NSColor(white: 1, alpha: 0.12)).cgColor
+        btn.attributedTitle = NSAttributedString(string: theme.name, attributes: [
+            .foregroundColor: theme.accent,
+            .font: NSFont.systemFont(ofSize: 12, weight: selected ? .semibold : .regular),
+        ])
+    }
+
+    @objc private func selectTheme(_ sender: NSButton) {
+        guard let theme = themeSwatches.first(where: { $0.0 == sender })?.1 else { return }
+        MacTheme.current = theme
+        for (btn, t) in themeSwatches { applyThemeSwatchStyle(btn, theme: t) }
     }
 
     // MARK: - Credits

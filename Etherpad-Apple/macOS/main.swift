@@ -9,7 +9,7 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate {
 
         synthVC = MacSynthViewController()
         window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 1024, height: 790),
+            contentRect: NSRect(x: 0, y: 0, width: 1200, height: 790),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered, defer: false)
         window.isRestorable = false

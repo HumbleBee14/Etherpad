@@ -24,6 +24,7 @@
 		79A40EDDBA1BD25E43A83622 /* MacSynthViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FD858A422F262A004AEC8C8 /* MacSynthViewController.swift */; };
 		7A1C2B3D4E5F60718293A4B5 /* MacSettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B2D3C4E5F60718293A4B5C6 /* MacSettingsViewController.swift */; };
 		8C3D4E5F60718293A4B5C6D7 /* VisualEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D4E5F60718293A4B5C6D7E8 /* VisualEffects.swift */; };
+		A1B2C3D4E5F60718293A4001 /* MacTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4002 /* MacTheme.swift */; };
 		7EF0F207BFF6CA803E7DFEB3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0459D88593563AE08363B271 /* Assets.xcassets */; };
 		A6220EE26DF77B1F7BB07A5B /* EtherpadViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D45A6FC8E72E5F76D667776A /* EtherpadViewController.swift */; };
 		AA7EEBC00F809FAA163EA3C0 /* logo.png in Resources */ = {isa = PBXBuildFile; fileRef = FB6D6CFF09FC4FFF00173174 /* logo.png */; };
@@ -66,6 +67,7 @@
 		5FD858A422F262A004AEC8C8 /* MacSynthViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacSynthViewController.swift; path = macOS/MacSynthViewController.swift; sourceTree = "<group>"; };
 		6B2D3C4E5F60718293A4B5C6 /* MacSettingsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacSettingsViewController.swift; path = macOS/MacSettingsViewController.swift; sourceTree = "<group>"; };
 		9D4E5F60718293A4B5C6D7E8 /* VisualEffects.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VisualEffects.swift; path = macOS/VisualEffects.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4002 /* MacTheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacTheme.swift; path = macOS/MacTheme.swift; sourceTree = "<group>"; };
 		71D16BE37D41AA9E7D6B781A /* CsoundEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CsoundEngine.swift; sourceTree = "<group>"; };
 		7BF59E8C574D9F23440EEAA6 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7BF59E8C574D9F23440EEAA6E /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -149,6 +151,7 @@
 				5FD858A422F262A004AEC8C8 /* MacSynthViewController.swift */,
 				6B2D3C4E5F60718293A4B5C6 /* MacSettingsViewController.swift */,
 				9D4E5F60718293A4B5C6D7E8 /* VisualEffects.swift */,
+				A1B2C3D4E5F60718293A4002 /* MacTheme.swift */,
 				A15C0DB4757777B15891FE17 /* Etherpad-macOS.entitlements */,
 				0459D88593563AE08363B271 /* Assets.xcassets */,
 			);
@@ -395,6 +398,7 @@
 				79A40EDDBA1BD25E43A83622 /* MacSynthViewController.swift in Sources */,
 				7A1C2B3D4E5F60718293A4B5 /* MacSettingsViewController.swift in Sources */,
 				8C3D4E5F60718293A4B5C6D7 /* VisualEffects.swift in Sources */,
+				A1B2C3D4E5F60718293A4001 /* MacTheme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

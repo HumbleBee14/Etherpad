@@ -28,7 +28,7 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     }
 
     override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 1024, height: 790))
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 1200, height: 790))
     }
 
     override func viewDidLoad() {
