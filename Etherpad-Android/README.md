@@ -2,7 +2,7 @@
 
 Kotlin + Jetpack Compose UI on top of a small C++ engine that drives
 Csound 6 through an Oboe audio callback. Inspired by Paul Batchelor's
-2014 EtherSurface; ground-up rewrite in 2026.
+2014 EtherSurface; Rewritten and modernized now in Kotlin and also for other platforms.
 
 ## Stack
 

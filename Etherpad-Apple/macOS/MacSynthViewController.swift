@@ -13,12 +13,14 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     private let bannerLabel = NSTextField(labelWithString: "Multitouch Mode On — Press Esc to Exit")
 
     private var controlBar: NSView!
+    private var recordButton: NSButton!
     private var immersiveButton: NSButton!
     private var immersiveMode = false
     private var barShown = true
     private var barHideWork: DispatchWorkItem?
     /// Distance from the top edge within which mouse movement reveals the hidden bar.
     private let revealZoneHeight: CGFloat = 56
+    private var recordKeyMonitor: Any?
 
     private var scalePopup: NSPopUpButton!
     private var keyPopup: NSPopUpButton!
@@ -80,6 +82,13 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         barSpacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         bar.addArrangedSubview(barSpacer)
 
+        let recImg = NSImage(systemSymbolName: "record.circle", accessibilityDescription: "Record")!
+        recordButton = NSButton(image: recImg, target: self, action: #selector(toggleRecording))
+        recordButton.imagePosition = .imageOnly
+        recordButton.bezelStyle = .accessoryBar
+        recordButton.toolTip = "Record audio (⌥R)"
+        bar.addArrangedSubview(recordButton)
+
         let immersiveImg = NSImage(systemSymbolName: "arrow.up.left.and.arrow.down.right",
                                    accessibilityDescription: "Immersive mode")!
         immersiveButton = NSButton(image: immersiveImg, target: self, action: #selector(toggleImmersive))
@@ -117,6 +126,8 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         bannerLabel.textColor = .labelColor
         bannerLabel.alignment = .center
         bannerLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        bannerLabel.lineBreakMode = .byTruncatingMiddle
+        bannerLabel.maximumNumberOfLines = 2
         bannerLabel.translatesAutoresizingMaskIntoConstraints = false
         bannerBlur.addSubview(bannerLabel)
 
@@ -135,15 +146,17 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
 
             bannerBlur.centerXAnchor.constraint(equalTo: surface.centerXAnchor),
             bannerBlur.topAnchor.constraint(equalTo: controlBar.bottomAnchor, constant: 18),
-            bannerBlur.heightAnchor.constraint(equalToConstant: 40),
+            bannerBlur.heightAnchor.constraint(greaterThanOrEqualToConstant: 40),
 
             bannerLabel.leadingAnchor.constraint(equalTo: bannerBlur.leadingAnchor, constant: 20),
             bannerLabel.trailingAnchor.constraint(equalTo: bannerBlur.trailingAnchor, constant: -20),
-            bannerLabel.centerYAnchor.constraint(equalTo: bannerBlur.centerYAnchor),
+            bannerLabel.topAnchor.constraint(equalTo: bannerBlur.topAnchor, constant: 10),
+            bannerLabel.bottomAnchor.constraint(equalTo: bannerBlur.bottomAnchor, constant: -10),
         ])
 
         engine.start()
         restoreSettings()
+        installRecordKeyMonitor()
     }
 
     private enum Key {
@@ -170,6 +183,7 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
 
     deinit {
         removeKeyMonitor()
+        removeRecordKeyMonitor()
         CGAssociateMouseAndMouseCursorPosition(boolean_t(1))
         CGDisplayShowCursor(CGMainDisplayID())
         NotificationCenter.default.removeObserver(self)
@@ -236,6 +250,32 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         if let m = keyMonitor { NSEvent.removeMonitor(m); keyMonitor = nil }
     }
 
+    // ⌥R / ⌥S work even when the toolbar is hidden (immersive mode).
+    private func installRecordKeyMonitor() {
+        guard recordKeyMonitor == nil else { return }
+        recordKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self = self,
+                  self.view.window?.isKeyWindow == true,
+                  event.modifierFlags.contains(.option),
+                  !event.modifierFlags.contains(.command),
+                  !event.modifierFlags.contains(.control) else { return event }
+            switch event.charactersIgnoringModifiers?.lowercased() {
+            case "r":
+                self.startRecordingIfNeeded()
+                return nil
+            case "s":
+                self.stopRecordingIfNeeded()
+                return nil
+            default:
+                return event
+            }
+        }
+    }
+
+    private func removeRecordKeyMonitor() {
+        if let m = recordKeyMonitor { NSEvent.removeMonitor(m); recordKeyMonitor = nil }
+    }
+
     private var bannerHideWork: DispatchWorkItem?
     private func showBannerBriefly() {
         bannerHideWork?.cancel()
@@ -251,6 +291,19 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         if event.keyCode == 53 {
             setMultitouch(false)
             return true
+        }
+        // Recording shortcuts (toolbar hidden in multitouch / immersive).
+        if event.modifierFlags.contains(.option) {
+            switch event.charactersIgnoringModifiers?.lowercased() {
+            case "r":
+                startRecordingIfNeeded()
+                return true
+            case "s":
+                stopRecordingIfNeeded()
+                return true
+            default:
+                break
+            }
         }
         if let chars = event.charactersIgnoringModifiers,
            let popup = popupForNumberKey(chars) {
@@ -351,6 +404,95 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
             guard let self = self else { return }
             if !self.barShown { self.controlBar.isHidden = true }
         })
+    }
+
+    // MARK: - Recording
+    @objc func startRecordingMenu() { startRecordingIfNeeded() }
+    @objc func stopRecordingMenu() { stopRecordingIfNeeded() }
+    @objc func toggleRecordingMenu() { toggleRecording() }
+
+    @objc private func toggleRecording() {
+        if engine.isRecording { stopRecordingIfNeeded() } else { startRecordingIfNeeded() }
+    }
+
+    private func startRecordingIfNeeded() {
+        guard !engine.isRecording else { return }
+        beginRecording()
+    }
+
+    private func stopRecordingIfNeeded() {
+        guard engine.isRecording else { return }
+        finishRecording()
+    }
+
+    private func beginRecording() {
+        guard let dest = recordingDestinationURL(),
+              engine.startRecording(to: dest) else {
+            NSSound.beep()
+            return
+        }
+        updateRecordButton(recording: true)
+        bannerLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        bannerLabel.stringValue = "Recording…  (⌥S to stop)"
+        showBannerBriefly()
+    }
+
+    private func finishRecording() {
+        let url = engine.stopRecording()
+        updateRecordButton(recording: false)
+        guard let url = url else { return }
+        bannerLabel.font = .systemFont(ofSize: 12, weight: .semibold)
+        bannerLabel.stringValue = "Saved to \(friendlyPath(url))"
+        showBannerBriefly()
+    }
+
+    private func updateRecordButton(recording: Bool) {
+        recordButton.wantsLayer = true
+        if recording {
+            recordButton.image = NSImage(systemSymbolName: "stop.fill",
+                                         accessibilityDescription: "Stop recording")
+            recordButton.contentTintColor = .white
+            recordButton.layer?.backgroundColor = NSColor.systemRed.cgColor
+            recordButton.layer?.cornerRadius = 12
+            recordButton.toolTip = "Stop recording (⌥S)"
+        } else {
+            recordButton.image = NSImage(systemSymbolName: "record.circle",
+                                         accessibilityDescription: "Record")
+            recordButton.contentTintColor = .secondaryLabelColor
+            recordButton.layer?.backgroundColor = nil
+            recordButton.layer?.cornerRadius = 0
+            recordButton.toolTip = "Record audio (⌥R)"
+        }
+    }
+
+    private func friendlyPath(_ url: URL) -> String {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let path = url.path
+        if path.hasPrefix(home + "/") {
+            return "~/" + String(path.dropFirst(home.count + 1))
+        }
+        return path
+    }
+
+    /// Recordings save straight to ~/Downloads (granted by the sandbox entitlement),
+    /// with a dated name; a counter avoids overwriting same-second recordings.
+    private func recordingDestinationURL() -> URL? {
+        guard let dir = FileManager.default.urls(for: .downloadsDirectory,
+                                                 in: .userDomainMask).first else { return nil }
+        let base = defaultRecordingName()
+        var candidate = dir.appendingPathComponent("\(base).wav")
+        var n = 2
+        while FileManager.default.fileExists(atPath: candidate.path) {
+            candidate = dir.appendingPathComponent("\(base) (\(n)).wav")
+            n += 1
+        }
+        return candidate
+    }
+
+    private func defaultRecordingName() -> String {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
+        return "Etherpad \(fmt.string(from: Date()))"
     }
 
     // MARK: - Controls
