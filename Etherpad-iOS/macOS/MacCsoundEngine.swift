@@ -1,5 +1,6 @@
 import Foundation
 import AVFoundation
+import CoreAudio
 
 // =============================================================================
 //  MACOS AUDIO ENGINE — INTENTIONALLY DIFFERENT FROM iOS. Read before editing.
@@ -63,6 +64,31 @@ final class MacCsoundEngine {
         noteOnScores = on; noteOffScores = off
     }
 
+    // Default output device's nominal sample rate (e.g. 48000 on modern MacBooks).
+    // Falls back to 48000 if the query fails. Used to make Csound render at the
+    // hardware rate so AVAudioEngine does not resample.
+    private static func hardwareOutputSampleRate() -> Double {
+        var deviceID = AudioDeviceID(0)
+        var size = UInt32(MemoryLayout<AudioDeviceID>.size)
+        var addr = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+        guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject),
+                                         &addr, 0, nil, &size, &deviceID) == noErr,
+              deviceID != 0 else { return 48000 }
+
+        var rate = Float64(0)
+        var rsize = UInt32(MemoryLayout<Float64>.size)
+        var raddr = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyNominalSampleRate,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+        guard AudioObjectGetPropertyData(deviceID, &raddr, 0, nil, &rsize, &rate) == noErr,
+              rate > 0 else { return 48000 }
+        return Double(rate)
+    }
+
     func start() {
         guard !isRunning,
               let path = Bundle.main.path(forResource: "etherpad", ofType: "csd") else {
@@ -81,6 +107,12 @@ final class MacCsoundEngine {
         // null/dummy so Csound does not try to open a device itself.
         _ = csoundSetOption(c, "-+rtaudio=null")
         _ = csoundSetOption(c, "-d")               // no display windows
+
+        // Match Csound's render rate to the hardware output rate to avoid AVAudioEngine
+        // resampling (a 44100->48000 mismatch produced audible background noise). The
+        // CSD declares sr=44100; override it to the device rate so there is NO resample.
+        let hwRate = Self.hardwareOutputSampleRate()
+        _ = csoundSetOption(c, "--sample-rate=\(Int(hwRate))")
 
         // csoundCompile wants `const char **`. strdup gives mutable char*, so map
         // to UnsafePointer<CChar>? for the bridged signature.
