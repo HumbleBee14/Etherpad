@@ -1,8 +1,6 @@
 import AppKit
 import CoreGraphics
 
-// macOS synth screen: toolbar controls + surface + Multitouch mode.
-// Fully independent of iOS (own engine, own surface, own tables).
 final class MacSynthViewController: NSViewController, MacTouchDelegate {
 
     private let engine = MacCsoundEngine()
@@ -14,7 +12,6 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     private let bannerBlur = NSVisualEffectView()
     private let bannerLabel = NSTextField(labelWithString: "Multitouch Mode On — Press Esc to Exit")
 
-    // Popups kept so number keys (1–5) can open them during Multitouch mode.
     private var scalePopup: NSPopUpButton!
     private var keyPopup: NSPopUpButton!
     private var octavePopup: NSPopUpButton!
@@ -28,7 +25,6 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // --- Control bar ---
         let bar = NSStackView()
         bar.orientation = .horizontal
         bar.spacing = 8
@@ -54,15 +50,13 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         let about = NSButton(title: "About", target: self, action: #selector(showAbout))
         bar.addArrangedSubview(about)
 
-        // --- Surface ---
         surface.delegate = self
         surface.translatesAutoresizingMaskIntoConstraints = false
 
         view.addSubview(bar)
         view.addSubview(surface)
 
-        // --- Glassmorphic toast (hidden until Multitouch mode) ---
-        bannerBlur.material = .hudWindow            // modern translucent glass
+        bannerBlur.material = .hudWindow
         bannerBlur.blendingMode = .withinWindow
         bannerBlur.state = .active
         bannerBlur.wantsLayer = true
@@ -105,22 +99,15 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         engine.start()
         surface.numberOfNotes = Double(selectedSize)
         engine.setSize(selectedSize)
-
-        // Safety net only on TRUE app deactivation (⌘-Tab / app hidden), handled by
-        // MacAppDelegate.applicationWillResignActive. NOTE: we deliberately do NOT
-        // observe didResignKeyNotification — it fires when a popup menu opens, which
-        // would kick the user out of Multitouch mode the instant they press 1–5.
     }
 
     deinit {
-        // Guarantee the cursor is never left hidden/detached.
         removeKeyMonitor()
         CGAssociateMouseAndMouseCursorPosition(boolean_t(1))
         CGDisplayShowCursor(CGMainDisplayID())
         NotificationCenter.default.removeObserver(self)
     }
 
-    // MARK: - Touch delegate -> engine
     func touchBegan(slot: Int, x: Float, y: Float) { engine.noteOn(slot: slot, x: x, y: y) }
     func touchMoved(slot: Int, x: Float, y: Float) { engine.updatePosition(slot: slot, x: x, y: y) }
     func touchEnded(slot: Int) { engine.noteOff(slot: slot) }
@@ -139,27 +126,26 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
             bannerLabel.stringValue = "Multitouch Mode On — Press Esc to Exit"
             showBannerBriefly()
             view.window?.makeFirstResponder(surface)
-            installKeyMonitor()                                     // capture keys reliably
-            CGAssociateMouseAndMouseCursorPosition(boolean_t(0))   // detach pointer
+            installKeyMonitor()
+            CGAssociateMouseAndMouseCursorPosition(boolean_t(0))
             CGDisplayHideCursor(CGMainDisplayID())
         } else {
             bannerLabel.stringValue = "Multitouch Mode Off"
             showBannerBriefly()
             removeKeyMonitor()
-            CGAssociateMouseAndMouseCursorPosition(boolean_t(1))   // reattach
+            CGAssociateMouseAndMouseCursorPosition(boolean_t(1))
             CGDisplayShowCursor(CGMainDisplayID())
         }
     }
 
-    // A local key monitor intercepts EVERY key while in Multitouch mode, before the
-    // responder chain / popup buttons can consume it (which was dropping us out of
-    // mode on number keys). Returning nil swallows the event.
+    // Local monitor swallows keys before the responder chain so number keys can't
+    // drop out of Multitouch mode.
     private var keyMonitor: Any?
     private func installKeyMonitor() {
         guard keyMonitor == nil else { return }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self = self, self.multitouchOn else { return event }
-            if self.handleKey(event) { return nil }   // handled → swallow
+            if self.handleKey(event) { return nil }
             return event
         }
     }
@@ -176,27 +162,20 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: work)
     }
 
-    // Called by the local key monitor for every keyDown while in Multitouch mode.
-    // Returns true when the key is consumed (monitor then swallows it so it can't
-    // reach the popup buttons / responder chain and drop us out of mode).
-    // - Esc: exit Multitouch mode.
-    // - 1–5: open Scale/Key/Octave/Size/Sound (native arrow-nav + Return select; the
-    //   menu's own tracking loop handles those while open).
-    // - everything else: swallowed, mode preserved.
+    // Esc exits; 1–5 open the matching popup; all else swallowed to stay in mode.
     private func handleKey(_ event: NSEvent) -> Bool {
         guard multitouchOn else { return false }
-        if event.keyCode == 53 {                 // Esc → exit mode
+        if event.keyCode == 53 {
             setMultitouch(false)
             return true
         }
         if let chars = event.charactersIgnoringModifiers,
            let popup = popupForNumberKey(chars) {
-            // Open on the next runloop tick so we return from the monitor first
-            // (performClick runs a modal menu tracking loop).
+            // Async so the monitor returns before performClick's modal menu loop.
             DispatchQueue.main.async { popup.performClick(nil) }
             return true
         }
-        return true                              // swallow everything else; stay in mode
+        return true
     }
     override var acceptsFirstResponder: Bool { true }
 
@@ -212,17 +191,14 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     }
 
 
-    // Called by the app on terminate for a clean shutdown.
     func shutdown() {
         setMultitouch(false)
         engine.allNotesOff()
         engine.stop()
     }
 
-    // App lost focus (⌘-Tab / hidden): restore cursor and silence any held voices
-    // so nothing keeps sounding in the background.
     func handleAppDeactivation() {
-        setMultitouch(false)        // also re-associates + shows the cursor
+        setMultitouch(false)
         surface.cancelAllTouches()
         engine.allNotesOff()
     }
@@ -262,7 +238,7 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     private func makeOctavePopup() -> NSPopUpButton {
         let pop = NSPopUpButton(frame: .zero, pullsDown: false)
         pop.addItems(withTitles: MacSynthTables.octaveLabels)
-        pop.selectItem(at: 2)              // "0" -> Csound value 4 (default)
+        pop.selectItem(at: 2)
         pop.target = self; pop.action = #selector(octaveChanged(_:))
         return pop
     }
@@ -293,7 +269,7 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     @objc private func soundChanged(_ s: NSPopUpButton) { engine.setSound(s.indexOfSelectedItem) }
 
     @objc private func showAbout() { presentAbout() }
-    @objc func showAboutMenu() { presentAbout() }   // reachable from the app menu
+    @objc func showAboutMenu() { presentAbout() }
     private func presentAbout() {
         let a = NSAlert()
         a.messageText = "Etherpad"

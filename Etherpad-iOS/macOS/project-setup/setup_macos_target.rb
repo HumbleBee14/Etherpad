@@ -124,12 +124,16 @@ unless target.shell_script_build_phases.any? { |p| p.name == SIGN_PHASE }
   log.call("added signing phase")
 end
 
-# Shared resource: etherpad.csd (reuse the existing iOS file reference)
-csd_ref = project.files.find { |f| f.path && File.basename(f.path) == CSD_BASENAME }
-abort("Could not find #{CSD_BASENAME} reference") unless csd_ref
+# macOS resource: the macOS target uses its OWN copy at macOS/etherpad.csd
+# (NOT the iOS Etherpad/Resources/etherpad.csd — the targets are fully separate).
+# Match the macOS path explicitly; matching by basename alone would grab the iOS
+# ref and add a second CSD to the macOS target -> "multiple commands produce" build
+# failure on re-run.
+csd_ref = project.files.find { |f| (f.path || "").end_with?("macOS/#{CSD_BASENAME}") }
+abort("Could not find macOS/#{CSD_BASENAME} reference") unless csd_ref
 unless target.resources_build_phase.files.any? { |f| f.file_ref == csd_ref }
   target.resources_build_phase.add_file_reference(csd_ref)
-  log.call("added shared #{CSD_BASENAME}")
+  log.call("added macOS #{CSD_BASENAME}")
 end
 
 # Shared scheme

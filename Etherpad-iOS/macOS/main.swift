@@ -22,8 +22,6 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ app: NSApplication) -> Bool { true }
 
     func applicationWillResignActive(_ notification: Notification) {
-        // Leaving the app: exit Multitouch (restore cursor) and release any held
-        // voices so nothing keeps sounding in the background.
         synthVC?.handleAppDeactivation()
     }
 
@@ -34,7 +32,6 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate {
     private func buildMenu() {
         let mainMenu = NSMenu()
 
-        // App menu (Quit).
         let appItem = NSMenuItem()
         mainMenu.addItem(appItem)
         let appMenu = NSMenu()
@@ -47,7 +44,6 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate {
                         keyEquivalent: "q")
         appItem.submenu = appMenu
 
-        // Mode menu (⌘M toggles Multitouch). Targets the responder chain → the VC.
         let modeItem = NSMenuItem()
         mainMenu.addItem(modeItem)
         let modeMenu = NSMenu(title: "Mode")
@@ -60,10 +56,8 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-// Explicit AppKit bootstrap. NOTE: `@main` on an NSApplicationDelegate does NOT
-// start the AppKit run loop or connect the delegate when there is no storyboard/
-// XIB — the process launches but applicationDidFinishLaunching never fires, so no
-// window appears. We bootstrap NSApplication manually instead.
+// @main on an NSApplicationDelegate does not start the AppKit run loop without a
+// storyboard/XIB; bootstrap NSApplication explicitly.
 let app = NSApplication.shared
 let delegate = MacAppDelegate()
 app.delegate = delegate

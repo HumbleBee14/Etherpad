@@ -1,8 +1,5 @@
 import AppKit
 
-// macOS surface. Independent of the iOS TouchSurfaceView (UIKit); this is a fresh
-// AppKit/Core Graphics implementation. Declares its own delegate protocol so no
-// code is shared with iOS.
 protocol MacTouchDelegate: AnyObject {
     func touchBegan(slot: Int, x: Float, y: Float)
     func touchMoved(slot: Int, x: Float, y: Float)
@@ -12,15 +9,11 @@ protocol MacTouchDelegate: AnyObject {
 final class MacSurfaceView: NSView {
     weak var delegate: MacTouchDelegate?
 
-    // Key handling lives in the view controller via a local NSEvent monitor (more
-    // reliable than the responder chain for capturing keys in Multitouch mode).
-
     var numberOfNotes: Double = 8.0 {
         didSet { if numberOfNotes != oldValue { needsDisplay = true } }
     }
 
-    // Active voice positions in VIEW coordinates (AppKit origin = bottom-left).
-    private var activePoints: [Int: CGPoint] = [:]   // slot -> point
+    private var activePoints: [Int: CGPoint] = [:]
     let maxSlots = MacCsoundEngine.maxTouches
 
     private let bgColor     = NSColor(red: 0x3b/255, green: 0x44/255, blue: 0x4b/255, alpha: 1)
@@ -29,17 +22,16 @@ final class MacSurfaceView: NSView {
     private let baseRadius: CGFloat = 60
     private let lineWidth: CGFloat = 3
 
-    override var isFlipped: Bool { false }            // keep AppKit bottom-left origin
+    override var isFlipped: Bool { false }
     override var acceptsFirstResponder: Bool { true }
 
-    // MARK: - Multitouch (trackpad) state
     var multitouchActive = false {
         didSet {
             if !multitouchActive { cancelAllTouches() }
             needsDisplay = true
         }
     }
-    private var touchSlots: [NSObject: Int] = [:]     // NSTouch.identity -> slot
+    private var touchSlots: [NSObject: Int] = [:]
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -50,7 +42,6 @@ final class MacSurfaceView: NSView {
         commonInit()
     }
     private func commonInit() {
-        // Receive raw trackpad (indirect) multitouch; ignore resting palms/thumbs.
         allowedTouchTypes = [.indirect]
         wantsRestingTouches = false
     }
@@ -61,7 +52,6 @@ final class MacSurfaceView: NSView {
         ctx.setFillColor(bgColor.cgColor)
         ctx.fill(bounds)
 
-        // Grid lines (vertical column dividers).
         ctx.setStrokeColor(lineColor.cgColor)
         ctx.setLineWidth(lineWidth)
         ctx.setLineJoin(.round)
@@ -75,7 +65,6 @@ final class MacSurfaceView: NSView {
             ctx.strokePath()
         }
 
-        // Active touch circles.
         ctx.setFillColor(circleColor.cgColor)
         for (_, p) in activePoints {
             let r = baseRadius
@@ -83,8 +72,6 @@ final class MacSurfaceView: NSView {
         }
     }
 
-    // Normalize a VIEW point to (x,y) in [0,1], origin bottom-left, NO Y inversion
-    // (AppKit and Csound channels both treat up as 1).
     private func normalised(_ p: CGPoint) -> (Float, Float) {
         let x = Float(p.x / max(bounds.width, 1)).clampedUnit()
         let y = Float(p.y / max(bounds.height, 1)).clampedUnit()
@@ -99,11 +86,11 @@ final class MacSurfaceView: NSView {
         needsDisplay = true
     }
 
-    // MARK: - Mouse (normal mode: single voice on slot 0)
+    // MARK: - Mouse (normal mode, single voice on slot 0)
     private var mouseActive = false
 
     override func mouseDown(with event: NSEvent) {
-        guard !multitouchActive else { return }       // trackpad owns input in MT mode
+        guard !multitouchActive else { return }
         let p = convert(event.locationInWindow, from: nil)
         mouseActive = true
         activePoints[0] = p
@@ -129,26 +116,21 @@ final class MacSurfaceView: NSView {
         needsDisplay = true
     }
 
-    // MARK: - Swallow gesture events in Multitouch mode
-    // macOS turns some multi-finger movement into gesture events (magnify/rotate/
-    // swipe/scroll). While in Multitouch mode we consume them here so they do NOT
-    // trigger app/system gesture actions and so they don't compete with raw NSTouch
-    // note generation. (NOTE: OS-level gestures handled entirely by WindowServer —
-    // e.g. 3-finger Mission Control swipe — may still fire; those can only be turned
-    // off in System Settings ▸ Trackpad. We suppress everything that reaches the app.)
+    // Swallow gesture events while in Multitouch mode so they don't fire app/system
+    // actions. OS-level gestures (e.g. Mission Control) are handled by WindowServer
+    // first and can only be disabled in System Settings ▸ Trackpad.
     override func magnify(with event: NSEvent)  { if !multitouchActive { super.magnify(with: event) } }
     override func rotate(with event: NSEvent)   { if !multitouchActive { super.rotate(with: event) } }
     override func swipe(with event: NSEvent)    { if !multitouchActive { super.swipe(with: event) } }
     override func scrollWheel(with event: NSEvent) { if !multitouchActive { super.scrollWheel(with: event) } }
     override func smartMagnify(with event: NSEvent) { if !multitouchActive { super.smartMagnify(with: event) } }
 
-    // MARK: - Trackpad multitouch (Multitouch mode: up to maxSlots voices)
+    // MARK: - Trackpad multitouch
     private func nextFreeSlot() -> Int? {
         let used = Set(touchSlots.values)
         return (0..<maxSlots).first { !used.contains($0) }
     }
 
-    // NSTouch.normalizedPosition is already 0..1, origin bottom-left → maps directly.
     private func viewPoint(_ t: NSTouch) -> CGPoint {
         CGPoint(x: CGFloat(t.normalizedPosition.x) * bounds.width,
                 y: CGFloat(t.normalizedPosition.y) * bounds.height)

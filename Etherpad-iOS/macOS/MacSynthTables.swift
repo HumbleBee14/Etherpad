@@ -1,8 +1,6 @@
 import Foundation
 
-// macOS copy of the synth tables (mirrors iOS EtherpadViewController; kept separate
-// so iOS source is untouched). Mirror any iOS scale/sound change here.
-
+// Mirrors the iOS scale/sound tables; kept separate so iOS source is untouched.
 struct MacScaleOption { let name: String; let steps: [Int] }
 
 enum MacSynthTables {
