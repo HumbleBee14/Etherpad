@@ -63,6 +63,20 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate {
             keyEquivalent: "h")
         immersiveItem.keyEquivalentModifierMask = [.option]
         modeMenu.addItem(immersiveItem)
+
+        modeMenu.addItem(.separator())
+        let recordStartItem = NSMenuItem(
+            title: "Start Recording",
+            action: #selector(MacSynthViewController.startRecordingMenu),
+            keyEquivalent: "r")
+        recordStartItem.keyEquivalentModifierMask = [.option]
+        modeMenu.addItem(recordStartItem)
+        let recordStopItem = NSMenuItem(
+            title: "Stop Recording",
+            action: #selector(MacSynthViewController.stopRecordingMenu),
+            keyEquivalent: "s")
+        recordStopItem.keyEquivalentModifierMask = [.option]
+        modeMenu.addItem(recordStopItem)
         modeItem.submenu = modeMenu
 
         NSApp.mainMenu = mainMenu

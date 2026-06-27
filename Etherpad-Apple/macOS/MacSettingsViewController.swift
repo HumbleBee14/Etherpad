@@ -459,10 +459,12 @@ final class MacSettingsViewController: NSViewController {
         lineStack.translatesAutoresizingMaskIntoConstraints = false
 
         let shortcut = makeTipLine("Press ⌥M for touchpad mode (Esc to exit).")
+        let record = makeTipLine("Press ⌥R to record, ⌥S to stop — works even when the toolbar is hidden.")
         let gestures = makeTipLine(
             "For smooth multi-finger play, turn off gestures (Mission Control & App Exposé) in "
             + "System Settings ▸ Trackpad ▸ More Gestures.")
         lineStack.addArrangedSubview(shortcut)
+        lineStack.addArrangedSubview(record)
         lineStack.addArrangedSubview(gestures)
 
         box.contentView?.addSubview(lineStack)

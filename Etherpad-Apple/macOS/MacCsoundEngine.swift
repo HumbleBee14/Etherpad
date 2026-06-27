@@ -23,6 +23,10 @@ final class MacCsoundEngine {
     private var sourceNode: AVAudioSourceNode?
     private var isRunning = false
 
+    private var recordingFile: AVAudioFile?
+    private var recordingURL: URL?
+    private(set) var isRecording = false
+
     private var ksmps = 0
     private var nchnls = 0
     private var sampleRate: Double = 44100
@@ -159,6 +163,7 @@ final class MacCsoundEngine {
 
     func stop() {
         guard isRunning else { return }
+        if isRecording { stopRecording() }
         avEngine.stop()
         if let n = sourceNode { avEngine.detach(n) }
         sourceNode = nil
@@ -166,6 +171,45 @@ final class MacCsoundEngine {
         cs = nil
         for i in 0..<Self.maxTouches { xPtrs[i] = nil; yPtrs[i] = nil }
         isRunning = false
+    }
+
+    // MARK: - Recording
+    // Taps the main mixer (called off the realtime render thread, so file I/O is safe)
+    // and writes the live output straight to `url` (a WAV). No temp file involved.
+    @discardableResult
+    func startRecording(to url: URL) -> Bool {
+        guard isRunning, !isRecording else { return false }
+        let mixer = avEngine.mainMixerNode
+        let format = mixer.outputFormat(forBus: 0)
+        do {
+            recordingFile = try AVAudioFile(forWriting: url,
+                                            settings: format.settings,
+                                            commonFormat: .pcmFormatFloat32,
+                                            interleaved: false)
+            recordingURL = url
+            mixer.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, _ in
+                guard let self = self, let file = self.recordingFile else { return }
+                try? file.write(from: buffer)
+            }
+            isRecording = true
+            return true
+        } catch {
+            print("[Etherpad-mac] startRecording failed: \(error)")
+            recordingFile = nil
+            recordingURL = nil
+            return false
+        }
+    }
+
+    @discardableResult
+    func stopRecording() -> URL? {
+        guard isRecording else { return nil }
+        avEngine.mainMixerNode.removeTap(onBus: 0)
+        let url = recordingURL
+        recordingFile = nil   // closing the file flushes it to disk
+        recordingURL = nil
+        isRecording = false
+        return url
     }
 
     private func writeChannel(slot: Int, x: Float, y: Float) {

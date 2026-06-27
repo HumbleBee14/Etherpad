@@ -1,17 +1,22 @@
-# Etherpad
-
-An expressive multi-touch synthesizer for iPhone, iPad, Mac, and Android. Touch anywhere to make sound — every finger is an independent voice, driven by a professional [Csound](https://www.csound.com) synthesis engine. Slide, hold, lift; the music follows your gesture in real time.
-
-No setup, no MIDI, no music theory required. Open and play.
-
 <p align="center">
   <img src="Etherpad-Android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="120" alt="Etherpad" />
 </p>
 
-## Get the app
+<h1 align="center">Etherpad</h1>
 
-- **Google Play (Android)** — [Google PlayStore](https://play.google.com/store/apps/details?id=com.humblebee.etherpad)
-- **App Store (iOS / iPadOS / macOS)** — [Apple Store App](https://apps.apple.com/us/app/etherpad/id6772439909)
+<p align="center"><b>An expressive multi-touch synthesizer for iPhone, iPad, Mac, and Android.</b></p>
+
+<p align="center">
+  Touch anywhere to make sound — every finger is an independent voice, driven by a professional
+  <a href="https://www.csound.com">Csound</a> engine. Slide, hold, lift; the music follows your gesture
+  in real time. No setup, no MIDI, no music theory required. Open and play.
+</p>
+
+<p align="center">
+  <a href="https://apps.apple.com/us/app/etherpad/id6772439909"><img src="https://img.shields.io/badge/App_Store-iOS%20%7C%20iPadOS%20%7C%20macOS-0D96F6?logo=apple&logoColor=white" alt="Download on the App Store" /></a>
+  <a href="https://play.google.com/store/apps/details?id=com.humblebee.etherpad"><img src="https://img.shields.io/badge/Google_Play-Android-34A853?logo=googleplay&logoColor=white" alt="Get it on Google Play" /></a>
+  <a href="NOTICE.md"><img src="https://img.shields.io/badge/license-GPLv3-3DA639" alt="License: GPLv3" /></a>
+</p>
 
 ## Features
 
@@ -32,6 +37,10 @@ This repo is open source and contains Apple (iOS + macOS) and Android implementa
 - **[Etherpad-Android](Etherpad-Android/)** — Android app. Kotlin + Jetpack Compose UI, with a small C++ engine driving Csound through Oboe. See its [README](Etherpad-Android/README.md) for build instructions.
 
 The three apps share the Csound score (`etherpad.csd`) and the same sonic identity but otherwise have nothing in common code-wise — each is idiomatic to its platform.
+
+## Contributing
+
+Contributions and ideas are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Credits
 
