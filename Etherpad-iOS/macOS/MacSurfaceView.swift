@@ -12,14 +12,8 @@ protocol MacTouchDelegate: AnyObject {
 final class MacSurfaceView: NSView {
     weak var delegate: MacTouchDelegate?
 
-    // The surface is the first responder in Multitouch mode, so key events arrive
-    // here. Return true if handled (so we don't beep / pass it on).
-    var keyHandler: ((NSEvent) -> Bool)?
-
-    override func keyDown(with event: NSEvent) {
-        if keyHandler?(event) == true { return }
-        super.keyDown(with: event)
-    }
+    // Key handling lives in the view controller via a local NSEvent monitor (more
+    // reliable than the responder chain for capturing keys in Multitouch mode).
 
     var numberOfNotes: Double = 8.0 {
         didSet { if numberOfNotes != oldValue { needsDisplay = true } }

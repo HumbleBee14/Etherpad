@@ -56,7 +56,6 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
 
         // --- Surface ---
         surface.delegate = self
-        surface.keyHandler = { [weak self] in self?.handleKey($0) ?? false }
         surface.translatesAutoresizingMaskIntoConstraints = false
 
         view.addSubview(bar)
@@ -115,6 +114,7 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
 
     deinit {
         // Guarantee the cursor is never left hidden/detached.
+        removeKeyMonitor()
         CGAssociateMouseAndMouseCursorPosition(boolean_t(1))
         CGDisplayShowCursor(CGMainDisplayID())
         NotificationCenter.default.removeObserver(self)
@@ -139,14 +139,32 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
             bannerLabel.stringValue = "Multitouch Mode On — Press Esc to Exit"
             showBannerBriefly()
             view.window?.makeFirstResponder(surface)
+            installKeyMonitor()                                     // capture keys reliably
             CGAssociateMouseAndMouseCursorPosition(boolean_t(0))   // detach pointer
             CGDisplayHideCursor(CGMainDisplayID())
         } else {
             bannerLabel.stringValue = "Multitouch Mode Off"
             showBannerBriefly()
+            removeKeyMonitor()
             CGAssociateMouseAndMouseCursorPosition(boolean_t(1))   // reattach
             CGDisplayShowCursor(CGMainDisplayID())
         }
+    }
+
+    // A local key monitor intercepts EVERY key while in Multitouch mode, before the
+    // responder chain / popup buttons can consume it (which was dropping us out of
+    // mode on number keys). Returning nil swallows the event.
+    private var keyMonitor: Any?
+    private func installKeyMonitor() {
+        guard keyMonitor == nil else { return }
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self = self, self.multitouchOn else { return event }
+            if self.handleKey(event) { return nil }   // handled → swallow
+            return event
+        }
+    }
+    private func removeKeyMonitor() {
+        if let m = keyMonitor { NSEvent.removeMonitor(m); keyMonitor = nil }
     }
 
     private var bannerHideWork: DispatchWorkItem?
@@ -158,12 +176,13 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: work)
     }
 
-    // Key handling runs on the SURFACE (the first responder in Multitouch mode) via
-    // surface.keyHandler, so ordinary keys NEVER fall through to AppKit defaults that
-    // could drop us out of mode. Returns true when handled.
+    // Called by the local key monitor for every keyDown while in Multitouch mode.
+    // Returns true when the key is consumed (monitor then swallows it so it can't
+    // reach the popup buttons / responder chain and drop us out of mode).
     // - Esc: exit Multitouch mode.
-    // - 1–5: open Scale/Key/Octave/Size/Sound (native arrow-nav + Return; Esc closes
-    //   just the popup). All other keys are swallowed so Multitouch mode is preserved.
+    // - 1–5: open Scale/Key/Octave/Size/Sound (native arrow-nav + Return select; the
+    //   menu's own tracking loop handles those while open).
+    // - everything else: swallowed, mode preserved.
     private func handleKey(_ event: NSEvent) -> Bool {
         guard multitouchOn else { return false }
         if event.keyCode == 53 {                 // Esc → exit mode
@@ -172,7 +191,9 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         }
         if let chars = event.charactersIgnoringModifiers,
            let popup = popupForNumberKey(chars) {
-            popup.performClick(nil)              // opens menu with keyboard focus
+            // Open on the next runloop tick so we return from the monitor first
+            // (performClick runs a modal menu tracking loop).
+            DispatchQueue.main.async { popup.performClick(nil) }
             return true
         }
         return true                              // swallow everything else; stay in mode
