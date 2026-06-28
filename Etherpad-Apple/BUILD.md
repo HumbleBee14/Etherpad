@@ -34,7 +34,8 @@ open Etherpad-Apple/Etherpad.xcodeproj
 
 Pick a scheme from the toolbar:
 
-- **Etherpad-iOS** — iPhone / iPad
+- **Etherpad-iOS** — iPhone / iPad (embeds the AU extension)
+- **Etherpad-AU** — AUv3 extension only (CI / extension debugging)
 - **Etherpad-macOS** — Mac
 
 Frameworks under `Frameworks/` are already linked. iOS shim sources live in
@@ -64,6 +65,17 @@ mode; **Esc** exits.
 
 ---
 
+## iPad AUv3 — GarageBand / AUM
+
+1. Build and run **Etherpad-iOS** on an iPad (or install via TestFlight).
+2. In **GarageBand** (or **AUM**), add an instrument track and browse AU instruments.
+3. Select **HumbleBee: Etherpad** — the full touch pad and patch toolbar appear in the plugin UI.
+
+The extension is embedded in the main app; hosts discover it after Etherpad is installed once.
+Shared synth logic lives in `iOS/Shared/`; the AU uses `HostCsoundEngine` for host-pull audio.
+
+---
+
 ## CLI builds
 
 ```sh
@@ -73,6 +85,10 @@ cd Etherpad-Apple
 xcodebuild -project Etherpad.xcodeproj -scheme Etherpad-iOS \
   -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
   -configuration Release ARCHS=arm64 ONLY_ACTIVE_ARCH=YES build
+
+# AU extension (Simulator)
+xcodebuild -project Etherpad.xcodeproj -scheme Etherpad-AU \
+  -sdk iphonesimulator -configuration Release ARCHS=arm64 ONLY_ACTIVE_ARCH=YES build
 
 # macOS
 xcodebuild -project Etherpad.xcodeproj -scheme Etherpad-macOS \

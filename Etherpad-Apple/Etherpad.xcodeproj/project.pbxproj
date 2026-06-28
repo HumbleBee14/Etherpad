@@ -38,10 +38,12 @@
 		8C3D4E5F60718293A4B5C6D7 /* VisualEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D4E5F60718293A4B5C6D7E8 /* VisualEffects.swift */; };
 		8D2387EF55B4DC79FB9EA926 /* SynthCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E6ED90D527C6B94739ED5C9 /* SynthCatalog.swift */; };
 		8D7A2CE333F84BCEE9A51B14 /* SynthPatchState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25F1E79BBA966253DB187CDB /* SynthPatchState.swift */; };
+		91D2EA6867727AD5C7391C26 /* SynthPatchMenuFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02E7B051A52229DB23ECE2DB /* SynthPatchMenuFactory.swift */; };
 		9CE0D85CD5F60E185E022311 /* VisualEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBCDF72A7572D182527EB70D /* VisualEffects.swift */; };
 		A1B2C3D4E5F60718293A4001 /* MacTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4002 /* MacTheme.swift */; };
 		A6220EE26DF77B1F7BB07A5B /* EtherpadViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D45A6FC8E72E5F76D667776A /* EtherpadViewController.swift */; };
 		AA7EEBC00F809FAA163EA3C0 /* logo.png in Resources */ = {isa = PBXBuildFile; fileRef = FB6D6CFF09FC4FFF00173174 /* logo.png */; };
+		B333D119DD98D95977720E35 /* SynthPatchMenuFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02E7B051A52229DB23ECE2DB /* SynthPatchMenuFactory.swift */; };
 		B5485E7CEEF6E31ED6EA3E5D /* TouchSurfaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBCDF72A7572D182527EB70C /* TouchSurfaceView.swift */; };
 		B5485E7CEEF6E31ED6EA3E5E /* VisualEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBCDF72A7572D182527EB70D /* VisualEffects.swift */; };
 		B7D1F66265CA9AF10AC3E313 /* SynthTouchCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1DCA46EB153856CC4603475 /* SynthTouchCoordinator.swift */; };
@@ -92,6 +94,7 @@
 
 /* Begin PBXFileReference section */
 		00C76DA0D09E5F638D001B8E /* MacSynthTables.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacSynthTables.swift; path = macOS/MacSynthTables.swift; sourceTree = "<group>"; };
+		02E7B051A52229DB23ECE2DB /* SynthPatchMenuFactory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SynthPatchMenuFactory.swift; path = Shared/SynthPatchMenuFactory.swift; sourceTree = "<group>"; };
 		0459D88593563AE08363B271 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = macOS/Assets.xcassets; sourceTree = "<group>"; };
 		11587677099646A8784B8D95 /* main.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = main.swift; path = macOS/main.swift; sourceTree = "<group>"; };
 		14D61CFCEF0A2DDF6F998191 /* CsoundMIDI.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = CsoundMIDI.h; path = CsoundMIDI.h; sourceTree = "<group>"; };
@@ -197,6 +200,7 @@
 				F08EFA8E8C8E4FF95071212B /* SynthScore.swift */,
 				D1DCA46EB153856CC4603475 /* SynthTouchCoordinator.swift */,
 				83C6825EAEB13A8396623CB9 /* SynthVoiceLayout.swift */,
+				02E7B051A52229DB23ECE2DB /* SynthPatchMenuFactory.swift */,
 			);
 			name = Shared;
 			sourceTree = "<group>";
@@ -551,6 +555,7 @@
 				8778D03BE3B2CD6182CD281A /* SynthScore.swift in Sources */,
 				B7D1F66265CA9AF10AC3E313 /* SynthTouchCoordinator.swift in Sources */,
 				6B43BB712DB5D9D21913A7DF /* SynthVoiceLayout.swift in Sources */,
+				B333D119DD98D95977720E35 /* SynthPatchMenuFactory.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -571,6 +576,7 @@
 				644CDE52DC65ED8CED9D2CA4 /* SynthTouchCoordinator.swift in Sources */,
 				DFAE2667CBB800651FAD099A /* SynthVoiceLayout.swift in Sources */,
 				EB2A10DD8D46EDE238FB4DAC /* EtherpadAUContext.swift in Sources */,
+				91D2EA6867727AD5C7391C26 /* SynthPatchMenuFactory.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

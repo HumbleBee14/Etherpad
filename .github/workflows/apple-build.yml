@@ -67,8 +67,38 @@ jobs:
       - name: Result
         if: success()
         run: |
-          echo "iOS simulator build succeeded."
+          echo "iOS simulator build succeeded (includes embedded Etherpad-AU extension)."
           echo "For App Store / TestFlight: archive Etherpad-iOS with signing + export IPA."
+
+  build-au:
+    name: Build iOS AU extension
+    needs: validate
+    runs-on: macos-26
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Xcode
+        run: |
+          sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+          xcodebuild -version
+
+      - name: Build AU for Simulator (no signing)
+        working-directory: Etherpad-Apple
+        run: |
+          xcodebuild \
+            -project Etherpad.xcodeproj \
+            -scheme Etherpad-AU \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -derivedDataPath build/DerivedDataAU \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
+            build
+
+      - name: Result
+        if: success()
+        run: echo "Etherpad-AU extension build succeeded."
 
   build-macos:
     name: Build macOS
