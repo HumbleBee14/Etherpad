@@ -1,99 +1,63 @@
 import AudioToolbox
 
-// MARK: - Factory Presets
-
-/// Ten curated factory presets for the Etherpad AUv3 instrument.
-///
-/// Each preset maps to a `SynthPatchState` that fully configures the synth
-/// engine's scale, key, octave, size, and sound parameters.
-///
-/// Preset numbers are frozen — **never reorder or renumber** once shipped,
-/// because hosts persist presets by number.
+/// Factory presets for the Etherpad AUv3 instrument.
+/// Hosts display these in their preset browser for quick sound selection.
 enum EtherpadPresets {
 
-    // MARK: Preset List
+    /// All factory presets, numbered 0–9.
+    static let factory: [AUAudioUnitPreset] = {
+        let configs: [(number: Int, name: String)] = [
+            (0,  "Ether Default"),
+            (1,  "Dreamy Blues"),
+            (2,  "Flamenco Monk"),
+            (3,  "Pentatonic Pad"),
+            (4,  "Chromatic Dreams"),
+            (5,  "Minor Tri"),
+            (6,  "Overtone Ether"),
+            (7,  "Whole-Tone Xan"),
+            (8,  "Major Pad"),
+            (9,  "BP Explorer"),
+        ]
+        return configs.map { config in
+            let preset = AUAudioUnitPreset()
+            preset.number = config.number
+            preset.name = config.name
+            return preset
+        }
+    }()
 
-    /// The factory presets exposed via `AUAudioUnit.factoryPresets`.
-    static let factory: [AUAudioUnitPreset] = (0..<presetDefinitions.count).map { index in
-        let preset = AUAudioUnitPreset()
-        preset.number = index
-        preset.name = presetDefinitions[index].name
-        return preset
-    }
-
-    // MARK: Patch Lookup
-
-    /// Returns the `SynthPatchState` associated with a factory preset number.
-    ///
-    /// - Parameter presetNumber: The zero-based preset index (0–9).
-    /// - Returns: The corresponding patch state, or `nil` if the number is out of range.
+    /// Returns the `SynthPatchState` for a factory preset number, or `nil` if invalid.
     static func patchState(for presetNumber: Int) -> SynthPatchState? {
-        guard presetDefinitions.indices.contains(presetNumber) else { return nil }
-        return presetDefinitions[presetNumber].patch
+        presetConfigs.first { $0.number == presetNumber }?.patch
     }
 
-    // MARK: - Internal Definitions
+    // MARK: - Internal Preset Definitions
 
-    /// A named pairing of preset metadata and its synth configuration.
-    private struct PresetDefinition {
-        let name: String
+    private struct PresetConfig {
+        let number: Int
         let patch: SynthPatchState
     }
 
-    /// Master list of preset definitions.
-    ///
-    /// | #  | Name              | Sound | Scale               | Key | Octave | Size |
-    /// |----|-------------------|-------|---------------------|-----|--------|------|
-    /// | 0  | Ether Default     | 0     | Default             | 0   | 4      | 8    |
-    /// | 1  | Dreamy Blues       | 1     | Blues               | 9   | 4      | 8    |
-    /// | 2  | Flamenco Monk     | 4     | Flamenco            | 4   | 4      | 10   |
-    /// | 3  | Pentatonic Pad    | 0     | Pentatonic          | 7   | 4      | 8    |
-    /// | 4  | Chromatic Dreams  | 1     | Chromatic           | 0   | 4      | 12   |
-    /// | 5  | Minor Tri         | 3     | Minor               | 2   | 5      | 8    |
-    /// | 6  | Overtone Ether    | 0     | Overtone Series Low | 0   | 3      | 8    |
-    /// | 7  | Whole-Tone Xan    | 2     | Whole-Tone          | 6   | 4      | 8    |
-    /// | 8  | Major Pad         | 0     | Major               | 0   | 4      | 8    |
-    /// | 9  | BP Explorer       | 0     | Bohlen-Pierce       | 0   | 4      | 10   |
-    private static let presetDefinitions: [PresetDefinition] = [
-        PresetDefinition(
-            name: "Ether Default",
-            patch: SynthPatchState(scaleName: "Default", key: 0, octave: 4, size: 8, sound: 0)
-        ),
-        PresetDefinition(
-            name: "Dreamy Blues",
-            patch: SynthPatchState(scaleName: "Blues", key: 9, octave: 4, size: 8, sound: 1)
-        ),
-        PresetDefinition(
-            name: "Flamenco Monk",
-            patch: SynthPatchState(scaleName: "Flamenco", key: 4, octave: 4, size: 10, sound: 4)
-        ),
-        PresetDefinition(
-            name: "Pentatonic Pad",
-            patch: SynthPatchState(scaleName: "Pentatonic", key: 7, octave: 4, size: 8, sound: 0)
-        ),
-        PresetDefinition(
-            name: "Chromatic Dreams",
-            patch: SynthPatchState(scaleName: "Chromatic", key: 0, octave: 4, size: 12, sound: 1)
-        ),
-        PresetDefinition(
-            name: "Minor Tri",
-            patch: SynthPatchState(scaleName: "Minor", key: 2, octave: 5, size: 8, sound: 3)
-        ),
-        PresetDefinition(
-            name: "Overtone Ether",
-            patch: SynthPatchState(scaleName: "Overtone Series Low", key: 0, octave: 3, size: 8, sound: 0)
-        ),
-        PresetDefinition(
-            name: "Whole-Tone Xan",
-            patch: SynthPatchState(scaleName: "Whole-Tone", key: 6, octave: 4, size: 8, sound: 2)
-        ),
-        PresetDefinition(
-            name: "Major Pad",
-            patch: SynthPatchState(scaleName: "Major", key: 0, octave: 4, size: 8, sound: 0)
-        ),
-        PresetDefinition(
-            name: "BP Explorer",
-            patch: SynthPatchState(scaleName: "Bohlen-Pierce", key: 0, octave: 4, size: 10, sound: 0)
-        ),
+    private static let presetConfigs: [PresetConfig] = [
+        PresetConfig(number: 0, patch: SynthPatchState(
+            scaleName: "Default", key: 0, octave: 4, size: 8, sound: 0)),
+        PresetConfig(number: 1, patch: SynthPatchState(
+            scaleName: "Blues", key: 9, octave: 4, size: 8, sound: 1)),
+        PresetConfig(number: 2, patch: SynthPatchState(
+            scaleName: "Flamenco", key: 4, octave: 4, size: 10, sound: 4)),
+        PresetConfig(number: 3, patch: SynthPatchState(
+            scaleName: "Pentatonic", key: 7, octave: 4, size: 8, sound: 0)),
+        PresetConfig(number: 4, patch: SynthPatchState(
+            scaleName: "Chromatic", key: 0, octave: 4, size: 12, sound: 1)),
+        PresetConfig(number: 5, patch: SynthPatchState(
+            scaleName: "Minor", key: 2, octave: 5, size: 8, sound: 3)),
+        PresetConfig(number: 6, patch: SynthPatchState(
+            scaleName: "Overtone Series Low", key: 0, octave: 3, size: 8, sound: 0)),
+        PresetConfig(number: 7, patch: SynthPatchState(
+            scaleName: "Whole-Tone", key: 6, octave: 4, size: 8, sound: 2)),
+        PresetConfig(number: 8, patch: SynthPatchState(
+            scaleName: "Major", key: 0, octave: 4, size: 8, sound: 0)),
+        PresetConfig(number: 9, patch: SynthPatchState(
+            scaleName: "Bohlen-Pierce", key: 0, octave: 4, size: 10, sound: 0)),
     ]
 }

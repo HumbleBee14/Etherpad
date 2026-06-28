@@ -79,7 +79,7 @@ public final class EtherpadAudioUnit: AUAudioUnit {
         }
 
         // String representation for indexed parameters
-        _parameterTree.implementorStringForValueCallback = { param, valuePtr in
+        _parameterTree.implementorStringFromValueCallback = { param, valuePtr in
             let value = Int(valuePtr?.pointee ?? param.value)
             switch param.address {
             case EtherpadParameterAddress.scale.rawValue:
@@ -180,7 +180,7 @@ public final class EtherpadAudioUnit: AUAudioUnit {
     // MARK: - MIDI Output
 
     /// Advertise MIDI output port so hosts (AUM, etc.) can route touch pad → MIDI.
-    public override var MIDIOutputNames: [String] { ["Etherpad Touch"] }
+    public override var midiOutputNames: [String] { ["Etherpad Touch"] }
 
     // MARK: - State Persistence
 
@@ -206,7 +206,10 @@ public final class EtherpadAudioUnit: AUAudioUnit {
             // Restore preset reference
             if let name = newValue?[kAUPresetNameKey] as? String,
                let number = newValue?[kAUPresetNumberKey] as? Int {
-                _currentPreset = AUAudioUnitPreset(number: number, name: name)
+                let preset = AUAudioUnitPreset()
+                preset.number = number
+                preset.name = name
+                _currentPreset = preset
             }
         }
     }

@@ -105,6 +105,13 @@ final class SynthPatchMenuFactory {
         notifyPatchChanged()
     }
 
+    /// Update internal patch state without applying to the engine.
+    /// Used by AU view controller when the engine already has the new state
+    /// (e.g., from host parameter automation).
+    func updatePatchSilently(_ newPatch: SynthPatchState) {
+        patch = newPatch
+    }
+
     private func notifyPatchChanged() {
         onPatchChanged?(patch)
     }

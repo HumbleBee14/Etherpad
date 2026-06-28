@@ -1,112 +1,93 @@
 import AudioToolbox
 
-// MARK: - MIDI Output Handler
-
-/// Converts touch-surface gestures into outgoing MIDI events, allowing hosts
-/// to record or route the Etherpad's performance as standard MIDI data.
+/// Converts touch pad gestures to MIDI note/CC events for host routing.
 ///
-/// Each active touch slot is assigned a MIDI note based on the current
-/// `SynthPatchState` (scale, key, octave, size). Continuous Y-axis movement
-/// is transmitted as CC 74 (Brightness / Sound Controller 5).
-///
-/// **Usage**: Set `midiOutputBlock` from the AUAudioUnit's `outputProvider`
-/// and call `touchBegan`, `touchMoved`, `touchEnded` from the touch surface.
+/// When the user touches the pad inside the AUv3 plugin, this handler
+/// generates MIDI Note On/Off and CC messages that hosts like AUM can
+/// route to other instruments in the chain.
 final class MIDIOutputHandler {
 
-    // MARK: - Public Properties
-
-    /// The host-provided block for sending MIDI output events.
-    /// Set this from `AUAudioUnit.midiOutputEventBlock`.
+    /// Set by the audio unit from its `midiOutputEventBlock` property.
     var midiOutputBlock: AUMIDIOutputEventBlock?
 
-    /// Current patch state, used to map XY coordinates to MIDI notes.
+    /// Current patch state for XY ↔ MIDI note conversion.
     var patchState: SynthPatchState = .factoryDefault
 
-    /// Master enable. When `false`, no MIDI events are emitted.
+    /// Master enable/disable for MIDI output.
     var isEnabled: Bool = true
 
-    // MARK: - Private State
-
-    /// Maps active voice slot → currently sounding MIDI note number.
+    /// Tracks active MIDI notes per voice slot.
     private var activeNotes: [Int: UInt8] = [:]
 
-    // MARK: - Touch Events
+    /// Tracks last sent CC74 per slot to avoid redundant messages.
+    private var lastBrightness: [Int: UInt8] = [:]
 
-    /// Called when a new touch begins on the performance surface.
-    ///
-    /// Converts the touch position to a MIDI note and sends a Note On message.
-    ///
-    /// - Parameters:
-    ///   - slot: Voice slot index (0 ..< `SynthVoiceLayout.maxTouches`).
-    ///   - x: Horizontal position, 0 (right) to 1 (left).
-    ///   - y: Vertical position / dynamics, 0 (soft) to 1 (loud).
+    // MARK: - Touch Events → MIDI
+
+    /// Call when a touch begins on the pad. Sends MIDI Note On.
     func touchBegan(slot: Int, x: Float, y: Float) {
-        guard isEnabled else { return }
+        guard isEnabled, let block = midiOutputBlock else { return }
 
         let (note, velocity) = xyToMIDINote(x: x, y: y)
-
-        // Release any existing note on this slot (safety).
-        if let previousNote = activeNotes[slot] {
-            sendNoteOff(note: previousNote)
-        }
-
         activeNotes[slot] = note
-        sendNoteOn(note: note, velocity: velocity)
+        lastBrightness[slot] = nil
+
+        sendNoteOn(note: note, velocity: velocity, via: block)
     }
 
-    /// Called when an active touch moves on the performance surface.
-    ///
-    /// Sends CC 74 (Brightness) derived from the Y-axis position.
-    ///
-    /// - Parameters:
-    ///   - slot: Voice slot index.
-    ///   - x: Updated horizontal position.
-    ///   - y: Updated vertical position / dynamics.
+    /// Call when a touch moves on the pad. Sends CC74 (brightness) from Y.
     func touchMoved(slot: Int, x: Float, y: Float) {
-        guard isEnabled, activeNotes[slot] != nil else { return }
+        guard isEnabled, let block = midiOutputBlock else { return }
+        guard activeNotes[slot] != nil else { return }
 
-        let ccValue = UInt8(max(0, min(127, Int(y * 127))))
-        sendCC(controller: 74, value: ccValue)
-    }
-
-    /// Called when a touch ends on the performance surface.
-    ///
-    /// Sends a Note Off for the slot's active note.
-    ///
-    /// - Parameter slot: Voice slot index.
-    func touchEnded(slot: Int) {
-        guard isEnabled, let note = activeNotes.removeValue(forKey: slot) else { return }
-        sendNoteOff(note: note)
-    }
-
-    /// Releases all currently active notes.
-    func allNotesOff() {
-        for (slot, note) in activeNotes {
-            sendNoteOff(note: note)
-            activeNotes.removeValue(forKey: slot)
+        // Send CC74 (Brightness/Timbre) mapped from Y position
+        let brightness = UInt8(max(0, min(127, Int(y * 127))))
+        if lastBrightness[slot] != brightness {
+            lastBrightness[slot] = brightness
+            sendCC(cc: 74, value: brightness, via: block)
         }
     }
 
-    // MARK: - XY → MIDI Conversion
+    /// Call when a touch ends on the pad. Sends MIDI Note Off.
+    func touchEnded(slot: Int) {
+        guard isEnabled, let block = midiOutputBlock else { return }
+        guard let note = activeNotes.removeValue(forKey: slot) else { return }
+        lastBrightness[slot] = nil
 
-    /// Converts an (x, y) touch coordinate to a MIDI note number and velocity,
-    /// respecting the current patch state's scale, key, octave, and size.
-    ///
-    /// - Parameters:
-    ///   - x: Horizontal position, 0 (right) to 1 (left). Inverted internally
-    ///        so that leftward movement goes up the scale.
-    ///   - y: Vertical position mapped to velocity (0.0 → 1, 1.0 → 127).
-    /// - Returns: A tuple of `(note, velocity)` clamped to valid MIDI range.
+        sendNoteOff(note: note, via: block)
+    }
+
+    /// Release all active MIDI output notes.
+    func allNotesOff() {
+        guard let block = midiOutputBlock else {
+            activeNotes.removeAll()
+            lastBrightness.removeAll()
+            return
+        }
+
+        for (_, note) in activeNotes {
+            sendNoteOff(note: note, via: block)
+        }
+        activeNotes.removeAll()
+        lastBrightness.removeAll()
+    }
+
+    // MARK: - XY → MIDI Note Conversion
+
+    /// Convert surface (x, y) coordinates to MIDI note and velocity.
     private func xyToMIDINote(x: Float, y: Float) -> (note: UInt8, velocity: UInt8) {
+        // Reverse the CSD mapping: kx = 1 - x, kstep = kx * gisize
         let kx = 1.0 - x
         let step = Int(kx * Float(patchState.size))
         let baseNote = patchState.key + 12 * (patchState.octave + 1)
 
         var midiNote: Int
         if let scaleSteps = SynthCatalog.scaleSteps(named: patchState.scaleName),
-           scaleSteps.first(where: { $0 >= 0 }) != nil {
-            midiNote = baseNote + scaleSteps[min(step, scaleSteps.count - 1)]
+           let first = scaleSteps.first, first >= 0 {
+            let clampedStep = min(step, scaleSteps.count - 1)
+            midiNote = baseNote + scaleSteps[max(0, clampedStep)]
         } else {
+            // Special scales (Bohlen-Pierce, Overtone): linear approximation
             midiNote = baseNote + step
         }
 
@@ -115,33 +96,32 @@ final class MIDIOutputHandler {
         return (clampedNote, velocity)
     }
 
-    // MARK: - MIDI Message Senders
+    // MARK: - MIDI Send Helpers
 
-    /// Sends a MIDI Note On (status 0x90, channel 0).
-    private func sendNoteOn(note: UInt8, velocity: UInt8) {
-        sendMIDIBytes([0x90, note, velocity])
+    private func sendNoteOn(note: UInt8, velocity: UInt8, via block: AUMIDIOutputEventBlock) {
+        var data: (UInt8, UInt8, UInt8) = (0x90, note, velocity)
+        withUnsafeMutablePointer(to: &data) { ptr in
+            ptr.withMemoryRebound(to: UInt8.self, capacity: 3) { bytes in
+                block(AUEventSampleTimeImmediate, 0, 3, bytes)
+            }
+        }
     }
 
-    /// Sends a MIDI Note Off (status 0x80, channel 0).
-    private func sendNoteOff(note: UInt8) {
-        sendMIDIBytes([0x80, note, 0x40]) // Release velocity 64
+    private func sendNoteOff(note: UInt8, via block: AUMIDIOutputEventBlock) {
+        var data: (UInt8, UInt8, UInt8) = (0x80, note, 0)
+        withUnsafeMutablePointer(to: &data) { ptr in
+            ptr.withMemoryRebound(to: UInt8.self, capacity: 3) { bytes in
+                block(AUEventSampleTimeImmediate, 0, 3, bytes)
+            }
+        }
     }
 
-    /// Sends a MIDI Control Change (status 0xB0, channel 0).
-    private func sendCC(controller: UInt8, value: UInt8) {
-        sendMIDIBytes([0xB0, controller, value])
-    }
-
-    /// Transmits raw MIDI bytes through the host-provided output block.
-    ///
-    /// Uses `withUnsafeMutableBufferPointer` for safe, allocation-free access.
-    private func sendMIDIBytes(_ bytes: [UInt8]) {
-        guard let block = midiOutputBlock else { return }
-
-        var data = bytes
-        data.withUnsafeMutableBufferPointer { buffer in
-            guard let baseAddress = buffer.baseAddress else { return }
-            _ = block(AUEventSampleTimeImmediate, 0, buffer.count, baseAddress)
+    private func sendCC(cc: UInt8, value: UInt8, via block: AUMIDIOutputEventBlock) {
+        var data: (UInt8, UInt8, UInt8) = (0xB0, cc, value)
+        withUnsafeMutablePointer(to: &data) { ptr in
+            ptr.withMemoryRebound(to: UInt8.self, capacity: 3) { bytes in
+                block(AUEventSampleTimeImmediate, 0, 3, bytes)
+            }
         }
     }
 }

@@ -1,12 +1,7 @@
 import AudioToolbox
 
-// MARK: - Parameter Addresses
-
-/// Stable AUParameterAddress constants for the Etherpad AUv3 extension.
-///
-/// Each case maps to a unique `AUParameterAddress` (`UInt64`) that identifies
-/// a host-automatable parameter. Values are frozen — **never reorder or renumber**
-/// once shipped, or existing host sessions will break.
+/// Stable parameter addresses for the Etherpad AUv3 instrument.
+/// These addresses are the host↔AU contract — never change published addresses.
 enum EtherpadParameterAddress: AUParameterAddress, CaseIterable {
     case scale  = 0
     case key    = 1
@@ -15,115 +10,73 @@ enum EtherpadParameterAddress: AUParameterAddress, CaseIterable {
     case sound  = 4
 }
 
-// MARK: - Parameter Factory
+// MARK: - Parameter Tree Factory
 
-/// Creates and queries the `AUParameterTree` used by `EtherpadAudioUnit`.
-///
-/// All parameter metadata (ranges, value strings, flags) derives from
-/// `SynthCatalog` so the AU and standalone app stay in sync automatically.
-struct EtherpadParameterFactory {
+/// Creates and configures the `AUParameterTree` for Etherpad's 5 synth parameters.
+/// All parameters are readable and writable so hosts can automate them.
+enum EtherpadParameterFactory {
 
-    // MARK: Tree Creation
-
-    /// Builds the canonical parameter tree with a single "Etherpad" group.
-    ///
-    /// - Returns: A fully configured `AUParameterTree` containing five parameters
-    ///   (scale, key, octave, size, sound) ready to be assigned to an `AUAudioUnit`.
+    /// Create the full parameter tree with all Etherpad parameters.
     static func createParameterTree() -> AUParameterTree {
+        let flags: AudioUnitParameterOptions = [.flag_IsReadable, .flag_IsWritable]
 
-        // --- Scale (indexed) ------------------------------------------------
-        let scaleParam = AUParameterTree.createParameter(
-            withIdentifier: "scale",
-            name: "Scale",
+        let scale = AUParameterTree.createParameter(
+            withIdentifier: "scale", name: "Scale",
             address: EtherpadParameterAddress.scale.rawValue,
-            min: 0,
-            max: AUValue(SynthCatalog.scaleOptions.count - 1),
-            unit: .indexed,
-            unitName: nil,
-            flags: [.flag_IsReadable, .flag_IsWritable],
+            min: 0, max: AUValue(SynthCatalog.scaleOptions.count - 1),
+            unit: .indexed, unitName: nil, flags: flags,
             valueStrings: SynthCatalog.scaleOptions.map(\.name),
             dependentParameters: nil
         )
 
-        // --- Key (indexed) --------------------------------------------------
-        let keyParam = AUParameterTree.createParameter(
-            withIdentifier: "key",
-            name: "Key",
+        let key = AUParameterTree.createParameter(
+            withIdentifier: "key", name: "Key",
             address: EtherpadParameterAddress.key.rawValue,
-            min: 0,
-            max: 11,
-            unit: .indexed,
-            unitName: nil,
-            flags: [.flag_IsReadable, .flag_IsWritable],
+            min: 0, max: 11,
+            unit: .indexed, unitName: nil, flags: flags,
             valueStrings: SynthCatalog.keyNames,
             dependentParameters: nil
         )
 
-        // --- Octave (indexed) -----------------------------------------------
-        let octaveParam = AUParameterTree.createParameter(
-            withIdentifier: "octave",
-            name: "Octave",
+        let octave = AUParameterTree.createParameter(
+            withIdentifier: "octave", name: "Octave",
             address: EtherpadParameterAddress.octave.rawValue,
-            min: 0,
-            max: AUValue(SynthCatalog.octaveValues.count - 1),
-            unit: .indexed,
-            unitName: nil,
-            flags: [.flag_IsReadable, .flag_IsWritable],
+            min: 0, max: AUValue(SynthCatalog.octaveValues.count - 1),
+            unit: .indexed, unitName: nil, flags: flags,
             valueStrings: SynthCatalog.octaveLabels,
             dependentParameters: nil
         )
 
-        // --- Size (generic, continuous range) --------------------------------
-        let sizeParam = AUParameterTree.createParameter(
-            withIdentifier: "size",
-            name: "Size",
+        let size = AUParameterTree.createParameter(
+            withIdentifier: "size", name: "Size",
             address: EtherpadParameterAddress.size.rawValue,
             min: AUValue(SynthCatalog.sizeRange.lowerBound),
             max: AUValue(SynthCatalog.sizeRange.upperBound),
-            unit: .generic,
-            unitName: nil,
-            flags: [.flag_IsReadable, .flag_IsWritable],
+            unit: .generic, unitName: nil, flags: flags,
             valueStrings: nil,
             dependentParameters: nil
         )
 
-        // --- Sound (indexed) ------------------------------------------------
-        let soundParam = AUParameterTree.createParameter(
-            withIdentifier: "sound",
-            name: "Sound",
+        let sound = AUParameterTree.createParameter(
+            withIdentifier: "sound", name: "Sound",
             address: EtherpadParameterAddress.sound.rawValue,
-            min: 0,
-            max: AUValue(SynthCatalog.soundNames.count - 1),
-            unit: .indexed,
-            unitName: nil,
-            flags: [.flag_IsReadable, .flag_IsWritable],
+            min: 0, max: AUValue(SynthCatalog.soundNames.count - 1),
+            unit: .indexed, unitName: nil, flags: flags,
             valueStrings: SynthCatalog.soundNames,
             dependentParameters: nil
         )
 
-        // --- Group & Tree ---------------------------------------------------
-        let group = AUParameterTree.createGroup(
-            withIdentifier: "etherpad",
-            name: "Etherpad",
-            children: [scaleParam, keyParam, octaveParam, sizeParam, soundParam]
+        let synthGroup = AUParameterTree.createGroup(
+            withIdentifier: "synth", name: "Synth",
+            children: [sound, scale, key, octave, size]
         )
 
-        return AUParameterTree.createTree(withChildren: [group])
+        return AUParameterTree.createTree(withChildren: [synthGroup])
     }
 
-    // MARK: Lookup
-
-    /// Returns the `AUParameter` node for a given address, or `nil` if the tree
-    /// does not contain it.
-    ///
-    /// - Parameters:
-    ///   - address: The `EtherpadParameterAddress` to look up.
-    ///   - tree: The parameter tree to search.
-    /// - Returns: The matching `AUParameter`, or `nil`.
-    static func parameter(
-        for address: EtherpadParameterAddress,
-        in tree: AUParameterTree
-    ) -> AUParameter? {
+    /// Look up a parameter by its address in the tree.
+    static func parameter(for address: EtherpadParameterAddress,
+                          in tree: AUParameterTree) -> AUParameter? {
         tree.parameter(withAddress: address.rawValue)
     }
 }
