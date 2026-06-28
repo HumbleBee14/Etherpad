@@ -275,93 +275,88 @@ final class MIDIProcessor {
         return nil
     }
 
-    // MARK: - Note ↔ XY Mapping (Inverse of Csound's tablei)
+    // MARK: - Note ↔ XY Mapping (Pad-Emulation Keyboard Mode)
 
-    /// Maps a MIDI note to surface (x, y) by computing the exact inverse of
-    /// the CSD's pitch mapping:
+    /// Maps a host keyboard key to virtual touch-pad coordinates.
     ///
-    ///     CSD forward:  x → kx = 1-x → kstep = kx * gisize → knote = tablei(kstep, giscale) → pitch = knote + base
-    ///     This inverse:  pitch → knote = note - base → kstep = tablei⁻¹(knote) → kx = kstep/gisize → x = 1-kx
+    /// Standard XY-pad fallback (Kaoss-style / virtual pad emulation — not MPE piano mode):
+    /// - **X** → integer pad line `0…size−1` from note position within the octave + current scale
+    /// - **Y** → velocity → timbre; chromatic passing tones use a lower Y
     ///
-    /// For notes that land exactly on a scale degree: exact index lookup.
-    /// For chromatic notes between scale degrees: fractional interpolation,
-    /// guaranteeing every MIDI note gets a **unique** X → unique pitch.
+    /// `size` is dynamic — changing Etherpad Size immediately changes how many lines exist
+    /// and how chroma maps across them. Shift Key/Octave in the patch to move the register.
     private func midiNoteToXY(note: UInt8, velocity: UInt8) -> (x: Float, y: Float) {
         let patchState = patchBox.snapshot()
-        let baseNote = patchState.key + 12 * (patchState.octave + 1)
-        let targetSemi = Float(Int(note) - baseNote)
-        let y = max(Float(velocity) / 127.0, 0.05)
-        let gisize = Float(patchState.size)
+        let gisize = patchState.size
+        guard gisize > 0 else { return (0.5, max(Float(velocity) / 127.0, 0.05)) }
 
-        guard gisize > 0 else { return (0.5, y) }
+        let kstep = padEmulationPadStep(note: note, patchState: patchState)
+        let kx = Float(kstep) / Float(gisize)
+        let x = (1.0 - kx).clamped01()
+
+        var y = max(Float(velocity) / 127.0, 0.05)
+        let chroma = keyRelativeChroma(note: note, key: patchState.key)
+        if !isScaleTone(chroma: chroma, patchState: patchState) {
+            // Black / passing keys: same pad line as nearest scale tone, softer timbre on Y.
+            y = max(0.05, y * 0.72)
+        }
+
+        return (x, y)
+    }
+
+    /// Semitone offset from patch root within one octave (0 = root, 1 = minor 2nd, …).
+    private func keyRelativeChroma(note: UInt8, key: Int) -> Int {
+        ((Int(note) - key) % 12 + 12) % 12
+    }
+
+    /// Pad line 0…size−1 for a keyboard note (Csound uses `int(kx * gisize)`).
+    private func padEmulationPadStep(note: UInt8, patchState: SynthPatchState) -> Int {
+        let gisize = patchState.size
+        guard gisize > 1 else { return 0 }
+
+        let chroma = keyRelativeChroma(note: note, key: patchState.key)
 
         guard let scaleSteps = SynthCatalog.scaleSteps(named: patchState.scaleName),
-              !scaleSteps.isEmpty else {
-            let kx = targetSemi / gisize
-            return ((1.0 - kx).clamped01(), y)
+              !scaleSteps.isEmpty,
+              scaleSteps.first! >= 0 else {
+            return chromaticPadStep(chroma: chroma, gisize: gisize)
         }
 
-        // Bohlen-Pierce / Overtone scales use Csound giscale_type branches, not tablei ET.
-        if let first = scaleSteps.first, first < 0 {
-            let kx = targetSemi / gisize
-            return ((1.0 - kx).clamped01(), y)
+        let n = min(gisize, scaleSteps.count)
+
+        // White / scale tone → exact pad line for that degree.
+        for i in 0..<n where scaleSteps[i] % 12 == chroma {
+            return i
         }
 
-        let n = min(patchState.size, scaleSteps.count)
-        guard n > 0 else { return (0.5, y) }
-
-        // --- Exact inverse of tablei ---
-        // 1. Exact match: scaleSteps[i] == targetSemi → kstep = i
+        // Black / passing tone → nearest scale line (shortest distance on the 12-TET circle).
+        var bestStep = 0
+        var bestDist = Int.max
         for i in 0..<n {
-            if Float(scaleSteps[i]) == targetSemi {
-                let kx = Float(i) / gisize
-                return ((1.0 - kx).clamped01(), y)
+            let semi = scaleSteps[i] % 12
+            let dist = min(abs(semi - chroma), 12 - abs(semi - chroma))
+            if dist < bestDist {
+                bestDist = dist
+                bestStep = i
             }
         }
+        return bestStep
+    }
 
-        // 2. Below first scale degree → extrapolate downward
-        let first = Float(scaleSteps[0])
-        if targetSemi < first {
-            if n >= 2 {
-                // Use the first interval as the extrapolation slope
-                let interval = Float(scaleSteps[1] - scaleSteps[0])
-                let kstep = (targetSemi - first) / max(interval, 1.0)   // negative
-                let kx = kstep / gisize
-                return ((1.0 - kx).clamped01(), y)
-            }
-            return (1.0, y)   // only one step, clamp to left edge
+    /// Spread 12 chromatic positions across `gisize` pad lines (Bohlen-Pierce / Overtone / fallback).
+    private func chromaticPadStep(chroma: Int, gisize: Int) -> Int {
+        guard gisize > 1 else { return 0 }
+        return min(gisize - 1, max(0, Int(round(Float(chroma) * Float(gisize - 1) / 11.0))))
+    }
+
+    private func isScaleTone(chroma: Int, patchState: SynthPatchState) -> Bool {
+        guard let scaleSteps = SynthCatalog.scaleSteps(named: patchState.scaleName),
+              !scaleSteps.isEmpty,
+              scaleSteps.first! >= 0 else {
+            return true
         }
-
-        // 3. Above last scale degree → extrapolate upward
-        let last = Float(scaleSteps[n - 1])
-        if targetSemi > last {
-            if n >= 2 {
-                let interval = Float(scaleSteps[n - 1] - scaleSteps[n - 2])
-                let overshoot = targetSemi - last
-                let kstep = Float(n - 1) + overshoot / max(interval, 1.0)
-                let kx = kstep / gisize
-                return ((1.0 - kx).clamped01(), y)
-            }
-            let kx = Float(n - 1) / gisize
-            return ((1.0 - kx).clamped01(), y)
-        }
-
-        // 4. Between two scale degrees → fractional interpolation
-        //    (mirrors Csound's tablei linear interpolation)
-        for i in 0..<(n - 1) {
-            let lo = Float(scaleSteps[i])
-            let hi = Float(scaleSteps[i + 1])
-            if targetSemi >= lo && targetSemi < hi {
-                let span = hi - lo
-                let frac = (span > 0) ? (targetSemi - lo) / span : 0
-                let kstep = Float(i) + frac
-                let kx = kstep / gisize
-                return ((1.0 - kx).clamped01(), y)
-            }
-        }
-
-        // Fallback (should not reach here)
-        return (0.5, y)
+        let n = min(patchState.size, scaleSteps.count)
+        return scaleSteps.prefix(n).contains { $0 % 12 == chroma }
     }
 }
 
