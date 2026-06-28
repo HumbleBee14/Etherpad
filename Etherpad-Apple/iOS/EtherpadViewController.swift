@@ -13,25 +13,11 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
     private var sizeBtn:   UIBarButtonItem!
     private var soundBtn:  UIBarButtonItem!
 
-    private var selectedScale:  String = "Default"
-    private var selectedKey:    Int    = 0
-    private var selectedOctave: Int    = 4
-    private var selectedSize:   Int    = 8
-    private var selectedSound:  Int    = 0
-
-    private let scaleMajor:   [Int] = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19, 21, 23]
-    private let scaleMinor:   [Int] = [0, 2, 3, 5, 7, 8, 11, 12, 14, 15, 17, 19, 20, 23]
-    private let scalePent:    [Int] = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28, 30]
-    private let scaleBlues:   [Int] = [0, 3, 5, 6, 7, 10, 12, 15, 17, 18, 19, 22, 24, 27]
-    private let scaleChrom:   [Int] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
-    private let scaleWhole:   [Int] = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26]
-    private let scaleOct:     [Int] = [0, 1, 3, 4, 6, 7, 9, 10, 12, 13, 15, 16, 18, 19, 21]
-    private let scaleFlam:    [Int] = [0, 1, 4, 5, 7, 8, 11, 12, 13, 16, 17, 19, 21, 22]
-    private let scaleDefault: [Int] = [0, 2, 4, 7, 9, 11, 12, 14, 16, 19, 21, 24, 26, 28]
-    private let scaleBP:      [Int] = [-1]
-    // Overtone series use giscale_type 2 and 3 in the CSD.
-    private let scaleOTLow:   [Int] = [-2]
-    private let scaleOTHigh:  [Int] = [-3]
+    private var selectedScale:  String = SynthCatalog.defaultScaleName
+    private var selectedKey:    Int    = SynthCatalog.defaultKey
+    private var selectedOctave: Int    = SynthCatalog.defaultOctave
+    private var selectedSize:   Int    = SynthCatalog.defaultSize
+    private var selectedSound:  Int    = SynthCatalog.defaultSound
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -161,27 +147,14 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
     }
 
     private var scaleOptions: [ScaleOption] {
-        [
-            .init(name: "Default",     steps: scaleDefault),
-            .init(name: "Major",       steps: scaleMajor),
-            .init(name: "Minor",       steps: scaleMinor),
-            .init(name: "Pentatonic",  steps: scalePent),
-            .init(name: "Flamenco",    steps: scaleFlam),
-            .init(name: "Blues",       steps: scaleBlues),
-            .init(name: "Chromatic",   steps: scaleChrom),
-            .init(name: "Whole-Tone",  steps: scaleWhole),
-            .init(name: "Octatonic",   steps: scaleOct),
-            .init(name: "Bohlen-Pierce", steps: scaleBP),
-            .init(name: "Overtone Series Low",  steps: scaleOTLow),
-            .init(name: "Overtone Series High", steps: scaleOTHigh),
-        ]
+        SynthCatalog.scaleOptions.map { ScaleOption(name: $0.name, steps: $0.steps) }
     }
 
     private func buildScaleMenu() -> UIMenu {
         let actions = scaleOptions.map { opt in
             makeAction(title: opt.name,
                        isSelected: opt.name == selectedScale,
-                       isDefault: opt.name == "Default") { [weak self] in
+                       isDefault: opt.name == SynthCatalog.defaultScaleName) { [weak self] in
                 guard let self = self else { return }
                 self.selectedScale = opt.name
                 self.engine.setScale(opt.steps)
@@ -192,11 +165,11 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
         return UIMenu(title: "Scale", children: actions)
     }
 
-    private let keyNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+    private let keyNames = SynthCatalog.keyNames
 
     private func buildKeyMenu() -> UIMenu {
         let actions = keyNames.enumerated().map { i, name in
-            makeAction(title: name, isSelected: i == selectedKey, isDefault: i == 0) { [weak self] in
+            makeAction(title: name, isSelected: i == selectedKey, isDefault: i == SynthCatalog.defaultKey) { [weak self] in
                 guard let self = self else { return }
                 self.selectedKey = i
                 self.engine.setKey(i)
@@ -207,13 +180,12 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
         return UIMenu(title: "Key", children: actions)
     }
 
-    // Display labels 2..-2 map to Csound values 6..2.
-    private let octaveLabels = ["2", "1", "0", "-1", "-2"]
-    private let octaveValues = [6, 5, 4, 3, 2]
+    private let octaveLabels = SynthCatalog.octaveLabels
+    private let octaveValues = SynthCatalog.octaveValues
 
     private func buildOctaveMenu() -> UIMenu {
         let actions = zip(octaveLabels, octaveValues).map { label, val in
-            makeAction(title: label, isSelected: val == selectedOctave, isDefault: val == 4) { [weak self] in
+            makeAction(title: label, isSelected: val == selectedOctave, isDefault: val == SynthCatalog.defaultOctave) { [weak self] in
                 guard let self = self else { return }
                 self.selectedOctave = val
                 self.engine.setOctave(val)
@@ -225,8 +197,8 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
     }
 
     private func buildSizeMenu() -> UIMenu {
-        let actions = (4...14).map { n in
-            makeAction(title: "\(n)", isSelected: n == selectedSize, isDefault: n == 8) { [weak self] in
+        let actions = SynthCatalog.sizeRange.map { n in
+            makeAction(title: "\(n)", isSelected: n == selectedSize, isDefault: n == SynthCatalog.defaultSize) { [weak self] in
                 guard let self = self else { return }
                 self.selectedSize = n
                 self.engine.setSize(n)
@@ -238,11 +210,11 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
         return UIMenu(title: "Size", children: actions)
     }
 
-    private let soundNames = ["Ether Pad", "Distorted Dreams", "Xanpalamin", "Give it a Tri", "Digital Monk"]
+    private let soundNames = SynthCatalog.soundNames
 
     private func buildSoundMenu() -> UIMenu {
         let actions = soundNames.enumerated().map { i, name in
-            makeAction(title: name, isSelected: i == selectedSound, isDefault: i == 0) { [weak self] in
+            makeAction(title: name, isSelected: i == selectedSound, isDefault: i == SynthCatalog.defaultSound) { [weak self] in
                 guard let self = self else { return }
                 self.selectedSound = i
                 self.engine.setSound(i)

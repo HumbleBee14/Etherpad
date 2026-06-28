@@ -24,7 +24,7 @@ final class TouchSurfaceView: UIView {
     private let lineWidth: CGFloat = 3
 
     private var activeVoices: [UITouch: Int] = [:]
-    private let maxSlots = CsoundEngine.maxTouches
+    private let maxSlots = SynthVoiceLayout.maxTouches
 
     private struct Ripple { var origin: CGPoint; var t: CFTimeInterval }
     private var ripples: [Ripple] = []
