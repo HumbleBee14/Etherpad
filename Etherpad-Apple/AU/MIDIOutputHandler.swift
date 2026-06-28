@@ -10,8 +10,13 @@ final class MIDIOutputHandler {
     /// Set by the audio unit from its `midiOutputEventBlock` property.
     var midiOutputBlock: AUMIDIOutputEventBlock?
 
-    /// Current patch state for XY ↔ MIDI note conversion.
-    var patchState: SynthPatchState = .factoryDefault
+    /// Current patch state for XY ↔ MIDI note conversion (thread-safe).
+    private let patchBox = RealtimePatchState()
+
+    var patchState: SynthPatchState {
+        get { patchBox.snapshot() }
+        set { patchBox.value = newValue }
+    }
 
     /// Master enable/disable for MIDI output.
     var isEnabled: Bool = true
@@ -76,6 +81,7 @@ final class MIDIOutputHandler {
 
     /// Convert surface (x, y) coordinates to MIDI note and velocity.
     private func xyToMIDINote(x: Float, y: Float) -> (note: UInt8, velocity: UInt8) {
+        let patchState = patchBox.snapshot()
         // Reverse the CSD mapping: kx = 1 - x, kstep = kx * gisize
         let kx = 1.0 - x
         let step = Int(kx * Float(patchState.size))

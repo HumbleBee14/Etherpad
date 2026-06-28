@@ -129,10 +129,19 @@ public final class EtherpadAudioUnit: AUAudioUnit {
         // sync MIDI processors and notify VC. The AU owns this callback — VC uses
         // `onUIStateChanged` instead to avoid overwrites.
         hostEngine.onPatchStateChanged = { [weak self] patchState in
+            // Patch snapshots must update immediately for the next render quantum.
             self?.midiProcessor.patchState = patchState
             self?.midiOutputHandler.patchState = patchState
-            self?.syncParameterTreeFromEngine()
-            self?.onUIStateChanged?(patchState)
+            // Parameter tree + UI must stay on the main thread.
+            let syncUI = {
+                self?.syncParameterTreeFromEngine()
+                self?.onUIStateChanged?(patchState)
+            }
+            if Thread.isMainThread {
+                syncUI()
+            } else {
+                DispatchQueue.main.async(execute: syncUI)
+            }
         }
     }
 
@@ -150,10 +159,9 @@ public final class EtherpadAudioUnit: AUAudioUnit {
     /// Reverb + delay tail in the CSD is roughly 2 seconds.
     public override var tailTime: TimeInterval { 2.0 }
 
-    /// Csound buffer latency at default ksmps=32, sr=44100.
+    /// Csound k-period latency at the host sample rate.
     public override var latency: TimeInterval {
-        guard hostEngine.isRunning else { return 0 }
-        return TimeInterval(32) / 44100.0
+        hostEngine.reportedLatency
     }
 
     // MARK: - Render Resources
@@ -196,6 +204,12 @@ public final class EtherpadAudioUnit: AUAudioUnit {
     public override var midiOutputNames: [String] { ["Etherpad Touch"] }
 
     // MARK: - State Persistence
+
+    /// All Etherpad patch settings are document-scoped (scale, key, octave, etc.).
+    public override var fullStateForDocument: [String: Any]? {
+        get { fullState }
+        set { fullState = newValue }
+    }
 
     public override var fullState: [String: Any]? {
         get {

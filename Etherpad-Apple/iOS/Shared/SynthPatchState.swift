@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 /// Patch parameters that map to Csound instr 100–104. Hosts and UI read/write this struct;
 /// engines receive values via `apply(to:)`.
@@ -72,5 +73,23 @@ struct SynthPatchState: Equatable, Codable {
         self.octave = octave
         self.size = size
         self.sound = sound
+    }
+}
+
+// MARK: - Realtime Thread Safety
+
+/// Lock-protected patch state for cross-thread access (audio render vs UI / host params).
+final class RealtimePatchState: @unchecked Sendable {
+    private let lock = OSAllocatedUnfairLock(initialState: SynthPatchState.factoryDefault)
+
+    var value: SynthPatchState {
+        get { lock.withLock { $0 } }
+        set { lock.withLock { $0 = newValue } }
+    }
+
+    func snapshot() -> SynthPatchState { lock.withLock { $0 } }
+
+    func mutate(_ body: (inout SynthPatchState) -> Void) {
+        lock.withLock { body(&$0) }
     }
 }

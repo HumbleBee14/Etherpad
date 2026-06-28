@@ -16,9 +16,13 @@ final class MIDIProcessor {
     /// The synth engine to drive. Set before render resources are allocated.
     weak var engine: SynthEngineProtocol?
 
-    /// Current patch state — written from main thread, read from audio thread.
-    /// Csound handles its own thread safety for the values that flow through.
-    var patchState: SynthPatchState = .factoryDefault
+    /// Current patch state — thread-safe; written from UI/host, read from audio render.
+    private let patchBox = RealtimePatchState()
+
+    var patchState: SynthPatchState {
+        get { patchBox.snapshot() }
+        set { patchBox.value = newValue }
+    }
 
     // MARK: - Note Tracking
 
@@ -283,6 +287,7 @@ final class MIDIProcessor {
     /// For chromatic notes between scale degrees: fractional interpolation,
     /// guaranteeing every MIDI note gets a **unique** X → unique pitch.
     private func midiNoteToXY(note: UInt8, velocity: UInt8) -> (x: Float, y: Float) {
+        let patchState = patchBox.snapshot()
         let baseNote = patchState.key + 12 * (patchState.octave + 1)
         let targetSemi = Float(Int(note) - baseNote)
         let y = max(Float(velocity) / 127.0, 0.05)
