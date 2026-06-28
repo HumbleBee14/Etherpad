@@ -111,17 +111,14 @@ final class MIDIProcessor {
 
     /// Handle MIDI 2.0 UMP event list (iOS 17+).
     private func handleMIDIEventList(_ event: UnsafePointer<AURenderEvent>) {
-        // MIDI 2.0 UMP: extract the MIDIEventList from the render event.
-        // On iOS 17+, we can iterate MIDIEventPackets.
-        // For backward compatibility, we parse the legacy MIDI bytes if present.
-        // Most hosts still send legacy MIDI events, so this is a forward-looking stub.
+        // MIDI 2.0 UMP: On iOS 17+, hosts may send MIDIEventList with UMP words.
+        // Most hosts still send legacy MIDI which arrives as .MIDI events.
+        // Future enhancement: parse UMP words for per-note controllers,
+        // high-resolution velocity, and per-note pitch bend.
         if #available(iOS 17.0, *) {
             event.withMemoryRebound(to: AUMIDIEventList.self, capacity: 1) { listEvent in
                 let eventList = listEvent.pointee.eventList
-                // MIDIEventList contains MIDIEventPackets with UMP words.
-                // Parse the first word to determine message type.
-                // For now, hosts primarily send legacy MIDI which arrives as .MIDI events.
-                _ = eventList // Future: iterate packets for MIDI 2.0 per-note controllers
+                _ = eventList // Stub: iterate packets for MIDI 2.0 per-note controllers
             }
         }
     }
@@ -225,7 +222,6 @@ final class MIDIProcessor {
         let aftertouch = Float(value) / 127.0
         let baseY = slotBaseY[slot]
         let modulatedY = (baseY + aftertouch * 0.3).clamped01()
-        // Recalculate x from current note
         let (x, _) = midiNoteToXY(note: note, velocity: UInt8(baseY * 127))
         engine.updatePosition(slot: slot, x: x, y: modulatedY)
     }
@@ -275,42 +271,92 @@ final class MIDIProcessor {
         return nil
     }
 
-    // MARK: - Note ↔ XY Mapping
+    // MARK: - Note ↔ XY Mapping (Inverse of Csound's tablei)
 
-    /// Maps a MIDI note to surface (x, y) coordinates using the current patch state.
+    /// Maps a MIDI note to surface (x, y) by computing the exact inverse of
+    /// the CSD's pitch mapping:
     ///
-    /// The CSD flips x internally (`kx = 1 - kx`), so we compute x such that
-    /// the engine produces the correct pitch for the given MIDI note.
+    ///     CSD forward:  x → kx = 1-x → kstep = kx * gisize → knote = tablei(kstep, giscale) → pitch = knote + base
+    ///     This inverse:  pitch → knote = note - base → kstep = tablei⁻¹(knote) → kx = kstep/gisize → x = 1-kx
+    ///
+    /// For notes that land exactly on a scale degree: exact index lookup.
+    /// For chromatic notes between scale degrees: fractional interpolation,
+    /// guaranteeing every MIDI note gets a **unique** X → unique pitch.
     private func midiNoteToXY(note: UInt8, velocity: UInt8) -> (x: Float, y: Float) {
         let baseNote = patchState.key + 12 * (patchState.octave + 1)
-        let targetSemitones = Int(note) - baseNote
+        let targetSemi = Float(Int(note) - baseNote)
         let y = max(Float(velocity) / 127.0, 0.05)
+        let gisize = Float(patchState.size)
 
-        // For ET scales with positive steps: find closest scale degree
-        if let scaleSteps = SynthCatalog.scaleSteps(named: patchState.scaleName),
-           let first = scaleSteps.first, first >= 0 {
-            let numSteps = min(patchState.size, scaleSteps.count)
-            guard numSteps > 0 else { return (0.5, y) }
+        guard gisize > 0 else { return (0.5, y) }
 
-            var bestStep = 0
-            var bestDist = Int.max
-            for i in 0..<numSteps {
-                let dist = abs(scaleSteps[i] - targetSemitones)
-                if dist < bestDist {
-                    bestDist = dist
-                    bestStep = i
-                }
-            }
-
-            // CSD: kx = 1 - x_surface, kstep = scale(kx, 0, gisize)
-            // So kx = step / gisize, and x_surface = 1 - step / gisize
-            let x = 1.0 - Float(bestStep) / Float(max(numSteps, 1))
-            return (x.clamped01(), y)
+        guard let scaleSteps = SynthCatalog.scaleSteps(named: patchState.scaleName),
+              !scaleSteps.isEmpty else {
+            let kx = targetSemi / gisize
+            return ((1.0 - kx).clamped01(), y)
         }
 
-        // For special scales (Bohlen-Pierce, Overtone): linear mapping
-        let x = 1.0 - Float(targetSemitones) / Float(max(patchState.size, 1))
-        return (x.clamped01(), y)
+        // Bohlen-Pierce / Overtone scales use Csound giscale_type branches, not tablei ET.
+        if let first = scaleSteps.first, first < 0 {
+            let kx = targetSemi / gisize
+            return ((1.0 - kx).clamped01(), y)
+        }
+
+        let n = min(patchState.size, scaleSteps.count)
+        guard n > 0 else { return (0.5, y) }
+
+        // --- Exact inverse of tablei ---
+        // 1. Exact match: scaleSteps[i] == targetSemi → kstep = i
+        for i in 0..<n {
+            if Float(scaleSteps[i]) == targetSemi {
+                let kx = Float(i) / gisize
+                return ((1.0 - kx).clamped01(), y)
+            }
+        }
+
+        // 2. Below first scale degree → extrapolate downward
+        let first = Float(scaleSteps[0])
+        if targetSemi < first {
+            if n >= 2 {
+                // Use the first interval as the extrapolation slope
+                let interval = Float(scaleSteps[1] - scaleSteps[0])
+                let kstep = (targetSemi - first) / max(interval, 1.0)   // negative
+                let kx = kstep / gisize
+                return ((1.0 - kx).clamped01(), y)
+            }
+            return (1.0, y)   // only one step, clamp to left edge
+        }
+
+        // 3. Above last scale degree → extrapolate upward
+        let last = Float(scaleSteps[n - 1])
+        if targetSemi > last {
+            if n >= 2 {
+                let interval = Float(scaleSteps[n - 1] - scaleSteps[n - 2])
+                let overshoot = targetSemi - last
+                let kstep = Float(n - 1) + overshoot / max(interval, 1.0)
+                let kx = kstep / gisize
+                return ((1.0 - kx).clamped01(), y)
+            }
+            let kx = Float(n - 1) / gisize
+            return ((1.0 - kx).clamped01(), y)
+        }
+
+        // 4. Between two scale degrees → fractional interpolation
+        //    (mirrors Csound's tablei linear interpolation)
+        for i in 0..<(n - 1) {
+            let lo = Float(scaleSteps[i])
+            let hi = Float(scaleSteps[i + 1])
+            if targetSemi >= lo && targetSemi < hi {
+                let span = hi - lo
+                let frac = (span > 0) ? (targetSemi - lo) / span : 0
+                let kstep = Float(i) + frac
+                let kx = kstep / gisize
+                return ((1.0 - kx).clamped01(), y)
+            }
+        }
+
+        // Fallback (should not reach here)
+        return (0.5, y)
     }
 }
 

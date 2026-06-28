@@ -41,6 +41,9 @@ public final class EtherpadAudioUnit: AUAudioUnit {
 
     private var _currentPreset: AUAudioUnitPreset?
 
+    /// Prevents `implementorValueObserver` re-entry while pushing engine state to the tree.
+    private var isSyncingParameters = false
+
     // MARK: - Init
 
     public override init(componentDescription: AudioComponentDescription,
@@ -67,10 +70,10 @@ public final class EtherpadAudioUnit: AUAudioUnit {
 
         // When a host (or the AU's own UI) writes a parameter, push it to the engine.
         _parameterTree.implementorValueObserver = { [weak self] param, value in
-            self?.hostEngine.applyParameterChange(param.address, value: value)
-            // Keep MIDI processor's patch state in sync
-            self?.midiProcessor.patchState = self?.hostEngine.currentPatchState ?? .factoryDefault
-            self?.midiOutputHandler.patchState = self?.hostEngine.currentPatchState ?? .factoryDefault
+            guard let self, !self.isSyncingParameters else { return }
+            self.hostEngine.applyParameterChange(param.address, value: value)
+            self.midiProcessor.patchState = self.hostEngine.currentPatchState
+            self.midiOutputHandler.patchState = self.hostEngine.currentPatchState
         }
 
         // When the host reads a parameter, pull from the engine.
@@ -102,6 +105,9 @@ public final class EtherpadAudioUnit: AUAudioUnit {
 
     /// Push current engine patch state to the parameter tree (e.g., after preset load).
     private func syncParameterTreeFromEngine() {
+        isSyncingParameters = true
+        defer { isSyncingParameters = false }
+
         let values = hostEngine.currentPatchState.toParameterValues()
         for (addr, value) in values {
             if let param = EtherpadParameterFactory.parameter(for: addr, in: _parameterTree) {
@@ -112,14 +118,21 @@ public final class EtherpadAudioUnit: AUAudioUnit {
 
     // MARK: - MIDI Configuration
 
+    /// View controller sets this to receive patch state updates for UI refresh.
+    /// **Do not** overwrite `hostEngine.onPatchStateChanged` — the AU owns that.
+    var onUIStateChanged: ((SynthPatchState) -> Void)?
+
     private func configureMIDI() {
         midiProcessor.engine = hostEngine
 
-        // When engine patch state changes (from UI menus), sync MIDI processors
+        // When engine patch state changes (from UI menus, host automation, presets),
+        // sync MIDI processors and notify VC. The AU owns this callback — VC uses
+        // `onUIStateChanged` instead to avoid overwrites.
         hostEngine.onPatchStateChanged = { [weak self] patchState in
             self?.midiProcessor.patchState = patchState
             self?.midiOutputHandler.patchState = patchState
             self?.syncParameterTreeFromEngine()
+            self?.onUIStateChanged?(patchState)
         }
     }
 

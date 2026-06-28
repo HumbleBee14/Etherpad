@@ -10,6 +10,8 @@ import UIKit
 /// - Uses a translucent blur toolbar that overlays the touch surface (maximises touch area)
 /// - Synchronises with the `AUParameterTree` bidirectionally
 /// - Generates MIDI output from touch pad gestures
+/// - Uses `EtherpadAudioUnit.onUIStateChanged` for state observation
+///   (never overwrites `hostEngine.onPatchStateChanged` — the AU owns that)
 /// - Conforms to `AUAudioUnitFactory` (Apple AUv3 requirement for the principal class)
 @objc(EtherpadAUViewController)
 public final class EtherpadAUViewController: AUViewController, AUAudioUnitFactory {
@@ -49,8 +51,12 @@ public final class EtherpadAUViewController: AUViewController, AUAudioUnitFactor
         surface.delegate = self
 
         menuFactory.onPatchChanged = { [weak self] patch in
-            self?.surface.numberOfNotes = Double(patch.size)
-            self?.refreshMenuTitles()
+            guard let self = self else { return }
+            self.surface.numberOfNotes = Double(patch.size)
+            self.refreshMenuTitles()
+            // Sync MIDI processors immediately when toolbar menus change.
+            self.audioUnit?.midiProcessor.patchState = patch
+            self.audioUnit?.midiOutputHandler.patchState = patch
         }
     }
 
@@ -103,14 +109,16 @@ public final class EtherpadAUViewController: AUViewController, AUAudioUnitFactor
         surface.numberOfNotes = Double(menuFactory.patch.size)
         refreshMenuTitles()
 
+        // Sync initial MIDI processor state
+        au.midiProcessor.patchState = menuFactory.patch
+        au.midiOutputHandler.patchState = menuFactory.patch
+
         // Observe AU parameter tree changes (from host automation)
         observeParameterTree(au)
 
-        // Sync MIDI output handler patch state
-        au.midiOutputHandler.patchState = menuFactory.patch
-
-        // Listen for engine-driven patch state changes (from host automation)
-        au.hostEngine.onPatchStateChanged = { [weak self] patchState in
+        // Use the AU's UI callback — NOT hostEngine.onPatchStateChanged.
+        // The AU owns onPatchStateChanged for authoritative MIDI processor sync.
+        au.onUIStateChanged = { [weak self] patchState in
             DispatchQueue.main.async {
                 self?.handleEngineStateChange(patchState)
             }
@@ -138,29 +146,25 @@ public final class EtherpadAUViewController: AUViewController, AUAudioUnitFactor
     /// Handle a parameter change from host automation.
     private func handleParameterChange(address: AUParameterAddress, value: AUValue) {
         guard let au = audioUnit else { return }
-
-        // Rebuild menu factory patch from engine state
+        // Rebuild UI from engine state (the AU already synced midiProcessor)
         let enginePatch = au.hostEngine.currentPatchState
-        updateMenuFactory(with: enginePatch)
+        updateMenuFactoryUI(with: enginePatch)
     }
 
-    /// Handle engine-driven patch state changes (from MIDI CC, etc.).
+    /// Handle engine-driven patch state changes (from toolbar menus, etc.).
     private func handleEngineStateChange(_ patchState: SynthPatchState) {
-        updateMenuFactory(with: patchState)
+        updateMenuFactoryUI(with: patchState)
     }
 
     /// Update the menu factory and UI to match a new patch state.
-    private func updateMenuFactory(with patchState: SynthPatchState) {
+    /// Does NOT re-apply to engine or midiProcessor — the AU handles that.
+    private func updateMenuFactoryUI(with patchState: SynthPatchState) {
         // Only update if actually changed to avoid infinite loops
         guard menuFactory.patch != patchState else { return }
 
-        // Update internal state without re-applying to engine (it's already set)
         menuFactory.updatePatchSilently(patchState)
         surface.numberOfNotes = Double(patchState.size)
         refreshMenuTitles()
-
-        // Sync MIDI output handler
-        audioUnit?.midiOutputHandler.patchState = patchState
     }
 
     // MARK: - Touch Surface
@@ -183,13 +187,7 @@ public final class EtherpadAUViewController: AUViewController, AUAudioUnitFactor
         view.clipsToBounds = true
 
         // Translucent blur bar that sits on top of the surface
-        let blurEffect: UIVisualEffect = {
-            if let cls = NSClassFromString("UIGlassEffect") as? NSObject.Type,
-               let obj = cls.init() as? UIVisualEffect {
-                return obj
-            }
-            return UIBlurEffect(style: .systemThinMaterialDark)
-        }()
+        let blurEffect = UIBlurEffect(style: .systemThinMaterialDark)
         let bar = UIVisualEffectView(effect: blurEffect)
         bar.clipsToBounds = true
         bar.layer.cornerRadius = 10
