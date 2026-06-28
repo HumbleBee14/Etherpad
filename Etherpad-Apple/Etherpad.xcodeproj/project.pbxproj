@@ -524,6 +524,8 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.2;
+				CURRENT_PROJECT_VERSION = 2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.humblebee.etherpad;
 				PRODUCT_NAME = Etherpad;
 				SDKROOT = macosx;
@@ -683,6 +685,8 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.2;
+				CURRENT_PROJECT_VERSION = 2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.humblebee.etherpad;
 				PRODUCT_NAME = Etherpad;
 				SDKROOT = macosx;
