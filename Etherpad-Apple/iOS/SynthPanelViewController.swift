@@ -81,14 +81,8 @@ final class SynthPanelViewController: UIViewController {
     private func configureToolbar() {
         view.clipsToBounds = true
 
-        let effect: UIVisualEffect = {
-            if let cls = NSClassFromString("UIGlassEffect") as? NSObject.Type,
-               let obj = cls.init() as? UIVisualEffect {
-                return obj
-            }
-            return UIBlurEffect(style: .systemThinMaterial)
-        }()
-        let bar = UIVisualEffectView(effect: effect)
+        let blurEffect = UIBlurEffect(style: .systemThinMaterialDark)
+        let bar = UIVisualEffectView(effect: blurEffect)
         bar.clipsToBounds = true
         bar.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(bar)

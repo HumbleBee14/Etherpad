@@ -57,7 +57,11 @@
 		DFAE2667CBB800651FAD099A /* SynthVoiceLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83C6825EAEB13A8396623CB9 /* SynthVoiceLayout.swift */; };
 		E0283414C0932713ADF3B3A1 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11587677099646A8784B8D95 /* main.swift */; };
 		EAB53B6D9EAA8DAD8615CCDC /* SynthPatchState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25F1E79BBA966253DB187CDB /* SynthPatchState.swift */; };
-		EB2A10DD8D46EDE238FB4DAC /* EtherpadAUContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C57B416F98FA8BE63A2B6 /* EtherpadAUContext.swift */; };
+		AA01000000000000000001F1 /* AUParameterAddresses.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01000000000000000001F0 /* AUParameterAddresses.swift */; };
+		AA01000000000000000002F1 /* EtherpadPresets.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01000000000000000002F0 /* EtherpadPresets.swift */; };
+		AA01000000000000000003F1 /* MIDIProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01000000000000000003F0 /* MIDIProcessor.swift */; };
+		AA01000000000000000004F1 /* MIDIOutputHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01000000000000000004F0 /* MIDIOutputHandler.swift */; };
+		AA01000000000000000005F1 /* SynthPatchState+AU.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01000000000000000005F0 /* SynthPatchState+AU.swift */; };
 		EFCE75C9E6F4EA0D4C4387BD /* CsoundEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71D16BE37D41AA9E7D6B781A /* CsoundEngine.swift */; };
 		F52F3B359F960552E55F1166 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7D6713FA6F75EF5F1CE2A741 /* LaunchScreen.storyboard */; };
 		F65B357BF136D44ABDFBCF8C /* CsoundiOS.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9D3E6CA2FC13C2D005E6DA3 /* CsoundiOS.xcframework */; };
@@ -129,8 +133,12 @@
 		BBCDF72A7572D182527EB70C /* TouchSurfaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchSurfaceView.swift; sourceTree = "<group>"; };
 		BBCDF72A7572D182527EB70D /* VisualEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualEffects.swift; sourceTree = "<group>"; };
 		BC17E5B8EFF4EA201FE1E0D0 /* EtherpadAudioUnit.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = EtherpadAudioUnit.swift; path = AU/EtherpadAudioUnit.swift; sourceTree = "<group>"; };
+		AA01000000000000000001F0 /* AUParameterAddresses.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AUParameterAddresses.swift; path = AU/AUParameterAddresses.swift; sourceTree = "<group>"; };
+		AA01000000000000000002F0 /* EtherpadPresets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = EtherpadPresets.swift; path = AU/EtherpadPresets.swift; sourceTree = "<group>"; };
+		AA01000000000000000003F0 /* MIDIProcessor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MIDIProcessor.swift; path = AU/MIDIProcessor.swift; sourceTree = "<group>"; };
+		AA01000000000000000004F0 /* MIDIOutputHandler.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MIDIOutputHandler.swift; path = AU/MIDIOutputHandler.swift; sourceTree = "<group>"; };
+		AA01000000000000000005F0 /* SynthPatchState+AU.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = "SynthPatchState+AU.swift"; path = "AU/SynthPatchState+AU.swift"; sourceTree = "<group>"; };
 		C0F14925AF2F6250D58D1AF3 /* Etherpad-macOS-Bridging-Header.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = "Etherpad-macOS-Bridging-Header.h"; path = "macOS/Etherpad-macOS-Bridging-Header.h"; sourceTree = "<group>"; };
-		C34C57B416F98FA8BE63A2B6 /* EtherpadAUContext.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = EtherpadAUContext.swift; path = AU/EtherpadAUContext.swift; sourceTree = "<group>"; };
 		CC90D15AF8CA6F08D2A79874 /* Etherpad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Etherpad.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D1DCA46EB153856CC4603475 /* SynthTouchCoordinator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SynthTouchCoordinator.swift; path = Shared/SynthTouchCoordinator.swift; sourceTree = "<group>"; };
 		D2503B4F14E2392F9ADFCCFC /* Etherpad-AU.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Etherpad-AU.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -283,7 +291,11 @@
 				BC17E5B8EFF4EA201FE1E0D0 /* EtherpadAudioUnit.swift */,
 				BA945D7DD9EDF38A5259B7FB /* Info.plist */,
 				3333604A572A944853DDBEBB /* Etherpad-AU-Bridging-Header.h */,
-				C34C57B416F98FA8BE63A2B6 /* EtherpadAUContext.swift */,
+				AA01000000000000000001F0 /* AUParameterAddresses.swift */,
+				AA01000000000000000002F0 /* EtherpadPresets.swift */,
+				AA01000000000000000003F0 /* MIDIProcessor.swift */,
+				AA01000000000000000004F0 /* MIDIOutputHandler.swift */,
+				AA01000000000000000005F0 /* SynthPatchState+AU.swift */,
 			);
 			name = AU;
 			sourceTree = SOURCE_ROOT;
@@ -571,8 +583,12 @@
 				C22209C7AA97E7341D7A6A41 /* SynthScore.swift in Sources */,
 				644CDE52DC65ED8CED9D2CA4 /* SynthTouchCoordinator.swift in Sources */,
 				DFAE2667CBB800651FAD099A /* SynthVoiceLayout.swift in Sources */,
-				EB2A10DD8D46EDE238FB4DAC /* EtherpadAUContext.swift in Sources */,
 				91D2EA6867727AD5C7391C26 /* SynthPatchMenuFactory.swift in Sources */,
+				AA01000000000000000001F1 /* AUParameterAddresses.swift in Sources */,
+				AA01000000000000000002F1 /* EtherpadPresets.swift in Sources */,
+				AA01000000000000000003F1 /* MIDIProcessor.swift in Sources */,
+				AA01000000000000000004F1 /* MIDIOutputHandler.swift in Sources */,
+				AA01000000000000000005F1 /* SynthPatchState+AU.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
