@@ -279,12 +279,10 @@ final class MIDIProcessor {
 
     /// Maps a host keyboard key to virtual touch-pad coordinates.
     ///
-    /// Standard XY-pad fallback (Kaoss-style / virtual pad emulation — not MPE piano mode):
-    /// - **X** → integer pad line `0…size−1` from note position within the octave + current scale
-    /// - **Y** → velocity → timbre; chromatic passing tones use a lower Y
-    ///
-    /// `size` is dynamic — changing Etherpad Size immediately changes how many lines exist
-    /// and how chroma maps across them. Shift Key/Octave in the patch to move the register.
+    /// Pad-emulation mode (XY-pad standard): each key = virtual finger on the pad.
+    /// - **X** → pad line from scale-aware chroma **plus octave offset** vs patch base
+    ///   (so C5 and C6 batches differ, not clones). Size sets line count dynamically.
+    /// - **Y** → velocity; passing/black keys use lower Y on the same nearest line.
     private func midiNoteToXY(note: UInt8, velocity: UInt8) -> (x: Float, y: Float) {
         let patchState = patchBox.snapshot()
         let gisize = patchState.size
@@ -309,12 +307,26 @@ final class MIDIProcessor {
         ((Int(note) - key) % 12 + 12) % 12
     }
 
-    /// Pad line 0…size−1 for a keyboard note (Csound uses `int(kx * gisize)`).
+    /// Pad line 0…size−1. Within-octave chroma slot + octave offset from patch base.
     private func padEmulationPadStep(note: UInt8, patchState: SynthPatchState) -> Int {
         let gisize = patchState.size
         guard gisize > 1 else { return 0 }
 
+        let withinOctave = chromaPadStep(note: note, patchState: patchState)
+        let octaveShift = octaveShiftFromBase(note: note, patchState: patchState)
+        return min(gisize - 1, max(0, withinOctave + octaveShift))
+    }
+
+    /// Octaves above/below patch Key+Octave base → +1/−1 pad line per 12 semitones.
+    private func octaveShiftFromBase(note: UInt8, patchState: SynthPatchState) -> Int {
+        let baseNote = patchState.key + 12 * (patchState.octave + 1)
+        return (Int(note) - baseNote) / 12
+    }
+
+    /// Pad line for chroma within one octave (before octave offset is applied).
+    private func chromaPadStep(note: UInt8, patchState: SynthPatchState) -> Int {
         let chroma = keyRelativeChroma(note: note, key: patchState.key)
+        let gisize = patchState.size
 
         guard let scaleSteps = SynthCatalog.scaleSteps(named: patchState.scaleName),
               !scaleSteps.isEmpty,
@@ -324,12 +336,10 @@ final class MIDIProcessor {
 
         let n = min(gisize, scaleSteps.count)
 
-        // White / scale tone → exact pad line for that degree.
         for i in 0..<n where scaleSteps[i] % 12 == chroma {
             return i
         }
 
-        // Black / passing tone → nearest scale line (shortest distance on the 12-TET circle).
         var bestStep = 0
         var bestDist = Int.max
         for i in 0..<n {
