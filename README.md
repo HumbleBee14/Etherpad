@@ -4,12 +4,11 @@
 
 <h1 align="center">Etherpad</h1>
 
-<p align="center"><b>An expressive multi-touch synthesizer for iPhone, iPad, Mac, and Android.</b></p>
+<p align="center"><b>An expressive multi-touch synthesizer</b></p>
 
 <p align="center">
-  Touch anywhere to make sound — every finger is an independent voice, driven by a professional
-  <a href="https://www.csound.com">Csound</a> engine. Slide, hold, lift; the music follows your gesture
-  in real time. No setup, no MIDI, no music theory required. Open and play.
+  Play ethereal music with your own touch — iPhone, iPad, Mac, and Android.  <br>   
+  Every finger is its own voice — slide, hold, lift ... the music follows your gesture in real time. <br> No setup, no MIDI, no music theory required. Just open and play.
 </p>
 
 <p align="center">
@@ -25,18 +24,29 @@
 - **12 musical scales** — Major, Minor, Pentatonic, Blues, Whole-Tone, Chromatic, Octatonic, Bohlen-Pierce, Flamenco, two Overtone Series, and the original Etherpad default
 - **Adjustable key, octave, and grid size** (4–14 notes per row)
 - **Optional visual effects** — ripples, finger trails, intensity rings, pitch-column glow
-- **iPad split-screen mode** — play two independent synths side-by-side on iPad
+- **iPad split-screen mode** — play two independent synths side-by-side
 - **Low-latency audio** — optimized for live performance
 
+### iPad — plugin
 
-## Repository layout
+- **AUv3 instrument** — run inside **GarageBand**, **AUM**, **Cubasis**, and other hosts
+- **MIDI input** — play from the host keyboard (pad-emulation mapping)
+- **MIDI output** — route touch performance to other tracks (e.g. in AUM)
 
-This repo is open source and contains Apple (iOS + macOS) and Android implementations sharing the same `etherpad.csd` synth definition:
+Note: Standalone on iPhone, iPad, and Mac needs no host. AUv3 is for DAW-style workflows on iPad.
 
-- **[Etherpad-Apple](Etherpad-Apple/)** — iPhone, iPad, and native macOS apps. Swift + UIKit/AppKit, separate Csound builds per platform. See [`BUILD.md`](Etherpad-Apple/BUILD.md) for setup.
-- **[Etherpad-Android](Etherpad-Android/)** — Android app. Kotlin + Jetpack Compose UI, with a small C++ engine driving Csound through Oboe. See its [README](Etherpad-Android/README.md) for build instructions.
+## App Preview
 
-The three apps share the Csound score (`etherpad.csd`) and the same sonic identity but otherwise have nothing in common code-wise — each is idiomatic to its platform.
+<p align="center">
+  <img src="docs/assets/Etherpad-macOS.png" width="720" alt="Etherpad on macOS — multi-touch synthesizer surface with pitch columns and visual effects" />
+</p>
+
+<p align="center">
+  <a href="https://youtu.be/RAIrqaHr3FI">
+    <img src="https://img.youtube.com/vi/RAIrqaHr3FI/maxresdefault.jpg" width="720" alt="Watch Etherpad AUv3 in GarageBand — touch synth layered with drums and instruments" />
+  </a>
+</p>
+<p align="center"><i>Etherpad AUv3 in GarageBand — touch synth layered with drums and instruments · <a href="https://youtu.be/RAIrqaHr3FI">Watch on YouTube</a></i></p>
 
 ## Contributing
 
@@ -44,14 +54,12 @@ Contributions and ideas are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Credits
 
-Etherpad is inspired by **EtherSurface**, an Android app written by [**Paul Batchelor**](https://paulbatchelor.github.io/about/) in 2014 (Original Creator). [Modernized and Upgraded]
+Etherpad is inspired by the original Android app **EtherSurface**, created by **[Paul Batchelor](https://paulbatchelor.github.io/about/)** in 2014.
 
 - Sound engine — [Csound](https://www.csound.com) by Barry Vercoe, Victor Lazzarini, et al.
 
-## License & attributions
+## License
 
-Application code © Dinesh (HumbleBee). Etherpad is a rewrite of Paul Batchelor's
-GPLv3 **EtherSurface**, used with his permission, and is powered by
-[Csound](https://www.csound.com) (LGPL-2.1).
+Application code © Dinesh (HumbleBee). Released under **GPLv3**.
 
-See [NOTICE.md](NOTICE.md) for full credits and license details.
+See [NOTICE.md](NOTICE.md) for full attributions.
