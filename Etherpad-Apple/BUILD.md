@@ -74,6 +74,20 @@ mode; **Esc** exits.
 The extension is embedded in the main app; hosts discover it after Etherpad is installed once.
 Shared synth logic lives in `iOS/Shared/`; the AU uses `HostCsoundEngine` for host-pull audio.
 
+**Important:** Always run the **Etherpad-iOS** scheme onto your iPad — not **Etherpad-AU** alone.
+GarageBand loads the plugin from `Etherpad.app/PlugIns/EtherpadAU.appex`.
+
+If GarageBand lists Etherpad but says *“Failed to load”* or *“not installed”*:
+
+1. Delete **Etherpad** from the iPad (long-press icon → Remove App).
+2. Xcode → **Product → Clean Build Folder** (⇧⌘K).
+3. Scheme **Etherpad-iOS**, destination your **iPad**, **⌘R**.
+4. Open the **Etherpad** app once, then force-quit **GarageBand** and reopen it.
+5. Create a **new** song (old songs may reference a broken AU install).
+6. External → **Audio Unit Extensions** → **HumbleBee: Etherpad**.
+
+Still failing? Connect the iPad to your Mac, open **Console.app**, filter for `EtherpadAU`, and retry loading in GarageBand.
+
 ---
 
 ## CLI builds

@@ -16,6 +16,8 @@ final class HostCsoundEngine: HostAudioEngine {
     private var isRunning = false
     private var ksmps = 0
     private var nchnls = 0
+    /// Retained until Csound starts so pre-render menu changes are not lost.
+    private var pendingPatch = SynthPatchState.factoryDefault
 
     private var xPtrs = [UnsafeMutablePointer<Float>?](
         repeating: nil, count: SynthVoiceLayout.maxTouches)
@@ -66,6 +68,12 @@ final class HostCsoundEngine: HostAudioEngine {
         nchnls = Int(csoundGetChannels(c, 0))
         bindChannels(c)
         isRunning = true
+        pendingPatch.apply(to: self)
+    }
+
+    func applyPatchState(_ patch: SynthPatchState) {
+        pendingPatch = patch
+        if isRunning { patch.apply(to: self) }
     }
 
     func stopHost() {
@@ -144,11 +152,35 @@ final class HostCsoundEngine: HostAudioEngine {
         for i in 0..<SynthVoiceLayout.maxTouches { noteOff(slot: i) }
     }
 
-    func setSize(_ size: Int)   { sendScore(SynthScore.size(size)) }
-    func setKey(_ key: Int)     { sendScore(SynthScore.key(key)) }
-    func setOctave(_ oct: Int)  { sendScore(SynthScore.octave(oct)) }
-    func setSound(_ sound: Int) { sendScore(SynthScore.sound(sound)) }
+    func setSize(_ size: Int) {
+        pendingPatch.size = size
+        guard isRunning else { return }
+        sendScore(SynthScore.size(size))
+    }
+
+    func setKey(_ key: Int) {
+        pendingPatch.key = key
+        guard isRunning else { return }
+        sendScore(SynthScore.key(key))
+    }
+
+    func setOctave(_ oct: Int) {
+        pendingPatch.octave = oct
+        guard isRunning else { return }
+        sendScore(SynthScore.octave(oct))
+    }
+
+    func setSound(_ sound: Int) {
+        pendingPatch.sound = sound
+        guard isRunning else { return }
+        sendScore(SynthScore.sound(sound))
+    }
+
     func setScale(_ steps: [Int]) {
+        if let match = SynthCatalog.scaleOptions.first(where: { $0.steps == steps }) {
+            pendingPatch.scaleName = match.name
+        }
+        guard isRunning else { return }
         guard let score = SynthScore.scale(steps) else { return }
         sendScore(score)
     }

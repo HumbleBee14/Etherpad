@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "2FDCB06B14E86FB8CBDD47E4"
-               BuildableName = "Etherpad-AU.appex"
+               BuildableName = "EtherpadAU.appex"
                BlueprintName = "Etherpad-AU"
                ReferencedContainer = "container:Etherpad.xcodeproj">
             </BuildableReference>
@@ -27,15 +27,6 @@
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES">
-      <MacroExpansion>
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "047C424D2DD3FCE6AACF5A23"
-            BuildableName = "Etherpad.app"
-            BlueprintName = "Etherpad-iOS"
-            ReferencedContainer = "container:Etherpad.xcodeproj">
-         </BuildableReference>
-      </MacroExpansion>
       <Testables>
       </Testables>
    </TestAction>

@@ -14,7 +14,7 @@ final class SynthPatchMenuFactory {
 
     func applyPatch(to engine: SynthEngineProtocol) {
         self.engine = engine
-        patch.apply(to: engine)
+        engine.applyPatchState(patch)
     }
 
     // MARK: - Menus

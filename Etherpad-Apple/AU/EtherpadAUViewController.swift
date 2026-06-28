@@ -1,13 +1,17 @@
+import AudioToolbox
+import AVFAudio
 import CoreAudioKit
 import UIKit
 
 /// Plugin UI: compact patch toolbar + full-screen touch surface.
-public final class EtherpadAUViewController: AUViewController {
+/// Principal class must conform to `AUAudioUnitFactory` (Apple AUv3 requirement).
+@objc(EtherpadAUViewController)
+public final class EtherpadAUViewController: AUViewController, AUAudioUnitFactory {
 
     private let surface = TouchSurfaceView()
     private let touchCoordinator = SynthTouchCoordinator()
     private let menuFactory = SynthPatchMenuFactory()
-    private var connected = false
+    private weak var audioUnit: EtherpadAudioUnit?
 
     private var scaleBtn: UIBarButtonItem!
     private var keyBtn: UIBarButtonItem!
@@ -44,6 +48,7 @@ public final class EtherpadAUViewController: AUViewController {
 
     public override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        surface.cancelAllTouches()
         touchCoordinator.engine?.allNotesOff()
     }
 
@@ -51,9 +56,24 @@ public final class EtherpadAUViewController: AUViewController {
         // Required by NSExtensionRequestHandling on AUViewController principal class.
     }
 
+    public func createAudioUnit(with componentDescription: AudioComponentDescription) throws -> AUAudioUnit {
+        let unit = try EtherpadAudioUnit(componentDescription: componentDescription, options: [])
+        audioUnit = unit
+        if isViewLoaded {
+            wireEngine(unit)
+        }
+        return unit
+    }
+
     private func connectToAudioUnitIfNeeded() {
-        guard !connected, let au = EtherpadAUContext.audioUnit else { return }
-        connected = true
+        guard let au = EtherpadAUContext.audioUnit else { return }
+        if audioUnit !== au || touchCoordinator.engine == nil {
+            audioUnit = au
+            wireEngine(au)
+        }
+    }
+
+    private func wireEngine(_ au: EtherpadAudioUnit) {
         touchCoordinator.engine = au.hostEngine
         menuFactory.applyPatch(to: au.hostEngine)
         surface.numberOfNotes = Double(menuFactory.patch.size)

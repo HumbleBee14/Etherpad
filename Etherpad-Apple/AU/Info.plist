@@ -29,8 +29,6 @@
 				<dict>
 					<key>description</key>
 					<string>Etherpad XY Synth</string>
-					<key>factoryFunction</key>
-					<string>$(PRODUCT_MODULE_NAME).EtherpadAUFactory</string>
 					<key>manufacturer</key>
 					<string>HmBe</string>
 					<key>name</key>

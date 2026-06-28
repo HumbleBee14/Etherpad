@@ -69,6 +69,8 @@ target.build_configurations.each do |config|
   bs["CURRENT_PROJECT_VERSION"]       = "1"
   bs["SKIP_INSTALL"]                  = "YES"
   bs["APPLICATION_EXTENSION_API_ONLY"] = "YES"
+  bs["TARGETED_DEVICE_FAMILY"]        = "1,2"
+  bs["OTHER_LDFLAGS"]                 = ["$(inherited)", "-framework", "Accelerate"]
 end
 log.call("build settings applied (#{BUNDLE_ID})")
 
@@ -158,7 +160,7 @@ end
 appex_ref = target.product_reference
 unless embed.files.any? { |f| f.file_ref == appex_ref }
   bf = embed.add_file_reference(appex_ref)
-  bf.settings = { "ATTRIBUTES" => ["RemoveHeadersOnCopy"] }
+  bf.settings = { "ATTRIBUTES" => ["CodeSignOnCopy", "RemoveHeadersOnCopy"] }
   log.call("embedded AU in #{CONTAINER_TARGET}")
 end
 

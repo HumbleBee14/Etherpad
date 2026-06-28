@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		007CAC947742DE2F069D9397 /* etherpad.csd in Resources */ = {isa = PBXBuildFile; fileRef = 2AAFC2E3511EC1E15B11152C /* etherpad.csd */; };
-		082A7E5CE61611A2A252EA54 /* EtherpadAUFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB6C20F1D9A5618659BCB60F /* EtherpadAUFactory.swift */; };
 		12E7C8CF08EBC01345720F0D /* SynthPanelViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E930DABB2FC2BBC40083C323 /* SynthPanelViewController.swift */; };
 		161F631934129F972C54F30D /* SynthEngineProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9646FC42AC791C70D12F828 /* SynthEngineProtocol.swift */; };
 		16B0FFF1CD60E99928421CD9 /* MacSynthTables.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00C76DA0D09E5F638D001B8E /* MacSynthTables.swift */; };
@@ -18,7 +17,7 @@
 		2D60643AEC3AAD91877E9739 /* MacSurfaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 927946F772CF3097D3332248 /* MacSurfaceView.swift */; };
 		37C6ABF76E4DAF623B8CF569 /* logo_shadow.png in Resources */ = {isa = PBXBuildFile; fileRef = 4A5BB333ECC9469751EBCA26 /* logo_shadow.png */; };
 		3F4A495DFC96528CF571DA17 /* EtherpadAudioUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC17E5B8EFF4EA201FE1E0D0 /* EtherpadAudioUnit.swift */; };
-		4F412DC2909C8F250EF9C04D /* Etherpad-AU.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D2503B4F14E2392F9ADFCCFC /* Etherpad-AU.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		4F412DC2909C8F250EF9C04D /* Etherpad-AU.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D2503B4F14E2392F9ADFCCFC /* Etherpad-AU.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		564A2C153D87A6F0085177DA /* SplitModeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E930DAB92FC2BBC40083C323 /* SplitModeController.swift */; };
 		57AE05F3812D84333F3B65A3 /* SynthCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E6ED90D527C6B94739ED5C9 /* SynthCatalog.swift */; };
 		5E2F8DAAF338A0A386BAA573 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BF59E8C574D9F23440EEAA6 /* AppDelegate.swift */; };
@@ -137,7 +136,6 @@
 		D2503B4F14E2392F9ADFCCFC /* Etherpad-AU.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Etherpad-AU.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D45A6FC8E72E5F76D667776A /* EtherpadViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EtherpadViewController.swift; sourceTree = "<group>"; };
 		D4B3718CF3F4FDD6D28F930F /* MacCsoundEngine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacCsoundEngine.swift; path = macOS/MacCsoundEngine.swift; sourceTree = "<group>"; };
-		DB6C20F1D9A5618659BCB60F /* EtherpadAUFactory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = EtherpadAUFactory.swift; path = AU/EtherpadAUFactory.swift; sourceTree = "<group>"; };
 		E4ED418A67903CEC1D0D2EB8 /* etherpad.csd */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = etherpad.csd; path = macOS/etherpad.csd; sourceTree = "<group>"; };
 		E57CB3960F46B4B9EBF73C39 /* Etherpad-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Etherpad-Bridging-Header.h"; sourceTree = "<group>"; };
 		E930DAB92FC2BBC40083C323 /* SplitModeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitModeController.swift; sourceTree = "<group>"; };
@@ -281,7 +279,6 @@
 		765520A3DD7B2B6E9431A51C /* AU */ = {
 			isa = PBXGroup;
 			children = (
-				DB6C20F1D9A5618659BCB60F /* EtherpadAUFactory.swift */,
 				637B4B3336C05B24F478A639 /* EtherpadAUViewController.swift */,
 				BC17E5B8EFF4EA201FE1E0D0 /* EtherpadAudioUnit.swift */,
 				BA945D7DD9EDF38A5259B7FB /* Info.plist */,
@@ -563,7 +560,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				082A7E5CE61611A2A252EA54 /* EtherpadAUFactory.swift in Sources */,
 				8796B1687004603E8919A674 /* EtherpadAUViewController.swift in Sources */,
 				3F4A495DFC96528CF571DA17 /* EtherpadAudioUnit.swift in Sources */,
 				FD6B1AF06E244CAFFD1680B1 /* HostCsoundEngine.swift in Sources */,
@@ -695,12 +691,18 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.2;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					Accelerate,
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.humblebee.etherpad.EtherpadAU;
 				PRODUCT_NAME = EtherpadAU;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "AU/Etherpad-AU-Bridging-Header.h";
 				SWIFT_VERSION = 5.10;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -744,7 +746,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 252N2WS4Y3;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Frameworks",
@@ -797,12 +801,18 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.2;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					Accelerate,
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.humblebee.etherpad.EtherpadAU;
 				PRODUCT_NAME = EtherpadAU;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "AU/Etherpad-AU-Bridging-Header.h";
 				SWIFT_VERSION = 5.10;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -811,7 +821,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 252N2WS4Y3;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Frameworks",

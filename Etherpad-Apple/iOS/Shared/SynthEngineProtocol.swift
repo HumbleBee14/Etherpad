@@ -15,7 +15,8 @@ protocol SynthEngineProtocol: AnyObject {
 }
 
 extension SynthEngineProtocol {
-    func applyPatch(_ patch: SynthPatchState) {
+    /// Applies full patch state. Host-pull engines may defer scores until audio starts.
+    func applyPatchState(_ patch: SynthPatchState) {
         patch.apply(to: self)
     }
 }
