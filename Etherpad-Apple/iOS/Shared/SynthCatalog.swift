@@ -42,6 +42,16 @@ enum SynthCatalog {
 
     static let sizeRange = 4...14
 
+    static let sizeLabels: [String] = sizeRange.map { "\($0)" }
+
+    static func sizeIndex(for value: Int) -> Int {
+        max(0, min(sizeLabels.count - 1, value - sizeRange.lowerBound))
+    }
+
+    static func sizeValue(forIndex index: Int) -> Int {
+        sizeRange.lowerBound + max(0, min(sizeLabels.count - 1, index))
+    }
+
     static func scaleSteps(named name: String) -> [Int]? {
         scaleOptions.first { $0.name == name }?.steps
     }

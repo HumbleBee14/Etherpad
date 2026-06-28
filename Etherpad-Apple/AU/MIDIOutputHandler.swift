@@ -106,7 +106,7 @@ final class MIDIOutputHandler {
 
     private func sendNoteOn(note: UInt8, velocity: UInt8, via block: AUMIDIOutputEventBlock) {
         var data: (UInt8, UInt8, UInt8) = (0x90, note, velocity)
-        withUnsafeMutablePointer(to: &data) { ptr in
+        _ = withUnsafeMutablePointer(to: &data) { ptr in
             ptr.withMemoryRebound(to: UInt8.self, capacity: 3) { bytes in
                 block(AUEventSampleTimeImmediate, 0, 3, bytes)
             }
@@ -115,7 +115,7 @@ final class MIDIOutputHandler {
 
     private func sendNoteOff(note: UInt8, via block: AUMIDIOutputEventBlock) {
         var data: (UInt8, UInt8, UInt8) = (0x80, note, 0)
-        withUnsafeMutablePointer(to: &data) { ptr in
+        _ = withUnsafeMutablePointer(to: &data) { ptr in
             ptr.withMemoryRebound(to: UInt8.self, capacity: 3) { bytes in
                 block(AUEventSampleTimeImmediate, 0, 3, bytes)
             }
@@ -124,7 +124,7 @@ final class MIDIOutputHandler {
 
     private func sendCC(cc: UInt8, value: UInt8, via block: AUMIDIOutputEventBlock) {
         var data: (UInt8, UInt8, UInt8) = (0xB0, cc, value)
-        withUnsafeMutablePointer(to: &data) { ptr in
+        _ = withUnsafeMutablePointer(to: &data) { ptr in
             ptr.withMemoryRebound(to: UInt8.self, capacity: 3) { bytes in
                 block(AUEventSampleTimeImmediate, 0, 3, bytes)
             }

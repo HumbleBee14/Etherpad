@@ -12,14 +12,14 @@ extension SynthPatchState {
             .scale: AUValue(scaleIndex),
             .key: AUValue(key),
             .octave: AUValue(octaveIndex),
-            .size: AUValue(size),
+            .size: AUValue(SynthCatalog.sizeIndex(for: size)),
             .sound: AUValue(sound)
         ]
     }
 
     /// Create from `AUParameter` indexed values.
     static func fromParameterValues(
-        scaleIndex: Int, key: Int, octaveIndex: Int, size: Int, sound: Int
+        scaleIndex: Int, key: Int, octaveIndex: Int, sizeIndex: Int, sound: Int
     ) -> SynthPatchState {
         let scaleName = scaleIndex < SynthCatalog.scaleOptions.count
             ? SynthCatalog.scaleOptions[scaleIndex].name
@@ -31,8 +31,7 @@ extension SynthPatchState {
             scaleName: scaleName,
             key: max(0, min(11, key)),
             octave: octave,
-            size: max(SynthCatalog.sizeRange.lowerBound,
-                      min(SynthCatalog.sizeRange.upperBound, size)),
+            size: SynthCatalog.sizeValue(forIndex: sizeIndex),
             sound: max(0, min(SynthCatalog.soundNames.count - 1, sound))
         )
     }

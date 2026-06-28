@@ -22,11 +22,16 @@ final class HostCsoundEngine: HostAudioEngine {
     var onPatchStateChanged: ((SynthPatchState) -> Void)?
 
     private struct AudioCore {
-        var cs: OpaquePointer?
+        /// Csound instance stored as bit pattern — `UInt` is Sendable across `withLock` closures.
+        var csBits: UInt = 0
         var isRunning = false
         var ksmps = 0
         var nchnls = 0
         var sampleRate: Double = 44100
+    }
+
+    private static func csoundPtr(from bits: UInt) -> OpaquePointer? {
+        bits == 0 ? nil : OpaquePointer(bitPattern: bits)
     }
 
     private let audioLock = OSAllocatedUnfairLock(initialState: AudioCore())
@@ -96,8 +101,9 @@ final class HostCsoundEngine: HostAudioEngine {
         let nchnls = Int(csoundGetChannels(c, 0))
         bindChannels(c)
 
+        let csBits = UInt(bitPattern: c)
         audioLock.withLock { core in
-            core.cs = c
+            core.csBits = csBits
             core.ksmps = ksmps
             core.nchnls = nchnls
             core.sampleRate = sampleRate
@@ -115,23 +121,23 @@ final class HostCsoundEngine: HostAudioEngine {
     }
 
     func stopHost() {
-        let csToDestroy: OpaquePointer? = audioLock.withLock { core in
-            guard core.isRunning else { return nil }
+        let csBits = audioLock.withLock { core -> UInt in
+            guard core.isRunning else { return 0 }
             core.isRunning = false
-            let c = core.cs
-            core.cs = nil
-            return c
+            let bits = core.csBits
+            core.csBits = 0
+            return bits
         }
-        if let c = csToDestroy { csoundDestroy(c) }
+        if let c = Self.csoundPtr(from: csBits) { csoundDestroy(c) }
         for i in 0..<SynthVoiceLayout.maxTouches { xPtrs[i] = nil; yPtrs[i] = nil }
     }
 
     func render(into bufferList: UnsafeMutablePointer<AudioBufferList>, frameCount: UInt32) -> OSStatus {
-        let snapshot = audioLock.withLock { core -> (OpaquePointer?, Int, Int)? in
-            guard core.isRunning, let cs = core.cs else { return nil }
-            return (cs, core.ksmps, core.nchnls)
+        let snapshot = audioLock.withLock { core -> (UInt, Int, Int)? in
+            guard core.isRunning, core.csBits != 0 else { return nil }
+            return (core.csBits, core.ksmps, core.nchnls)
         }
-        guard let (cs, ks, nch) = snapshot else { return noErr }
+        guard let (csBits, ks, nch) = snapshot, let cs = Self.csoundPtr(from: csBits) else { return noErr }
 
         let abl = UnsafeMutableAudioBufferListPointer(bufferList)
         var framesFilled = 0
@@ -173,11 +179,11 @@ final class HostCsoundEngine: HostAudioEngine {
     }
 
     private func sendScore(_ s: String) {
-        let cs: OpaquePointer? = audioLock.withLock { core in
-            guard core.isRunning else { return nil }
-            return core.cs
+        let csBits = audioLock.withLock { core -> UInt in
+            guard core.isRunning, core.csBits != 0 else { return 0 }
+            return core.csBits
         }
-        guard let cs else { return }
+        guard let cs = Self.csoundPtr(from: csBits) else { return }
         s.withCString { csoundEventString(cs, $0, 0) }
     }
 
@@ -252,20 +258,20 @@ final class HostCsoundEngine: HostAudioEngine {
 
     func applyParameterChange(_ address: UInt64, value: Float) {
         switch address {
-        case 0:
+        case 0: // scale
             let index = Int(value)
             guard index < SynthCatalog.scaleOptions.count else { return }
             setScale(SynthCatalog.scaleOptions[index].steps)
-        case 1:
+        case 1: // key
             setKey(Int(value))
-        case 2:
+        case 2: // sound
+            setSound(Int(value))
+        case 3: // octave
             let index = Int(value)
             guard index < SynthCatalog.octaveValues.count else { return }
             setOctave(SynthCatalog.octaveValues[index])
-        case 3:
-            setSize(Int(value))
-        case 4:
-            setSound(Int(value))
+        case 4: // size
+            setSize(SynthCatalog.sizeValue(forIndex: Int(value)))
         default:
             break
         }
@@ -274,18 +280,18 @@ final class HostCsoundEngine: HostAudioEngine {
     func parameterValue(for address: UInt64) -> Float {
         let patch = patchBox.snapshot()
         switch address {
-        case 0:
+        case 0: // scale
             let index = SynthCatalog.scaleOptions.firstIndex(where: { $0.name == patch.scaleName }) ?? 0
             return Float(index)
-        case 1:
+        case 1: // key
             return Float(patch.key)
-        case 2:
+        case 2: // sound
+            return Float(patch.sound)
+        case 3: // octave
             let index = SynthCatalog.octaveValues.firstIndex(of: patch.octave) ?? 2
             return Float(index)
-        case 3:
-            return Float(patch.size)
-        case 4:
-            return Float(patch.sound)
+        case 4: // size
+            return Float(SynthCatalog.sizeIndex(for: patch.size))
         default:
             return 0
         }

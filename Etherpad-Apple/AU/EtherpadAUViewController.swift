@@ -207,7 +207,7 @@ public final class EtherpadAUViewController: AUViewController, AUAudioUnitFactor
         sizeBtn = makeBarButton(title: menuFactory.sizeTitle, menu: menuFactory.sizeMenu())
         soundBtn = makeBarButton(title: menuFactory.soundTitle, menu: menuFactory.soundMenu())
 
-        let stack = UIStackView(arrangedSubviews: [soundBtn, scaleBtn, keyBtn, octBtn, sizeBtn])
+        let stack = UIStackView(arrangedSubviews: [scaleBtn, keyBtn, soundBtn, octBtn, sizeBtn])
         stack.axis = .horizontal
         stack.distribution = .fillEqually
         stack.alignment = .fill

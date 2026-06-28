@@ -5,9 +5,9 @@ import AudioToolbox
 enum EtherpadParameterAddress: AUParameterAddress, CaseIterable {
     case scale  = 0
     case key    = 1
-    case octave = 2
-    case size   = 3
-    case sound  = 4
+    case sound  = 2
+    case octave = 3
+    case size   = 4
 }
 
 // MARK: - Parameter Tree Factory
@@ -38,6 +38,15 @@ enum EtherpadParameterFactory {
             dependentParameters: nil
         )
 
+        let sound = AUParameterTree.createParameter(
+            withIdentifier: "sound", name: "Sound",
+            address: EtherpadParameterAddress.sound.rawValue,
+            min: 0, max: AUValue(SynthCatalog.soundNames.count - 1),
+            unit: .indexed, unitName: nil, flags: flags,
+            valueStrings: SynthCatalog.soundNames,
+            dependentParameters: nil
+        )
+
         let octave = AUParameterTree.createParameter(
             withIdentifier: "octave", name: "Octave",
             address: EtherpadParameterAddress.octave.rawValue,
@@ -50,28 +59,13 @@ enum EtherpadParameterFactory {
         let size = AUParameterTree.createParameter(
             withIdentifier: "size", name: "Size",
             address: EtherpadParameterAddress.size.rawValue,
-            min: AUValue(SynthCatalog.sizeRange.lowerBound),
-            max: AUValue(SynthCatalog.sizeRange.upperBound),
-            unit: .generic, unitName: nil, flags: flags,
-            valueStrings: nil,
-            dependentParameters: nil
-        )
-
-        let sound = AUParameterTree.createParameter(
-            withIdentifier: "sound", name: "Sound",
-            address: EtherpadParameterAddress.sound.rawValue,
-            min: 0, max: AUValue(SynthCatalog.soundNames.count - 1),
+            min: 0, max: AUValue(SynthCatalog.sizeLabels.count - 1),
             unit: .indexed, unitName: nil, flags: flags,
-            valueStrings: SynthCatalog.soundNames,
+            valueStrings: SynthCatalog.sizeLabels,
             dependentParameters: nil
         )
 
-        let synthGroup = AUParameterTree.createGroup(
-            withIdentifier: "synth", name: "Synth",
-            children: [sound, scale, key, octave, size]
-        )
-
-        return AUParameterTree.createTree(withChildren: [synthGroup])
+        return AUParameterTree.createTree(withChildren: [scale, key, sound, octave, size])
     }
 
     /// Look up a parameter by its address in the tree.

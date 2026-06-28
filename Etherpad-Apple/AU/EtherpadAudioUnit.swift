@@ -94,6 +94,9 @@ public final class EtherpadAudioUnit: AUAudioUnit {
             case EtherpadParameterAddress.octave.rawValue:
                 return value < SynthCatalog.octaveLabels.count
                     ? SynthCatalog.octaveLabels[value] : "?"
+            case EtherpadParameterAddress.size.rawValue:
+                return value < SynthCatalog.sizeLabels.count
+                    ? SynthCatalog.sizeLabels[value] : "?"
             case EtherpadParameterAddress.sound.rawValue:
                 return value < SynthCatalog.soundNames.count
                     ? SynthCatalog.soundNames[value] : "?"
@@ -275,7 +278,7 @@ public final class EtherpadAudioUnit: AUAudioUnit {
 
     /// AUM uses the first parameter from this list as the "main knob" on the plugin node.
     public override func parametersForOverview(withCount count: Int) -> [NSNumber] {
-        let addresses: [EtherpadParameterAddress] = [.sound, .scale, .key, .octave, .size]
+        let addresses: [EtherpadParameterAddress] = [.scale, .key, .sound, .octave, .size]
         return Array(addresses.prefix(count)).map { NSNumber(value: $0.rawValue) }
     }
 }
