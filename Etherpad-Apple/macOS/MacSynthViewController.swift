@@ -557,21 +557,20 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         return l
     }
 
-    // Marks the CSD default by making that menu item bold (matches iOS' default hint).
-    private func populatePopup(_ pop: NSPopUpButton, titles: [String], defaultIndex: Int) {
+    // Plain titles on the button; default row gets a "• " prefix only while the menu is open.
+    private func populatePopup(_ pop: DownwardPopUpButton, titles: [String], defaultIndex: Int) {
         pop.removeAllItems()
-        for (i, title) in titles.enumerated() {
+        pop.defaultItemIndex = defaultIndex
+        for title in titles {
             pop.addItem(withTitle: title)
-            if i == defaultIndex, let item = pop.item(at: i) {
-                item.attributedTitle = NSAttributedString(
-                    string: title,
-                    attributes: [.font: NSFont.boldSystemFont(ofSize: NSFont.systemFontSize)])
+            if let item = pop.lastItem {
+                item.representedObject = title
             }
         }
     }
 
     private func makeScalePopup() -> NSPopUpButton {
-        let pop = NSPopUpButton(frame: .zero, pullsDown: false)
+        let pop = DownwardPopUpButton(frame: .zero)
         populatePopup(pop, titles: MacSynthTables.scaleOptions.map(\.name),
                       defaultIndex: DefaultIndex.scale)
         pop.target = self; pop.action = #selector(scaleChanged(_:))
@@ -583,7 +582,7 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     }
 
     private func makeKeyPopup() -> NSPopUpButton {
-        let pop = NSPopUpButton(frame: .zero, pullsDown: false)
+        let pop = DownwardPopUpButton(frame: .zero)
         populatePopup(pop, titles: MacSynthTables.keyNames, defaultIndex: DefaultIndex.key)
         pop.target = self; pop.action = #selector(keyChanged(_:))
         return pop
@@ -594,7 +593,7 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     }
 
     private func makeOctavePopup() -> NSPopUpButton {
-        let pop = NSPopUpButton(frame: .zero, pullsDown: false)
+        let pop = DownwardPopUpButton(frame: .zero)
         populatePopup(pop, titles: MacSynthTables.octaveLabels, defaultIndex: DefaultIndex.octave)
         pop.selectItem(at: DefaultIndex.octave)
         pop.target = self; pop.action = #selector(octaveChanged(_:))
@@ -606,7 +605,7 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     }
 
     private func makeSizePopup() -> NSPopUpButton {
-        let pop = NSPopUpButton(frame: .zero, pullsDown: false)
+        let pop = DownwardPopUpButton(frame: .zero)
         let titles = (4...14).map(String.init)
         populatePopup(pop, titles: titles, defaultIndex: DefaultIndex.size)
         pop.selectItem(at: DefaultIndex.size)
@@ -622,7 +621,7 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     }
 
     private func makeSoundPopup() -> NSPopUpButton {
-        let pop = NSPopUpButton(frame: .zero, pullsDown: false)
+        let pop = DownwardPopUpButton(frame: .zero)
         populatePopup(pop, titles: MacSynthTables.soundNames, defaultIndex: DefaultIndex.sound)
         pop.target = self; pop.action = #selector(soundChanged(_:))
         return pop
@@ -640,8 +639,54 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     }
 }
 
-/// Container that reports mouse movement so the controller can reveal/hide the
-/// control bar in immersive mode.
+private final class DownwardPopUpButton: NSPopUpButton, NSMenuDelegate {
+    var defaultItemIndex = 0
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect, pullsDown: false)
+        menu?.delegate = self
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        menu?.delegate = self
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        guard let menu, menu.numberOfItems > 0 else {
+            super.mouseDown(with: event)
+            return
+        }
+        let selected = item(at: indexOfSelectedItem)
+        menu.popUp(positioning: selected, at: NSPoint(x: bounds.midX, y: bounds.minY), in: self)
+    }
+
+    override func performClick(_ sender: Any?) {
+        guard let menu, menu.numberOfItems > 0 else {
+            super.performClick(sender)
+            return
+        }
+        let selected = item(at: indexOfSelectedItem)
+        menu.popUp(positioning: selected, at: NSPoint(x: bounds.midX, y: bounds.minY), in: self)
+    }
+
+    func menuWillOpen(_ menu: NSMenu) {
+        guard (0..<menu.items.count).contains(defaultItemIndex) else { return }
+        let item = menu.items[defaultItemIndex]
+        let base = (item.representedObject as? String) ?? item.title
+        item.title = "• \(base)"
+    }
+
+    func menuDidClose(_ menu: NSMenu) {
+        guard (0..<menu.items.count).contains(defaultItemIndex) else { return }
+        let item = menu.items[defaultItemIndex]
+        if let base = item.representedObject as? String {
+            item.title = base
+        }
+    }
+}
+
+
 private final class ImmersiveContainerView: NSView {
     var onMouseMoved: ((NSPoint) -> Void)?
     private var moveTracking: NSTrackingArea?
