@@ -3,6 +3,11 @@ import AVFoundation
 import AudioToolbox
 
 /// Host-driven Csound backend for AUv3. Implements `HostAudioEngine`; standalone app uses `CsoundEngine` instead.
+///
+/// Thread safety: Csound’s `csoundEventString` is internally thread-safe (Csound 6+),
+/// and single-`Float` channel pointer writes are atomic on ARM64. Parameter changes
+/// from the host automation thread go through `applyParameterChange(_:value:)` which
+/// calls `sendScore` — safe because Csound serialises event string processing.
 final class HostCsoundEngine: HostAudioEngine {
 
     enum Error: Swift.Error {
@@ -12,10 +17,16 @@ final class HostCsoundEngine: HostAudioEngine {
         case startFailed(Int32)
     }
 
+    /// Called on the main thread whenever a patch parameter changes.
+    /// The AU view controller observes this to keep toolbar menus in sync.
+    var onPatchStateChanged: ((SynthPatchState) -> Void)?
+
     private var cs: OpaquePointer?
-    private var isRunning = false
+    private(set) var isRunning = false
     private var ksmps = 0
     private var nchnls = 0
+    /// Current patch state — readable from any thread, written from main thread.
+    private(set) var currentPatchState = SynthPatchState.factoryDefault
     /// Retained until Csound starts so pre-render menu changes are not lost.
     private var pendingPatch = SynthPatchState.factoryDefault
 
@@ -69,10 +80,12 @@ final class HostCsoundEngine: HostAudioEngine {
         bindChannels(c)
         isRunning = true
         pendingPatch.apply(to: self)
+        currentPatchState = pendingPatch
     }
 
     func applyPatchState(_ patch: SynthPatchState) {
         pendingPatch = patch
+        currentPatchState = patch
         if isRunning { patch.apply(to: self) }
     }
 
@@ -154,34 +167,90 @@ final class HostCsoundEngine: HostAudioEngine {
 
     func setSize(_ size: Int) {
         pendingPatch.size = size
+        currentPatchState.size = size
         guard isRunning else { return }
         sendScore(SynthScore.size(size))
+        onPatchStateChanged?(currentPatchState)
     }
 
     func setKey(_ key: Int) {
         pendingPatch.key = key
+        currentPatchState.key = key
         guard isRunning else { return }
         sendScore(SynthScore.key(key))
+        onPatchStateChanged?(currentPatchState)
     }
 
     func setOctave(_ oct: Int) {
         pendingPatch.octave = oct
+        currentPatchState.octave = oct
         guard isRunning else { return }
         sendScore(SynthScore.octave(oct))
+        onPatchStateChanged?(currentPatchState)
     }
 
     func setSound(_ sound: Int) {
         pendingPatch.sound = sound
+        currentPatchState.sound = sound
         guard isRunning else { return }
         sendScore(SynthScore.sound(sound))
+        onPatchStateChanged?(currentPatchState)
     }
 
     func setScale(_ steps: [Int]) {
         if let match = SynthCatalog.scaleOptions.first(where: { $0.steps == steps }) {
             pendingPatch.scaleName = match.name
+            currentPatchState.scaleName = match.name
         }
         guard isRunning else { return }
         guard let score = SynthScore.scale(steps) else { return }
         sendScore(score)
+        onPatchStateChanged?(currentPatchState)
+    }
+
+    // MARK: - AU Parameter Bridge
+
+    /// Apply a single parameter change from the AU parameter tree.
+    /// Called when the host automates a parameter or the user changes it in the AU UI.
+    func applyParameterChange(_ address: UInt64, value: Float) {
+        switch address {
+        case 0: // scale
+            let index = Int(value)
+            guard index < SynthCatalog.scaleOptions.count else { return }
+            let option = SynthCatalog.scaleOptions[index]
+            setScale(option.steps)
+        case 1: // key
+            setKey(Int(value))
+        case 2: // octave
+            let index = Int(value)
+            guard index < SynthCatalog.octaveValues.count else { return }
+            setOctave(SynthCatalog.octaveValues[index])
+        case 3: // size
+            setSize(Int(value))
+        case 4: // sound
+            setSound(Int(value))
+        default:
+            break
+        }
+    }
+
+    /// Read a parameter value for the AU parameter tree.
+    func parameterValue(for address: UInt64) -> Float {
+        switch address {
+        case 0: // scale
+            let index = SynthCatalog.scaleOptions.firstIndex(where: { $0.name == currentPatchState.scaleName }) ?? 0
+            return Float(index)
+        case 1: // key
+            return Float(currentPatchState.key)
+        case 2: // octave
+            let index = SynthCatalog.octaveValues.firstIndex(of: currentPatchState.octave) ?? 2
+            return Float(index)
+        case 3: // size
+            return Float(currentPatchState.size)
+        case 4: // sound
+            return Float(currentPatchState.sound)
+        default:
+            return 0
+        }
     }
 }
