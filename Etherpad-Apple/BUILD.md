@@ -34,7 +34,8 @@ open Etherpad-Apple/Etherpad.xcodeproj
 
 Pick a scheme from the toolbar:
 
-- **Etherpad-iOS** — iPhone / iPad
+- **Etherpad-iOS** — iPhone / iPad (embeds the AU extension)
+- **Etherpad-AU** — AUv3 extension only (CI / extension debugging)
 - **Etherpad-macOS** — Mac
 
 Frameworks under `Frameworks/` are already linked. iOS shim sources live in
@@ -64,6 +65,31 @@ mode; **Esc** exits.
 
 ---
 
+## iPad AUv3 — GarageBand / AUM
+
+1. Build and run **Etherpad-iOS** on an iPad (or install via TestFlight).
+2. In **GarageBand** (or **AUM**), add an instrument track and browse AU instruments.
+3. Select **HumbleBee: Etherpad** — the full touch pad and patch toolbar appear in the plugin UI.
+
+The extension is embedded in the main app; hosts discover it after Etherpad is installed once.
+Shared synth logic lives in `iOS/Shared/`; the AU uses `HostCsoundEngine` for host-pull audio.
+
+**Important:** Always run the **Etherpad-iOS** scheme onto your iPad — not **Etherpad-AU** alone.
+GarageBand loads the plugin from `Etherpad.app/PlugIns/EtherpadAU.appex`.
+
+If GarageBand lists Etherpad but says *“Failed to load”* or *“not installed”*:
+
+1. Delete **Etherpad** from the iPad (long-press icon → Remove App).
+2. Xcode → **Product → Clean Build Folder** (⇧⌘K).
+3. Scheme **Etherpad-iOS**, destination your **iPad**, **⌘R**.
+4. Open the **Etherpad** app once, then force-quit **GarageBand** and reopen it.
+5. Create a **new** song (old songs may reference a broken AU install).
+6. External → **Audio Unit Extensions** → **HumbleBee: Etherpad**.
+
+Still failing? Connect the iPad to your Mac, open **Console.app**, filter for `EtherpadAU`, and retry loading in GarageBand.
+
+---
+
 ## CLI builds
 
 ```sh
@@ -73,6 +99,10 @@ cd Etherpad-Apple
 xcodebuild -project Etherpad.xcodeproj -scheme Etherpad-iOS \
   -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
   -configuration Release ARCHS=arm64 ONLY_ACTIVE_ARCH=YES build
+
+# AU extension (Simulator)
+xcodebuild -project Etherpad.xcodeproj -scheme Etherpad-AU \
+  -sdk iphonesimulator -configuration Release ARCHS=arm64 ONLY_ACTIVE_ARCH=YES build
 
 # macOS
 xcodebuild -project Etherpad.xcodeproj -scheme Etherpad-macOS \

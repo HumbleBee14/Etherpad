@@ -1,11 +1,12 @@
 import UIKit
 import AVFoundation
 
-final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
+final class EtherpadViewController: UIViewController {
 
-    // Kept so we can rebuild menus on selection change — UIMenu is immutable.
-    private let engine  = CsoundEngine()
+    private let engine = CsoundEngine()
     private let surface = TouchSurfaceView()
+    private let touchCoordinator = SynthTouchCoordinator()
+    private let menuFactory = SynthPatchMenuFactory()
 
     private var scaleBtn:  UIBarButtonItem!
     private var keyBtn:    UIBarButtonItem!
@@ -13,35 +14,15 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
     private var sizeBtn:   UIBarButtonItem!
     private var soundBtn:  UIBarButtonItem!
 
-    private var selectedScale:  String = "Default"
-    private var selectedKey:    Int    = 0
-    private var selectedOctave: Int    = 4
-    private var selectedSize:   Int    = 8
-    private var selectedSound:  Int    = 0
-
-    private let scaleMajor:   [Int] = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19, 21, 23]
-    private let scaleMinor:   [Int] = [0, 2, 3, 5, 7, 8, 11, 12, 14, 15, 17, 19, 20, 23]
-    private let scalePent:    [Int] = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28, 30]
-    private let scaleBlues:   [Int] = [0, 3, 5, 6, 7, 10, 12, 15, 17, 18, 19, 22, 24, 27]
-    private let scaleChrom:   [Int] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
-    private let scaleWhole:   [Int] = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26]
-    private let scaleOct:     [Int] = [0, 1, 3, 4, 6, 7, 9, 10, 12, 13, 15, 16, 18, 19, 21]
-    private let scaleFlam:    [Int] = [0, 1, 4, 5, 7, 8, 11, 12, 13, 16, 17, 19, 21, 22]
-    private let scaleDefault: [Int] = [0, 2, 4, 7, 9, 11, 12, 14, 16, 19, 21, 24, 26, 28]
-    private let scaleBP:      [Int] = [-1]
-    // Overtone series use giscale_type 2 and 3 in the CSD.
-    private let scaleOTLow:   [Int] = [-2]
-    private let scaleOTHigh:  [Int] = [-3]
-
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // Audio session is configured by SplitSynthViewController on iPad; configure here for iPhone entry point.
         if UIDevice.current.userInterfaceIdiom == .phone {
             configureAudioSession()
         }
 
-        surface.delegate = self
+        touchCoordinator.engine = engine
+        surface.delegate = touchCoordinator
         surface.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(surface)
         NSLayoutConstraint.activate([
@@ -51,8 +32,15 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
             surface.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
 
+        menuFactory.onPatchChanged = { [weak self] patch in
+            self?.surface.numberOfNotes = Double(patch.size)
+            self?.refreshToolbarMenus()
+        }
+
         configureToolbar()
         engine.start()
+        menuFactory.applyPatch(to: engine)
+        surface.numberOfNotes = Double(menuFactory.patch.size)
 
         NotificationCenter.default.addObserver(
             self, selector: #selector(appWillResignActive),
@@ -69,8 +57,6 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
 
     override var prefersStatusBarHidden: Bool { true }
     override var prefersHomeIndicatorAutoHidden: Bool { true }
-
-    // Edge touches belong to the synth, not the system swipe-up gestures.
     override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge { .all }
 
     deinit {
@@ -83,7 +69,7 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
         do {
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
-            try session.setPreferredIOBufferDuration(0.005)  // ~5 ms
+            try session.setPreferredIOBufferDuration(0.005)
             try session.setActive(true)
         } catch {
             print("[Etherpad] Audio session setup failed: \(error)")
@@ -105,19 +91,6 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
             surface.cancelAllTouches()
             engine.allNotesOff()
         }
-        // On .ended, AVAudioSession resumes automatically for .playback category.
-    }
-
-    func touchBegan(slot: Int, x: Float, y: Float) {
-        engine.noteOn(slot: slot, x: x, y: y)
-    }
-
-    func touchMoved(slot: Int, x: Float, y: Float) {
-        engine.updatePosition(slot: slot, x: x, y: y)
-    }
-
-    func touchEnded(slot: Int) {
-        engine.noteOff(slot: slot)
     }
 
     private func configureToolbar() {
@@ -135,122 +108,29 @@ final class EtherpadViewController: UIViewController, TouchSurfaceDelegate {
             toolbar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
 
+        scaleBtn = UIBarButtonItem(title: menuFactory.scaleTitle, menu: menuFactory.scaleMenu())
+        keyBtn = UIBarButtonItem(title: menuFactory.keyTitle, menu: menuFactory.keyMenu())
+        octBtn = UIBarButtonItem(title: menuFactory.octaveTitle, menu: menuFactory.octaveMenu())
+        sizeBtn = UIBarButtonItem(title: menuFactory.sizeTitle, menu: menuFactory.sizeMenu())
+        soundBtn = UIBarButtonItem(title: menuFactory.soundTitle, menu: menuFactory.soundMenu())
         let flex = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
-
-        scaleBtn  = UIBarButtonItem(title: "Scale",  menu: buildScaleMenu())
-        keyBtn    = UIBarButtonItem(title: "Key",    menu: buildKeyMenu())
-        octBtn    = UIBarButtonItem(title: "Octave", menu: buildOctaveMenu())
-        sizeBtn   = UIBarButtonItem(title: "Size",   menu: buildSizeMenu())
-        soundBtn  = UIBarButtonItem(title: "Sound",  menu: buildSoundMenu())
         let aboutBtn = UIBarButtonItem(title: "About", style: .plain, target: self,
                                        action: #selector(showAbout))
 
         toolbar.items = [scaleBtn, flex, keyBtn, flex, octBtn, flex, sizeBtn, flex, soundBtn, flex, aboutBtn]
     }
 
-    // Leading bullet marks the CSD's default value — UIMenu rows don't support attributed underlines.
-    private func makeAction(title: String, isSelected: Bool, isDefault: Bool = false,
-                            handler: @escaping () -> Void) -> UIAction {
-        let displayTitle = isDefault ? "• \(title)" : title
-        return UIAction(title: displayTitle, state: isSelected ? .on : .off) { _ in handler() }
-    }
-
-    private struct ScaleOption {
-        let name: String
-        let steps: [Int]
-    }
-
-    private var scaleOptions: [ScaleOption] {
-        [
-            .init(name: "Default",     steps: scaleDefault),
-            .init(name: "Major",       steps: scaleMajor),
-            .init(name: "Minor",       steps: scaleMinor),
-            .init(name: "Pentatonic",  steps: scalePent),
-            .init(name: "Flamenco",    steps: scaleFlam),
-            .init(name: "Blues",       steps: scaleBlues),
-            .init(name: "Chromatic",   steps: scaleChrom),
-            .init(name: "Whole-Tone",  steps: scaleWhole),
-            .init(name: "Octatonic",   steps: scaleOct),
-            .init(name: "Bohlen-Pierce", steps: scaleBP),
-            .init(name: "Overtone Series Low",  steps: scaleOTLow),
-            .init(name: "Overtone Series High", steps: scaleOTHigh),
-        ]
-    }
-
-    private func buildScaleMenu() -> UIMenu {
-        let actions = scaleOptions.map { opt in
-            makeAction(title: opt.name,
-                       isSelected: opt.name == selectedScale,
-                       isDefault: opt.name == "Default") { [weak self] in
-                guard let self = self else { return }
-                self.selectedScale = opt.name
-                self.engine.setScale(opt.steps)
-                self.scaleBtn.title = "Scale: \(opt.name)"
-                self.scaleBtn.menu = self.buildScaleMenu()
-            }
-        }
-        return UIMenu(title: "Scale", children: actions)
-    }
-
-    private let keyNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-
-    private func buildKeyMenu() -> UIMenu {
-        let actions = keyNames.enumerated().map { i, name in
-            makeAction(title: name, isSelected: i == selectedKey, isDefault: i == 0) { [weak self] in
-                guard let self = self else { return }
-                self.selectedKey = i
-                self.engine.setKey(i)
-                self.keyBtn.title = "Key: \(name)"
-                self.keyBtn.menu = self.buildKeyMenu()
-            }
-        }
-        return UIMenu(title: "Key", children: actions)
-    }
-
-    // Display labels 2..-2 map to Csound values 6..2.
-    private let octaveLabels = ["2", "1", "0", "-1", "-2"]
-    private let octaveValues = [6, 5, 4, 3, 2]
-
-    private func buildOctaveMenu() -> UIMenu {
-        let actions = zip(octaveLabels, octaveValues).map { label, val in
-            makeAction(title: label, isSelected: val == selectedOctave, isDefault: val == 4) { [weak self] in
-                guard let self = self else { return }
-                self.selectedOctave = val
-                self.engine.setOctave(val)
-                self.octBtn.title = "Octave: \(label)"
-                self.octBtn.menu = self.buildOctaveMenu()
-            }
-        }
-        return UIMenu(title: "Octave", children: actions)
-    }
-
-    private func buildSizeMenu() -> UIMenu {
-        let actions = (4...14).map { n in
-            makeAction(title: "\(n)", isSelected: n == selectedSize, isDefault: n == 8) { [weak self] in
-                guard let self = self else { return }
-                self.selectedSize = n
-                self.engine.setSize(n)
-                self.surface.numberOfNotes = Double(n)
-                self.sizeBtn.title = "Size: \(n)"
-                self.sizeBtn.menu = self.buildSizeMenu()
-            }
-        }
-        return UIMenu(title: "Size", children: actions)
-    }
-
-    private let soundNames = ["Ether Pad", "Distorted Dreams", "Xanpalamin", "Give it a Tri", "Digital Monk"]
-
-    private func buildSoundMenu() -> UIMenu {
-        let actions = soundNames.enumerated().map { i, name in
-            makeAction(title: name, isSelected: i == selectedSound, isDefault: i == 0) { [weak self] in
-                guard let self = self else { return }
-                self.selectedSound = i
-                self.engine.setSound(i)
-                self.soundBtn.title = "Sound: \(name)"
-                self.soundBtn.menu = self.buildSoundMenu()
-            }
-        }
-        return UIMenu(title: "Sound", children: actions)
+    private func refreshToolbarMenus() {
+        scaleBtn.title = menuFactory.scaleTitle
+        scaleBtn.menu = menuFactory.scaleMenu()
+        keyBtn.title = menuFactory.keyTitle
+        keyBtn.menu = menuFactory.keyMenu()
+        octBtn.title = menuFactory.octaveTitle
+        octBtn.menu = menuFactory.octaveMenu()
+        sizeBtn.title = menuFactory.sizeTitle
+        sizeBtn.menu = menuFactory.sizeMenu()
+        soundBtn.title = menuFactory.soundTitle
+        soundBtn.menu = menuFactory.soundMenu()
     }
 
     @objc private func showAbout() {
