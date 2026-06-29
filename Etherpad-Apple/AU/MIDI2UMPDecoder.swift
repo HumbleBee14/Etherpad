@@ -45,6 +45,28 @@ enum MIDI2UMPDecoder {
         default:  return nil
         }
     }
+
+    /// Decode one MIDI 1.0 Channel Voice message carried in a single type-0x2 UMP word.
+    /// CoreMIDI may deliver MIDI 1.0 input this way; up-converts to the shared 2.0 form
+    /// so the engine path stays identical. word: [mt:4=2][grp:4][status:4][ch:4][d1:8][d2:8].
+    static func decodeChannelVoice1(word0: UInt32) -> MIDI2Message? {
+        guard UInt8(word0 >> 28 & 0xF) == 0x2 else { return nil }
+        let status = UInt8(word0 >> 20 & 0xF)
+        let data1 = UInt8(word0 >> 8 & 0x7F)
+        let data2 = UInt8(word0 & 0x7F)
+
+        switch status {
+        case 0x9 where data2 > 0: return .noteOn(note: data1, velocity16: MIDI1Upscale.to16(data2))
+        case 0x8, 0x9:            return .noteOff(note: data1, velocity16: 0)
+        case 0xB:                 return .controlChange(index: data1, value32: MIDI1Upscale.to32(data2))
+        case 0xE:
+            let combined = UInt16(data2) << 7 | UInt16(data1)   // 14-bit
+            return .channelPitchBend(value32: MIDI1Upscale.to32(from14: combined))
+        case 0xD:                 return .channelPressure(value32: MIDI1Upscale.to32(data1))
+        case 0xA:                 return .polyPressure(note: data1, value32: MIDI1Upscale.to32(data2))
+        default:                  return nil
+        }
+    }
 }
 
 /// Normalization from MIDI 2.0 fixed-width ints to engine floats.
@@ -55,5 +77,28 @@ enum MIDI2Scale {
         let center: UInt32 = 0x80000000
         if v >= center { return Float(v - center) / Float(0x7FFFFFFF) }
         return -Float(center - v) / Float(center)
+    }
+}
+
+/// MIDI 1.0 → MIDI 2.0 up-conversion via bit-replication (MIDI 2.0 spec M2-115),
+/// so a full-scale 7-/14-bit input maps to a full-scale high-res value (127 → 0xFFFF,
+/// not 0xFE00). Plain left-shift would lose the low bits and drop e.g. CC64 to 63.
+enum MIDI1Upscale {
+    /// 7-bit (0…127) → 16-bit, bit-replicated.
+    static func to16(_ v7: UInt8) -> UInt16 {
+        let v = UInt16(v7 & 0x7F)
+        return (v << 9) | (v << 2) | (v >> 5)
+    }
+
+    /// 7-bit (0…127) → 32-bit, bit-replicated.
+    static func to32(_ v7: UInt8) -> UInt32 {
+        let v = UInt32(v7 & 0x7F)
+        return (v << 25) | (v << 18) | (v << 11) | (v << 4) | (v >> 3)
+    }
+
+    /// 14-bit (0…0x3FFF) → 32-bit, bit-replicated.
+    static func to32(from14 v14: UInt16) -> UInt32 {
+        let v = UInt32(v14 & 0x3FFF)
+        return (v << 18) | (v << 4) | (v >> 10)
     }
 }
