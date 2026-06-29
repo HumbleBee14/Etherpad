@@ -6,7 +6,7 @@ final class AboutViewController: UIViewController {
 
     private var theme: Theme { .current }
     private var bgColor:   UIColor { theme.background }
-    private var textColor: UIColor { theme.line }
+    private var textColor: UIColor { UIColor(white: 0.96, alpha: 1) }
     private var linkColor: UIColor { theme.accent }
     private let subtleColor = UIColor(white: 1.0, alpha: 0.55)
 
