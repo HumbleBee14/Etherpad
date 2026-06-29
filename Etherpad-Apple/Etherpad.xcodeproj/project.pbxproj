@@ -60,6 +60,7 @@
 		AA01000000000000000001F1 /* AUParameterAddresses.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01000000000000000001F0 /* AUParameterAddresses.swift */; };
 		AA01000000000000000002F1 /* EtherpadPresets.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01000000000000000002F0 /* EtherpadPresets.swift */; };
 		AA01000000000000000003F1 /* MIDIProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01000000000000000003F0 /* MIDIProcessor.swift */; };
+		A0B3C3D3E3F300000000C402 /* MIDI2UMPDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0B3C3D3E3F300000000C401 /* MIDI2UMPDecoder.swift */; };
 		AA01000000000000000004F1 /* MIDIOutputHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01000000000000000004F0 /* MIDIOutputHandler.swift */; };
 		AA01000000000000000005F1 /* SynthPatchState+AU.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01000000000000000005F0 /* SynthPatchState+AU.swift */; };
 		EFCE75C9E6F4EA0D4C4387BD /* CsoundEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71D16BE37D41AA9E7D6B781A /* CsoundEngine.swift */; };
@@ -137,6 +138,7 @@
 		AA01000000000000000001F0 /* AUParameterAddresses.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AUParameterAddresses.swift; path = AU/AUParameterAddresses.swift; sourceTree = "<group>"; };
 		AA01000000000000000002F0 /* EtherpadPresets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = EtherpadPresets.swift; path = AU/EtherpadPresets.swift; sourceTree = "<group>"; };
 		AA01000000000000000003F0 /* MIDIProcessor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MIDIProcessor.swift; path = AU/MIDIProcessor.swift; sourceTree = "<group>"; };
+		A0B3C3D3E3F300000000C401 /* MIDI2UMPDecoder.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MIDI2UMPDecoder.swift; path = AU/MIDI2UMPDecoder.swift; sourceTree = "<group>"; };
 		AA01000000000000000004F0 /* MIDIOutputHandler.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MIDIOutputHandler.swift; path = AU/MIDIOutputHandler.swift; sourceTree = "<group>"; };
 		AA01000000000000000005F0 /* SynthPatchState+AU.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = "SynthPatchState+AU.swift"; path = "AU/SynthPatchState+AU.swift"; sourceTree = "<group>"; };
 		C0F14925AF2F6250D58D1AF3 /* Etherpad-macOS-Bridging-Header.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = "Etherpad-macOS-Bridging-Header.h"; path = "macOS/Etherpad-macOS-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -296,6 +298,7 @@
 				AA01000000000000000001F0 /* AUParameterAddresses.swift */,
 				AA01000000000000000002F0 /* EtherpadPresets.swift */,
 				AA01000000000000000003F0 /* MIDIProcessor.swift */,
+				A0B3C3D3E3F300000000C401 /* MIDI2UMPDecoder.swift */,
 				AA01000000000000000004F0 /* MIDIOutputHandler.swift */,
 				AA01000000000000000005F0 /* SynthPatchState+AU.swift */,
 			);
@@ -589,6 +592,7 @@
 				AA01000000000000000001F1 /* AUParameterAddresses.swift in Sources */,
 				AA01000000000000000002F1 /* EtherpadPresets.swift in Sources */,
 				AA01000000000000000003F1 /* MIDIProcessor.swift in Sources */,
+				A0B3C3D3E3F300000000C402 /* MIDI2UMPDecoder.swift in Sources */,
 				AA01000000000000000004F1 /* MIDIOutputHandler.swift in Sources */,
 				AA01000000000000000005F1 /* SynthPatchState+AU.swift in Sources */,
 			);
