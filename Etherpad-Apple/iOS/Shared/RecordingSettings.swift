@@ -4,9 +4,11 @@ final class RecordingSettings {
     private static let key = "EtherpadRecordingEnabled"
     static let didChangeNotification = NSNotification.Name("EtherpadRecordingSettingDidChange")
 
-    /// Hard cap on a single recording (seconds). WAV is ~10 MB/min stereo, so this
-    /// bounds the file. Raise here to extend the limit everywhere.
+    // Hard cap on one recording. Raise to extend everywhere.
     static let maxDuration: TimeInterval = 10 * 60
+
+    // Grace after backgrounding before finalizing; returning within it keeps the take.
+    static let backgroundGracePeriod: TimeInterval = 10
 
     static var isEnabled: Bool {
         get { UserDefaults.standard.bool(forKey: key) }

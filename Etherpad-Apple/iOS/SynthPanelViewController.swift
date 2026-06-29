@@ -21,6 +21,8 @@ final class SynthPanelViewController: UIViewController {
     private weak var toolbarBar: UIVisualEffectView?
     private var recordingURL: URL?
     private var recordingTimer: Timer?
+    private var backgroundGraceTimer: Timer?
+    private var pendingShareURL: URL?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -51,6 +53,12 @@ final class SynthPanelViewController: UIViewController {
             self, selector: #selector(appWillResignActive),
             name: UIApplication.willResignActiveNotification, object: nil)
         NotificationCenter.default.addObserver(
+            self, selector: #selector(appDidEnterBackground),
+            name: UIApplication.didEnterBackgroundNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(appWillEnterForeground),
+            name: UIApplication.willEnterForegroundNotification, object: nil)
+        NotificationCenter.default.addObserver(
             self, selector: #selector(handleInterruption(_:)),
             name: AVAudioSession.interruptionNotification, object: nil)
         NotificationCenter.default.addObserver(
@@ -64,7 +72,8 @@ final class SynthPanelViewController: UIViewController {
 
     deinit {
         NotificationCenter.default.removeObserver(self)
-        finalizeRecordingIfNeeded()
+        discardRecording()
+        if let url = pendingShareURL { try? FileManager.default.removeItem(at: url) }
         engine.allNotesOff()
         engine.stop()
     }
@@ -72,7 +81,24 @@ final class SynthPanelViewController: UIViewController {
     @objc private func appWillResignActive() {
         surface.cancelAllTouches()
         engine.allNotesOff()
-        finalizeRecordingIfNeeded()
+    }
+
+    @objc private func appDidEnterBackground() {
+        guard engine.isRecording else { return }
+        backgroundGraceTimer?.invalidate()
+        backgroundGraceTimer = Timer.scheduledTimer(
+            withTimeInterval: RecordingSettings.backgroundGracePeriod, repeats: false) { [weak self] _ in
+            self?.finalizeAndKeepRecording()
+        }
+    }
+
+    @objc private func appWillEnterForeground() {
+        backgroundGraceTimer?.invalidate()
+        backgroundGraceTimer = nil
+        if let url = pendingShareURL {
+            pendingShareURL = nil
+            presentShareSheet(for: url)
+        }
     }
 
     @objc private func handleInterruption(_ notification: Notification) {
@@ -84,7 +110,7 @@ final class SynthPanelViewController: UIViewController {
         if type == .began {
             surface.cancelAllTouches()
             engine.allNotesOff()
-            finalizeRecordingIfNeeded()
+            finalizeAndKeepRecording()
         } else if type == .ended {
             let options = (info[AVAudioSessionInterruptionOptionKey] as? UInt).map {
                 AVAudioSession.InterruptionOptions(rawValue: $0)
@@ -191,7 +217,7 @@ final class SynthPanelViewController: UIViewController {
     // MARK: - Recording
 
     @objc private func recordingSettingChanged() {
-        if engine.isRecording { finalizeRecordingIfNeeded() }
+        if engine.isRecording { discardRecording() }
         guard let bar = toolbarBar else { return }
         bar.removeFromSuperview()
         recordBtn = nil
@@ -221,19 +247,33 @@ final class SynthPanelViewController: UIViewController {
     }
 
     private func finishRecording() {
-        recordingTimer?.invalidate()
-        recordingTimer = nil
-        engine.stopRecording()
-        updateRecordButton(recording: false)
-        guard let url = recordingURL else { return }
-        recordingURL = nil
+        guard let url = stopRecordingKeepingFile() else { return }
         presentShareSheet(for: url)
     }
 
-    private func finalizeRecordingIfNeeded() {
-        guard engine.isRecording else { return }
+    private func finalizeAndKeepRecording() {
+        guard let url = stopRecordingKeepingFile() else { return }
+        pendingShareURL = url
+    }
+
+    private func stopRecordingKeepingFile() -> URL? {
+        backgroundGraceTimer?.invalidate()
+        backgroundGraceTimer = nil
         recordingTimer?.invalidate()
         recordingTimer = nil
+        guard engine.isRecording else { return nil }
+        engine.stopRecording()
+        updateRecordButton(recording: false)
+        defer { recordingURL = nil }
+        return recordingURL
+    }
+
+    private func discardRecording() {
+        backgroundGraceTimer?.invalidate()
+        backgroundGraceTimer = nil
+        recordingTimer?.invalidate()
+        recordingTimer = nil
+        guard engine.isRecording else { return }
         engine.stopRecording()
         if let url = recordingURL { try? FileManager.default.removeItem(at: url) }
         recordingURL = nil
