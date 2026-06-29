@@ -16,6 +16,23 @@ records, and known host limitations.
   not raw numbers. Menu changes emit recordable `.touch`/`.value`/`.release`
   gestures stamped with the real host time.
 
+## MIDI 2.0 (UMP)
+
+The plugin opts into the MIDI 2.0 protocol (`audioUnitMIDIProtocol = ._2_0`), so a
+UMP-capable host delivers native MIDI 2.0; MIDI 1.0 hosts are translated by CoreMIDI.
+Supported MIDI 2.0 Channel Voice messages:
+
+- Note On / Off with 16-bit velocity
+- Control Change, Channel Pressure, Poly Pressure (32-bit, normalized)
+- Channel Pitch Bend (32-bit, center 0x80000000)
+- **Per-note Pitch Bend** — each touched note bends independently
+- **Per-note Brightness** (Registered Per-Note Controller index 74) — per-note timbre
+
+Per-note values are additive on top of the channel-wide values (MPE-style): a global
+pitch wheel bends every note; a per-note bend adds individual expression on top. Both
+protocols flow through one internal path, so behaviour is identical apart from
+resolution and per-note independence.
+
 ## Recording a touch-surface performance in a host
 
 **The plugin plays live and emits correct MIDI — but a host will not record an
