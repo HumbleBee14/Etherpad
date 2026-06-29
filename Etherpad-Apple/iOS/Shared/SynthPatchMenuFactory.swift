@@ -1,7 +1,9 @@
 import UIKit
 
 /// Builds patch UIMenus from `SynthCatalog` and applies changes through `SynthEngineProtocol`.
-/// Shared by standalone iOS and AU plugin UI.
+/// Standalone iOS only. AU uses `AUPatchMenuFactory` (routes taps through the parameter tree).
+/// SYNC NOTE: keep functionally in sync with `AU/AUPatchMenuFactory.swift` — menu contents and
+/// option order must match; presentation may diverge.
 final class SynthPatchMenuFactory {
 
     private(set) var patch: SynthPatchState
