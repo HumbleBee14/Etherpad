@@ -2,14 +2,21 @@ import UIKit
 
 final class AboutViewController: UIViewController {
 
-    private let bgColor   = UIColor(red: 0x3b/255, green: 0x44/255, blue: 0x4b/255, alpha: 1)
-    private let textColor = UIColor(red: 0x50/255, green: 0x72/255, blue: 0xa7/255, alpha: 1)
-    private let linkColor = UIColor(red: 0xe9/255, green: 0xd6/255, blue: 0x6b/255, alpha: 1)
+    private var themedLabels: [UILabel] = []
+
+    private var theme: Theme { .current }
+    private var bgColor:   UIColor { theme.background }
+    private var textColor: UIColor { theme.line }
+    private var linkColor: UIColor { theme.accent }
     private let subtleColor = UIColor(white: 1.0, alpha: 0.55)
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = bgColor
+        view.layer.cornerRadius = 16
+        view.layer.cornerCurve = .continuous
+        view.layer.masksToBounds = true
+        applyPanelBorder()
 
         let scroll = UIScrollView()
         scroll.translatesAutoresizingMaskIntoConstraints = false
@@ -30,6 +37,7 @@ final class AboutViewController: UIViewController {
         title.font = .systemFont(ofSize: 22, weight: .bold)
         title.textColor = textColor
         title.textAlignment = .center
+        themedLabels.append(title)
         stack.addArrangedSubview(title)
 
         let tagline = UILabel()
@@ -38,9 +46,13 @@ final class AboutViewController: UIViewController {
         tagline.textColor = textColor
         tagline.textAlignment = .center
         tagline.numberOfLines = 0
+        themedLabels.append(tagline)
         stack.addArrangedSubview(tagline)
 
         stack.addArrangedSubview(makeSpacer(8))
+
+        stack.addArrangedSubview(makeSplitModeSection())
+        stack.addArrangedSubview(makeSpacer(12))
 
         let visHeaderRow = UIStackView()
         visHeaderRow.axis = .horizontal
@@ -51,6 +63,7 @@ final class AboutViewController: UIViewController {
         visHeader.text = "Visualizations"
         visHeader.font = .systemFont(ofSize: 15, weight: .semibold)
         visHeader.textColor = textColor
+        themedLabels.append(visHeader)
         visHeaderRow.addArrangedSubview(visHeader)
 
         visHeaderRow.addArrangedSubview(UIView())
@@ -80,35 +93,15 @@ final class AboutViewController: UIViewController {
 
         stack.addArrangedSubview(makeSpacer(12))
 
-        let splitRow = UIStackView()
-        splitRow.axis = .horizontal
-        splitRow.alignment = .center
-        splitRow.spacing = 12
+        let themeHeader = UILabel()
+        themeHeader.text = "Theme"
+        themeHeader.font = .systemFont(ofSize: 15, weight: .semibold)
+        themeHeader.textColor = textColor
+        themedLabels.append(themeHeader)
+        let themeHeaderContainer = inset(themeHeader)
+        stack.addArrangedSubview(themeHeaderContainer)
 
-        let splitHeader = UILabel()
-        splitHeader.text = "Split Mode"
-        splitHeader.font = .systemFont(ofSize: 15, weight: .semibold)
-        splitHeader.textColor = textColor
-        splitRow.addArrangedSubview(splitHeader)
-
-        splitRow.addArrangedSubview(UIView())
-
-        let splitToggle = UISwitch()
-        splitToggle.isOn = SplitModeController.isEnabled
-        splitToggle.addTarget(self, action: #selector(splitModeToggled(_:)), for: .valueChanged)
-        splitRow.addArrangedSubview(splitToggle)
-
-        let splitContainer = UIView()
-        splitContainer.translatesAutoresizingMaskIntoConstraints = false
-        splitRow.translatesAutoresizingMaskIntoConstraints = false
-        splitContainer.addSubview(splitRow)
-        NSLayoutConstraint.activate([
-            splitRow.topAnchor.constraint(equalTo: splitContainer.topAnchor),
-            splitRow.bottomAnchor.constraint(equalTo: splitContainer.bottomAnchor),
-            splitRow.leadingAnchor.constraint(equalTo: splitContainer.leadingAnchor, constant: 16),
-            splitRow.trailingAnchor.constraint(equalTo: splitContainer.trailingAnchor, constant: -16),
-        ])
-        stack.addArrangedSubview(splitContainer)
+        stack.addArrangedSubview(makeThemeGrid())
 
         stack.addArrangedSubview(makeSpacer(12))
 
@@ -306,7 +299,140 @@ final class AboutViewController: UIViewController {
         }
     }
 
+    private func makeSplitModeSection() -> UIView {
+        let row = UIStackView()
+        row.axis = .horizontal
+        row.alignment = .center
+        row.spacing = 12
+
+        let header = UILabel()
+        header.text = "Split Mode"
+        header.font = .systemFont(ofSize: 15, weight: .semibold)
+        header.textColor = textColor
+        themedLabels.append(header)
+        row.addArrangedSubview(header)
+
+        row.addArrangedSubview(UIView())
+
+        let toggle = UISwitch()
+        toggle.isOn = SplitModeController.isEnabled
+        toggle.addTarget(self, action: #selector(splitModeToggled(_:)), for: .valueChanged)
+        row.addArrangedSubview(toggle)
+
+        return inset(row)
+    }
+
     @objc private func splitModeToggled(_ sender: UISwitch) {
         SplitModeController.isEnabled = sender.isOn
+    }
+
+    // MARK: - Theme
+
+    private var themeCards: [(UIButton, Theme)] = []
+
+    private func makeThemeGrid() -> UIView {
+        themeCards.removeAll()
+        let cols = 3
+        let outer = UIStackView()
+        outer.axis = .vertical
+        outer.alignment = .fill
+        outer.distribution = .fillEqually
+        outer.spacing = 10
+
+        var row: UIStackView?
+        for (i, t) in Theme.all.enumerated() {
+            if i % cols == 0 {
+                row = UIStackView()
+                row!.axis = .horizontal
+                row!.spacing = 10
+                row!.alignment = .fill
+                row!.distribution = .fillEqually
+                outer.addArrangedSubview(row!)
+            }
+            let card = makeThemeCard(t)
+            row!.addArrangedSubview(card)
+            themeCards.append((card, t))
+        }
+        return inset(outer)
+    }
+
+    private func makeThemeCard(_ t: Theme) -> UIButton {
+        var config = UIButton.Configuration.plain()
+        config.title = t.name
+        config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 28)
+        config.titleAlignment = .leading
+
+        let btn = UIButton(configuration: config)
+        btn.backgroundColor = t.background
+        btn.layer.cornerRadius = 12
+        btn.layer.borderWidth = 2
+        btn.heightAnchor.constraint(equalToConstant: 56).isActive = true
+        btn.contentHorizontalAlignment = .leading
+
+        // Accent dot pinned to the trailing edge — previews the palette's accent.
+        let dot = UIView()
+        dot.backgroundColor = t.accent
+        dot.layer.cornerRadius = 6
+        dot.isUserInteractionEnabled = false
+        dot.translatesAutoresizingMaskIntoConstraints = false
+        btn.addSubview(dot)
+        NSLayoutConstraint.activate([
+            dot.widthAnchor.constraint(equalToConstant: 12),
+            dot.heightAnchor.constraint(equalToConstant: 12),
+            dot.trailingAnchor.constraint(equalTo: btn.trailingAnchor, constant: -12),
+            dot.centerYAnchor.constraint(equalTo: btn.centerYAnchor),
+        ])
+
+        btn.addAction(UIAction { [weak self] _ in self?.selectTheme(t) }, for: .touchUpInside)
+        applyThemeCardStyle(btn, theme: t)
+        return btn
+    }
+
+    private func applyThemeCardStyle(_ btn: UIButton, theme t: Theme) {
+        let selected = t.id == Theme.current.id
+        btn.layer.borderColor = (selected ? t.accent
+                                          : UIColor.white.withAlphaComponent(0.12)).cgColor
+        let font = UIFont.systemFont(ofSize: 13, weight: selected ? .semibold : .regular)
+        btn.configuration?.attributedTitle = AttributedString(t.name, attributes: AttributeContainer([
+            .foregroundColor: t.accent,
+            .font: font,
+        ]))
+    }
+
+    private func selectTheme(_ t: Theme) {
+        Theme.current = t
+        for (btn, theme) in themeCards { applyThemeCardStyle(btn, theme: theme) }
+        refreshThemeColors()
+    }
+
+    /// Repaint the popup's own chrome so the change is visible immediately.
+    private func refreshThemeColors() {
+        view.backgroundColor = bgColor
+        for sub in view.subviews where sub is UIScrollView { sub.backgroundColor = bgColor }
+        for label in themedLabels { label.textColor = textColor }
+        applyPanelBorder()
+        refreshChips()
+    }
+
+    private func applyPanelBorder() {
+        view.layer.borderWidth = 1
+        view.layer.borderColor = theme.accent(alpha: 0.35).cgColor
+    }
+
+    // MARK: - Layout helper
+
+    /// Wraps a view with the popup's standard 16pt side margins.
+    private func inset(_ child: UIView) -> UIView {
+        let container = UIView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        child.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(child)
+        NSLayoutConstraint.activate([
+            child.topAnchor.constraint(equalTo: container.topAnchor),
+            child.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            child.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            child.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+        ])
+        return container
     }
 }

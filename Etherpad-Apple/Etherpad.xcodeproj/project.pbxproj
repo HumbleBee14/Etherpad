@@ -25,6 +25,8 @@
 		644CDE52DC65ED8CED9D2CA4 /* SynthTouchCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1DCA46EB153856CC4603475 /* SynthTouchCoordinator.swift */; };
 		6810F66B61AA72FCA9DCAC12 /* CsoundiOS.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9D3E6CA2FC13C2D005E6DA3 /* CsoundiOS.xcframework */; };
 		6B43BB712DB5D9D21913A7DF /* SynthVoiceLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83C6825EAEB13A8396623CB9 /* SynthVoiceLayout.swift */; };
+		A1B2C3D4E5F600000000T101 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F600000000T100 /* Theme.swift */; };
+		A1B2C3D4E5F600000000T102 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F600000000T100 /* Theme.swift */; };
 		6C98FFFA0B20D6FD5EF9533D /* libSndfileiOS.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9D3E6CB2FC13C38005E6DA3 /* libSndfileiOS.xcframework */; };
 		728ECDE38DF9A0D336478031 /* etherpad.csd in Resources */ = {isa = PBXBuildFile; fileRef = E4ED418A67903CEC1D0D2EB8 /* etherpad.csd */; };
 		75B6DD717A9CB76CB76A491E /* CsoundMIDI.m in Sources */ = {isa = PBXBuildFile; fileRef = E9D3E6D72FC13F2F005E6DA3 /* CsoundMIDI.m */; };
@@ -120,6 +122,7 @@
 		7D6713FA6F75EF5F1CE2A741 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		7F596F37EDCAD3A5897614F3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		83C6825EAEB13A8396623CB9 /* SynthVoiceLayout.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SynthVoiceLayout.swift; path = Shared/SynthVoiceLayout.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F600000000T100 /* Theme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Theme.swift; path = Shared/Theme.swift; sourceTree = "<group>"; };
 		88447A549336C5D83A603A38 /* Info-macOS.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = "Info-macOS.plist"; path = "macOS/Info-macOS.plist"; sourceTree = "<group>"; };
 		89AA5E1752D560F34FAF83EE /* HostCsoundEngine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HostCsoundEngine.swift; path = Engine/HostCsoundEngine.swift; sourceTree = "<group>"; };
 		927946F772CF3097D3332248 /* MacSurfaceView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacSurfaceView.swift; path = macOS/MacSurfaceView.swift; sourceTree = "<group>"; };
@@ -210,6 +213,7 @@
 				D1DCA46EB153856CC4603475 /* SynthTouchCoordinator.swift */,
 				83C6825EAEB13A8396623CB9 /* SynthVoiceLayout.swift */,
 				02E7B051A52229DB23ECE2DB /* SynthPatchMenuFactory.swift */,
+				A1B2C3D4E5F600000000T100 /* Theme.swift */,
 			);
 			name = Shared;
 			sourceTree = "<group>";
@@ -557,6 +561,7 @@
 				EFCE75C9E6F4EA0D4C4387BD /* CsoundEngine.swift in Sources */,
 				A6220EE26DF77B1F7BB07A5B /* EtherpadViewController.swift in Sources */,
 				B5485E7CEEF6E31ED6EA3E5D /* TouchSurfaceView.swift in Sources */,
+				A1B2C3D4E5F600000000T101 /* Theme.swift in Sources */,
 				B5485E7CEEF6E31ED6EA3E5E /* VisualEffects.swift in Sources */,
 				564A2C153D87A6F0085177DA /* SplitModeController.swift in Sources */,
 				1D0104B675C2C0BBC3384C41 /* SplitSynthViewController.swift in Sources */,
@@ -582,6 +587,7 @@
 				A0B3C3D3E3F300000000B302 /* AUPatchMenuFactory.swift in Sources */,
 				FD6B1AF06E244CAFFD1680B1 /* HostCsoundEngine.swift in Sources */,
 				D0E0E9EEEDEA81BDC17D7605 /* TouchSurfaceView.swift in Sources */,
+				A1B2C3D4E5F600000000T102 /* Theme.swift in Sources */,
 				9CE0D85CD5F60E185E022311 /* VisualEffects.swift in Sources */,
 				57AE05F3812D84333F3B65A3 /* SynthCatalog.swift in Sources */,
 				B9C774EE0DBB26DE4A462F4A /* SynthEngineProtocol.swift in Sources */,
