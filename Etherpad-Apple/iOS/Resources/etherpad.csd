@@ -230,13 +230,13 @@ a2			oscili       .03*kadsr*a4, ao2+kcps_flat - cpsoct(ishift), gisine ;fnl outr
 
 a1 = a1 + asineL * ky
 a2 = a2 + asineR * ky
-elseif(gisound = 3) then
+elseif(gisound == 3) then
 ;Give It a Tri
 a1 vco2 ky * 0.05, kcps_flat, 12
 aenv linsegr 0, 0.005, 1, 0.5, 0
 a1 = a1 * aenv
 a2 = a1
-elseif(gisound = 4) then
+elseif(gisound == 4) then
 ;Digital Monk
 a1 vco2 0.1 + 0.3 * ky, kcps * 0.5, 2, 0.05
 a1 vowel a1, (1 - ky) * 12, 0
@@ -326,6 +326,7 @@ endin
 
 </CsInstruments>
 <CsScore>
+; $INF must be defined: Csound 6 expands an undefined macro to "" → 0 duration → always-on instruments deallocate → silence.
 #define INF # 360000 #
 i888 0 $INF
 i999 0 $INF
@@ -333,7 +334,7 @@ i"Mixer" 0 $INF
 i100 0 0.5 8
 i101 0 4 0
 i3 0 $INF
-;i2 0 100 
+;i2 0 100
 </CsScore>
 </CsoundSynthesizer>
 

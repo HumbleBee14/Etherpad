@@ -26,10 +26,12 @@ internal object Presets {
     val ScaleLabels = arrayOf(
         "Default", "Major", "Minor", "Pentatonic", "Flamenco",
         "Blues", "Chromatic", "Whole-Tone", "Octatonic", "Bohlen-Pierce",
+        "Overtone Series Low", "Overtone Series High",
     )
     const val DefaultScaleIdx = 0
 
-    // Bohlen-Pierce row is a sentinel: leading -1 selects the BP code path in instr 1.
+    // Single negative value = sentinel selecting an instr 1 code path: -1 Bohlen-Pierce,
+    // -2 Overtone Low, -3 Overtone High. Other rows are 14 ET semitone steps.
     val ScaleSteps = arrayOf(
         intArrayOf( 0, 2, 4, 7, 9,11,12,14,16,19,21,24,26,28),  // Default
         intArrayOf( 0, 2, 4, 5, 7, 9,11,12,14,16,17,19,21,23),  // Major
@@ -40,6 +42,8 @@ internal object Presets {
         intArrayOf( 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13),  // Chromatic
         intArrayOf( 0, 2, 4, 6, 8,10,12,14,16,18,20,22,24,26),  // Whole-Tone
         intArrayOf( 0, 1, 3, 4, 6, 7, 9,10,12,13,15,16,18,19),  // Octatonic
-        intArrayOf(-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),  // Bohlen-Pierce (sentinel)
+        intArrayOf(-1),  // Bohlen-Pierce
+        intArrayOf(-2),  // Overtone Series Low
+        intArrayOf(-3),  // Overtone Series High
     )
 }
