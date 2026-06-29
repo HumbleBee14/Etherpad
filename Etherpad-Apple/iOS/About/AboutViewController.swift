@@ -52,6 +52,8 @@ final class AboutViewController: UIViewController {
         stack.addArrangedSubview(makeSpacer(8))
 
         stack.addArrangedSubview(makeSplitModeSection())
+        stack.addArrangedSubview(makeSpacer(8))
+        stack.addArrangedSubview(makeRecordingSection())
         stack.addArrangedSubview(makeSpacer(12))
 
         let visHeaderRow = UIStackView()
@@ -324,6 +326,51 @@ final class AboutViewController: UIViewController {
 
     @objc private func splitModeToggled(_ sender: UISwitch) {
         SplitModeController.isEnabled = sender.isOn
+        refreshRecordingRowEnabled()
+    }
+
+    // MARK: - Recording
+
+    private weak var recordingSwitch: UISwitch?
+    private weak var recordingHeader: UILabel?
+
+    private func makeRecordingSection() -> UIView {
+        let row = UIStackView()
+        row.axis = .horizontal
+        row.alignment = .center
+        row.spacing = 12
+
+        let header = UILabel()
+        header.text = "Recording"
+        header.font = .systemFont(ofSize: 15, weight: .semibold)
+        header.textColor = textColor
+        themedLabels.append(header)
+        recordingHeader = header
+        row.addArrangedSubview(header)
+
+        row.addArrangedSubview(UIView())
+
+        let toggle = UISwitch()
+        toggle.isOn = RecordingSettings.isEnabled
+        toggle.addTarget(self, action: #selector(recordingToggled(_:)), for: .valueChanged)
+        recordingSwitch = toggle
+        row.addArrangedSubview(toggle)
+
+        let container = inset(row)
+        refreshRecordingRowEnabled()
+        return container
+    }
+
+    @objc private func recordingToggled(_ sender: UISwitch) {
+        RecordingSettings.isEnabled = sender.isOn
+    }
+
+    private func refreshRecordingRowEnabled() {
+        let enabled = !SplitModeController.isEnabled
+        recordingSwitch?.isEnabled = enabled
+        let alpha: CGFloat = enabled ? 1 : 0.4
+        recordingHeader?.alpha = alpha
+        recordingSwitch?.alpha = alpha
     }
 
     // MARK: - Theme

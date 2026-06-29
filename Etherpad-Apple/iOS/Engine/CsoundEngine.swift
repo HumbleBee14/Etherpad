@@ -5,6 +5,7 @@ final class CsoundEngine: SynthEngineProtocol {
 
     private(set) var csound: CsoundObj?
     private var isRunning = false
+    private(set) var isRecording = false
     private var listenerBridge: CsoundListenerBridge?
 
     private var xChannelPtrs: [UnsafeMutablePointer<Float>?] = Array(
@@ -67,8 +68,21 @@ final class CsoundEngine: SynthEngineProtocol {
         }
     }
 
+    func startRecording(to url: URL) {
+        guard isRunning, !isRecording, let cs = csound else { return }
+        cs.record(to: url)
+        isRecording = true
+    }
+
+    func stopRecording() {
+        guard isRecording else { return }
+        csound?.stopRecording()
+        isRecording = false
+    }
+
     func stop() {
         guard isRunning else { return }
+        if isRecording { stopRecording() }
         csound?.stop()
         csound = nil
         listenerBridge = nil

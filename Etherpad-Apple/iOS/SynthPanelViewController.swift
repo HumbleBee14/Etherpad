@@ -17,6 +17,11 @@ final class SynthPanelViewController: UIViewController {
     private var sizeBtn: UIButton!
     private var soundBtn: UIButton!
     private weak var settingsBtn: UIButton?
+    private weak var recordBtn: UIButton?
+    private weak var toolbarBar: UIVisualEffectView?
+    private var recordingURL: URL?
+    private var recordingTimer: Timer?
+    private var pendingShareURL: URL?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -47,8 +52,17 @@ final class SynthPanelViewController: UIViewController {
             self, selector: #selector(appWillResignActive),
             name: UIApplication.willResignActiveNotification, object: nil)
         NotificationCenter.default.addObserver(
+            self, selector: #selector(appDidEnterBackground),
+            name: UIApplication.didEnterBackgroundNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(appDidBecomeActive),
+            name: UIApplication.didBecomeActiveNotification, object: nil)
+        NotificationCenter.default.addObserver(
             self, selector: #selector(handleInterruption(_:)),
             name: AVAudioSession.interruptionNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(recordingSettingChanged),
+            name: RecordingSettings.didChangeNotification, object: nil)
     }
 
     override var prefersStatusBarHidden: Bool { true }
@@ -57,6 +71,8 @@ final class SynthPanelViewController: UIViewController {
 
     deinit {
         NotificationCenter.default.removeObserver(self)
+        discardRecording()
+        if let url = pendingShareURL { try? FileManager.default.removeItem(at: url) }
         engine.allNotesOff()
         engine.stop()
     }
@@ -64,6 +80,16 @@ final class SynthPanelViewController: UIViewController {
     @objc private func appWillResignActive() {
         surface.cancelAllTouches()
         engine.allNotesOff()
+    }
+
+    @objc private func appDidEnterBackground() {
+        finalizeAndKeepRecording()
+    }
+
+    @objc private func appDidBecomeActive() {
+        guard let url = pendingShareURL else { return }
+        pendingShareURL = nil
+        presentShareSheet(for: url)
     }
 
     @objc private func handleInterruption(_ notification: Notification) {
@@ -75,12 +101,17 @@ final class SynthPanelViewController: UIViewController {
         if type == .began {
             surface.cancelAllTouches()
             engine.allNotesOff()
+            finalizeAndKeepRecording()
         } else if type == .ended {
             let options = (info[AVAudioSessionInterruptionOptionKey] as? UInt).map {
                 AVAudioSession.InterruptionOptions(rawValue: $0)
             }
             if options?.contains(.shouldResume) ?? true {
                 try? AVAudioSession.sharedInstance().setActive(true)
+            }
+            if UIApplication.shared.applicationState == .active, let url = pendingShareURL {
+                pendingShareURL = nil
+                presentShareSheet(for: url)
             }
         }
     }
@@ -93,6 +124,7 @@ final class SynthPanelViewController: UIViewController {
         bar.clipsToBounds = true
         bar.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(bar)
+        toolbarBar = bar
         NSLayoutConstraint.activate([
             bar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             bar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -107,6 +139,17 @@ final class SynthPanelViewController: UIViewController {
         soundBtn = makeBarButton(title: "Sound", menu: menuFactory.soundMenu())
 
         var buttons: [UIButton] = [scaleBtn, keyBtn, octBtn, sizeBtn, soundBtn]
+
+        if RecordingSettings.isEnabled && showsAboutButton {
+            let rec = UIButton(type: .system)
+            let cfg = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
+            rec.setImage(UIImage(systemName: "record.circle", withConfiguration: cfg), for: .normal)
+            rec.tintColor = .white
+            rec.addTarget(self, action: #selector(toggleRecording), for: .touchUpInside)
+            recordBtn = rec
+            buttons.append(rec)
+        }
+
         if showsAboutButton {
             let gear = UIButton(type: .system)
             let cfg = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
@@ -164,6 +207,104 @@ final class SynthPanelViewController: UIViewController {
             pop.delegate = self
         }
         present(settings, animated: true)
+    }
+
+    // MARK: - Recording
+
+    @objc private func recordingSettingChanged() {
+        if engine.isRecording { discardRecording() }
+        guard let bar = toolbarBar else { return }
+        bar.removeFromSuperview()
+        recordBtn = nil
+        configureToolbar()
+    }
+
+    @objc private func toggleRecording() {
+        if engine.isRecording {
+            finishRecording()
+        } else {
+            beginRecording()
+        }
+    }
+
+    private func beginRecording() {
+        sweepStaleRecordings()
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("\(defaultRecordingName()).wav")
+        engine.startRecording(to: url)
+        guard engine.isRecording else { return }
+        recordingURL = url
+        updateRecordButton(recording: true)
+        recordingTimer = Timer.scheduledTimer(
+            withTimeInterval: RecordingSettings.maxDuration, repeats: false) { [weak self] _ in
+            self?.finishRecording()
+        }
+    }
+
+    private func finishRecording() {
+        guard let url = stopRecordingKeepingFile() else { return }
+        presentShareSheet(for: url)
+    }
+
+    private func finalizeAndKeepRecording() {
+        guard let url = stopRecordingKeepingFile() else { return }
+        if let old = pendingShareURL { try? FileManager.default.removeItem(at: old) }
+        pendingShareURL = url
+    }
+
+    private func stopRecordingKeepingFile() -> URL? {
+        recordingTimer?.invalidate()
+        recordingTimer = nil
+        guard engine.isRecording else { return nil }
+        engine.stopRecording()
+        updateRecordButton(recording: false)
+        defer { recordingURL = nil }
+        return recordingURL
+    }
+
+    private func discardRecording() {
+        recordingTimer?.invalidate()
+        recordingTimer = nil
+        guard engine.isRecording else { return }
+        engine.stopRecording()
+        if let url = recordingURL { try? FileManager.default.removeItem(at: url) }
+        recordingURL = nil
+        updateRecordButton(recording: false)
+    }
+
+    private func presentShareSheet(for url: URL) {
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        let share = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        share.completionWithItemsHandler = { _, _, _, _ in
+            try? FileManager.default.removeItem(at: url)
+        }
+        if let pop = share.popoverPresentationController {
+            pop.sourceView = recordBtn ?? view
+            pop.sourceRect = recordBtn?.bounds ?? CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 0, height: 0)
+        }
+        present(share, animated: true)
+    }
+
+    private func updateRecordButton(recording: Bool) {
+        let cfg = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
+        let name = recording ? "stop.fill" : "record.circle"
+        recordBtn?.setImage(UIImage(systemName: name, withConfiguration: cfg), for: .normal)
+        recordBtn?.tintColor = recording ? .systemRed : .white
+    }
+
+    private func defaultRecordingName() -> String {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
+        return "Etherpad \(fmt.string(from: Date()))"
+    }
+
+    private func sweepStaleRecordings() {
+        let tmp = FileManager.default.temporaryDirectory
+        let files = (try? FileManager.default.contentsOfDirectory(
+            at: tmp, includingPropertiesForKeys: nil)) ?? []
+        for url in files where url.lastPathComponent.hasPrefix("Etherpad ") && url.pathExtension == "wav" {
+            try? FileManager.default.removeItem(at: url)
+        }
     }
 }
 
