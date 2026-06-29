@@ -182,7 +182,8 @@ public final class EtherpadAudioUnit: AUAudioUnit {
 
     public override func deallocateRenderResources() {
         midiProcessor.allNotesOff()
-        midiOutputHandler.allNotesOff()
+        // Rendering has stopped, so the queue can't drain — flush note-offs directly.
+        midiOutputHandler.flushActiveNotesOffSync()
         hostEngine.allNotesOff()
         hostEngine.stopHost()
         super.deallocateRenderResources()
@@ -193,10 +194,12 @@ public final class EtherpadAudioUnit: AUAudioUnit {
     public override var internalRenderBlock: AUInternalRenderBlock {
         let engine = hostEngine
         let midi = midiProcessor
-        return { _, _, frameCount, _, outputData, eventList, _ in
+        let midiOut = midiOutputHandler
+        return { _, timestamp, frameCount, _, outputData, eventList, _ in
             if let eventList {
                 midi.processRenderEvents(eventList)
             }
+            midiOut.render(at: AUEventSampleTime(timestamp.pointee.mSampleTime))
             return engine.render(into: outputData, frameCount: frameCount)
         }
     }

@@ -1,16 +1,12 @@
 import AudioToolbox
+import os
 
-/// Converts touch pad gestures to MIDI note/CC events for host routing.
-///
-/// When the user touches the pad inside the AUv3 plugin, this handler
-/// generates MIDI Note On/Off and CC messages that hosts like AUM can
-/// route to other instruments in the chain.
+/// Touch gestures → MIDI out. UI thread enqueues; the render thread drains and is the
+/// sole caller of `AUMIDIOutputEventBlock` (Apple requires it on the render thread).
 final class MIDIOutputHandler {
 
-    /// Set by the audio unit from its `midiOutputEventBlock` property.
     var midiOutputBlock: AUMIDIOutputEventBlock?
 
-    /// Current patch state for XY ↔ MIDI note conversion (thread-safe).
     private let patchBox = RealtimePatchState()
 
     var patchState: SynthPatchState {
@@ -18,68 +14,106 @@ final class MIDIOutputHandler {
         set { patchBox.value = newValue }
     }
 
-    /// Master enable/disable for MIDI output.
     var isEnabled: Bool = true
 
-    /// Tracks active MIDI notes per voice slot.
-    private var activeNotes: [Int: UInt8] = [:]
+    // MARK: - Event Queue (UI producer → audio consumer)
 
-    /// Tracks last sent CC74 per slot to avoid redundant messages.
-    private var lastBrightness: [Int: UInt8] = [:]
+    private enum EventKind { case noteOn, noteOff, cc }
 
-    // MARK: - Touch Events → MIDI
+    private struct OutEvent {
+        let kind: EventKind
+        let slot: Int
+        let data1: UInt8   // note or cc number
+        let data2: UInt8   // velocity or cc value
+    }
 
-    /// Call when a touch begins on the pad. Sends MIDI Note On.
+    private let pending = OSAllocatedUnfairLock(initialState: [OutEvent]())
+
+    private func enqueue(_ event: OutEvent) {
+        pending.withLock { $0.append(event) }
+    }
+
+    // MARK: - Note Tracking (audio thread only)
+
+    private var activeNotes = [UInt8?](repeating: nil, count: SynthVoiceLayout.maxTouches)
+    private var lastBrightness = [Int16](repeating: -1, count: SynthVoiceLayout.maxTouches)
+
+    // MARK: - Touch → MIDI (UI thread: enqueue only)
+
     func touchBegan(slot: Int, x: Float, y: Float) {
-        guard isEnabled, let block = midiOutputBlock else { return }
-
+        guard isEnabled, (0..<SynthVoiceLayout.maxTouches).contains(slot) else { return }
         let (note, velocity) = xyToMIDINote(x: x, y: y)
-        activeNotes[slot] = note
-        lastBrightness[slot] = nil
-
-        sendNoteOn(note: note, velocity: velocity, via: block)
+        enqueue(OutEvent(kind: .noteOn, slot: slot, data1: note, data2: velocity))
     }
 
-    /// Call when a touch moves on the pad. Sends CC74 (brightness) from Y.
     func touchMoved(slot: Int, x: Float, y: Float) {
-        guard isEnabled, let block = midiOutputBlock else { return }
-        guard activeNotes[slot] != nil else { return }
-
-        // Send CC74 (Brightness/Timbre) mapped from Y position
+        guard isEnabled, (0..<SynthVoiceLayout.maxTouches).contains(slot) else { return }
         let brightness = UInt8(max(0, min(127, Int(y * 127))))
-        if lastBrightness[slot] != brightness {
-            lastBrightness[slot] = brightness
-            sendCC(cc: 74, value: brightness, via: block)
-        }
+        enqueue(OutEvent(kind: .cc, slot: slot, data1: 74, data2: brightness))
     }
 
-    /// Call when a touch ends on the pad. Sends MIDI Note Off.
+    // Release paths are not gated by isEnabled, so a note can always be turned off.
     func touchEnded(slot: Int) {
-        guard isEnabled, let block = midiOutputBlock else { return }
-        guard let note = activeNotes.removeValue(forKey: slot) else { return }
-        lastBrightness[slot] = nil
-
-        sendNoteOff(note: note, via: block)
+        guard (0..<SynthVoiceLayout.maxTouches).contains(slot) else { return }
+        enqueue(OutEvent(kind: .noteOff, slot: slot, data1: 0, data2: 0))
     }
 
-    /// Release all active MIDI output notes.
     func allNotesOff() {
-        guard let block = midiOutputBlock else {
-            activeNotes.removeAll()
-            lastBrightness.removeAll()
-            return
+        for slot in 0..<SynthVoiceLayout.maxTouches {
+            enqueue(OutEvent(kind: .noteOff, slot: slot, data1: 0, data2: 0))
         }
-
-        for (_, note) in activeNotes {
-            sendNoteOff(note: note, via: block)
-        }
-        activeNotes.removeAll()
-        lastBrightness.removeAll()
     }
 
-    // MARK: - XY → MIDI Note Conversion
+    /// Teardown only: render has stopped so the queue can't drain — send offs directly.
+    func flushActiveNotesOffSync() {
+        guard let block = midiOutputBlock else { return }
+        for slot in 0..<SynthVoiceLayout.maxTouches {
+            if let note = activeNotes[slot] {
+                send(0x80, note, 0, at: AUEventSampleTimeImmediate, via: block)
+                activeNotes[slot] = nil
+                lastBrightness[slot] = -1
+            }
+        }
+    }
 
-    /// Convert surface (x, y) coordinates to MIDI note and velocity.
+    // MARK: - Render (audio thread)
+
+    func render(at sampleTime: AUEventSampleTime) {
+        // take the producer's buffer, leave it empty: O(1), no audio-thread copy
+        let events = pending.withLock { state -> [OutEvent] in
+            defer { state = [] }
+            return state
+        }
+        guard !events.isEmpty, let block = midiOutputBlock else { return }
+
+        for event in events {
+            let slot = event.slot
+            switch event.kind {
+            case .noteOn:
+                if let old = activeNotes[slot] {
+                    send(0x80, old, 0, at: sampleTime, via: block)
+                }
+                activeNotes[slot] = event.data1
+                lastBrightness[slot] = -1
+                send(0x90, event.data1, event.data2, at: sampleTime, via: block)
+
+            case .noteOff:
+                if let note = activeNotes[slot] {
+                    send(0x80, note, 0, at: sampleTime, via: block)
+                    activeNotes[slot] = nil
+                    lastBrightness[slot] = -1
+                }
+
+            case .cc:
+                guard activeNotes[slot] != nil, lastBrightness[slot] != Int16(event.data2) else { continue }
+                lastBrightness[slot] = Int16(event.data2)
+                send(0xB0, event.data1, event.data2, at: sampleTime, via: block)
+            }
+        }
+    }
+
+    // MARK: - XY → MIDI Note Conversion (UI thread)
+
     private func xyToMIDINote(x: Float, y: Float) -> (note: UInt8, velocity: UInt8) {
         let patchState = patchBox.snapshot()
         // Reverse the CSD mapping: kx = 1 - x, kstep = kx * gisize
@@ -93,7 +127,6 @@ final class MIDIOutputHandler {
             let clampedStep = min(step, scaleSteps.count - 1)
             midiNote = baseNote + scaleSteps[max(0, clampedStep)]
         } else {
-            // Special scales (Bohlen-Pierce, Overtone): linear approximation
             midiNote = baseNote + step
         }
 
@@ -102,31 +135,14 @@ final class MIDIOutputHandler {
         return (clampedNote, velocity)
     }
 
-    // MARK: - MIDI Send Helpers
+    // MARK: - MIDI Send (audio thread)
 
-    private func sendNoteOn(note: UInt8, velocity: UInt8, via block: AUMIDIOutputEventBlock) {
-        var data: (UInt8, UInt8, UInt8) = (0x90, note, velocity)
-        _ = withUnsafeMutablePointer(to: &data) { ptr in
-            ptr.withMemoryRebound(to: UInt8.self, capacity: 3) { bytes in
-                block(AUEventSampleTimeImmediate, 0, 3, bytes)
-            }
-        }
-    }
-
-    private func sendNoteOff(note: UInt8, via block: AUMIDIOutputEventBlock) {
-        var data: (UInt8, UInt8, UInt8) = (0x80, note, 0)
-        _ = withUnsafeMutablePointer(to: &data) { ptr in
-            ptr.withMemoryRebound(to: UInt8.self, capacity: 3) { bytes in
-                block(AUEventSampleTimeImmediate, 0, 3, bytes)
-            }
-        }
-    }
-
-    private func sendCC(cc: UInt8, value: UInt8, via block: AUMIDIOutputEventBlock) {
-        var data: (UInt8, UInt8, UInt8) = (0xB0, cc, value)
-        _ = withUnsafeMutablePointer(to: &data) { ptr in
-            ptr.withMemoryRebound(to: UInt8.self, capacity: 3) { bytes in
-                block(AUEventSampleTimeImmediate, 0, 3, bytes)
+    private func send(_ status: UInt8, _ d1: UInt8, _ d2: UInt8,
+                      at sampleTime: AUEventSampleTime, via block: AUMIDIOutputEventBlock) {
+        var bytes: (UInt8, UInt8, UInt8) = (status, d1, d2)
+        _ = withUnsafeMutablePointer(to: &bytes) { ptr in
+            ptr.withMemoryRebound(to: UInt8.self, capacity: 3) { raw in
+                block(sampleTime, 0, 3, raw)
             }
         }
     }
