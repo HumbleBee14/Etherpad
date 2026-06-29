@@ -13,6 +13,10 @@ final class AboutViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = bgColor
+        view.layer.cornerRadius = 16
+        view.layer.cornerCurve = .continuous
+        view.layer.masksToBounds = true
+        applyPanelBorder()
 
         let scroll = UIScrollView()
         scroll.translatesAutoresizingMaskIntoConstraints = false
@@ -46,6 +50,9 @@ final class AboutViewController: UIViewController {
         stack.addArrangedSubview(tagline)
 
         stack.addArrangedSubview(makeSpacer(8))
+
+        stack.addArrangedSubview(makeSplitModeSection())
+        stack.addArrangedSubview(makeSpacer(12))
 
         let visHeaderRow = UIStackView()
         visHeaderRow.axis = .horizontal
@@ -95,39 +102,6 @@ final class AboutViewController: UIViewController {
         stack.addArrangedSubview(themeHeaderContainer)
 
         stack.addArrangedSubview(makeThemeGrid())
-
-        stack.addArrangedSubview(makeSpacer(12))
-
-        let splitRow = UIStackView()
-        splitRow.axis = .horizontal
-        splitRow.alignment = .center
-        splitRow.spacing = 12
-
-        let splitHeader = UILabel()
-        splitHeader.text = "Split Mode"
-        splitHeader.font = .systemFont(ofSize: 15, weight: .semibold)
-        splitHeader.textColor = textColor
-        themedLabels.append(splitHeader)
-        splitRow.addArrangedSubview(splitHeader)
-
-        splitRow.addArrangedSubview(UIView())
-
-        let splitToggle = UISwitch()
-        splitToggle.isOn = SplitModeController.isEnabled
-        splitToggle.addTarget(self, action: #selector(splitModeToggled(_:)), for: .valueChanged)
-        splitRow.addArrangedSubview(splitToggle)
-
-        let splitContainer = UIView()
-        splitContainer.translatesAutoresizingMaskIntoConstraints = false
-        splitRow.translatesAutoresizingMaskIntoConstraints = false
-        splitContainer.addSubview(splitRow)
-        NSLayoutConstraint.activate([
-            splitRow.topAnchor.constraint(equalTo: splitContainer.topAnchor),
-            splitRow.bottomAnchor.constraint(equalTo: splitContainer.bottomAnchor),
-            splitRow.leadingAnchor.constraint(equalTo: splitContainer.leadingAnchor, constant: 16),
-            splitRow.trailingAnchor.constraint(equalTo: splitContainer.trailingAnchor, constant: -16),
-        ])
-        stack.addArrangedSubview(splitContainer)
 
         stack.addArrangedSubview(makeSpacer(12))
 
@@ -325,6 +299,29 @@ final class AboutViewController: UIViewController {
         }
     }
 
+    private func makeSplitModeSection() -> UIView {
+        let row = UIStackView()
+        row.axis = .horizontal
+        row.alignment = .center
+        row.spacing = 12
+
+        let header = UILabel()
+        header.text = "Split Mode"
+        header.font = .systemFont(ofSize: 15, weight: .semibold)
+        header.textColor = textColor
+        themedLabels.append(header)
+        row.addArrangedSubview(header)
+
+        row.addArrangedSubview(UIView())
+
+        let toggle = UISwitch()
+        toggle.isOn = SplitModeController.isEnabled
+        toggle.addTarget(self, action: #selector(splitModeToggled(_:)), for: .valueChanged)
+        row.addArrangedSubview(toggle)
+
+        return inset(row)
+    }
+
     @objc private func splitModeToggled(_ sender: UISwitch) {
         SplitModeController.isEnabled = sender.isOn
     }
@@ -413,7 +410,13 @@ final class AboutViewController: UIViewController {
         view.backgroundColor = bgColor
         for sub in view.subviews where sub is UIScrollView { sub.backgroundColor = bgColor }
         for label in themedLabels { label.textColor = textColor }
+        applyPanelBorder()
         refreshChips()
+    }
+
+    private func applyPanelBorder() {
+        view.layer.borderWidth = 1
+        view.layer.borderColor = theme.accent(alpha: 0.35).cgColor
     }
 
     // MARK: - Layout helper
