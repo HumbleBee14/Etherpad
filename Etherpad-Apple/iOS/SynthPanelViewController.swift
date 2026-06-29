@@ -119,6 +119,10 @@ final class SynthPanelViewController: UIViewController {
             if options?.contains(.shouldResume) ?? true {
                 try? AVAudioSession.sharedInstance().setActive(true)
             }
+            if UIApplication.shared.applicationState == .active, let url = pendingShareURL {
+                pendingShareURL = nil
+                presentShareSheet(for: url)
+            }
         }
     }
 
@@ -254,6 +258,7 @@ final class SynthPanelViewController: UIViewController {
 
     private func finalizeAndKeepRecording() {
         guard let url = stopRecordingKeepingFile() else { return }
+        if let old = pendingShareURL { try? FileManager.default.removeItem(at: old) }
         pendingShareURL = url
     }
 
