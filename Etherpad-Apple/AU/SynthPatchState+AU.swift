@@ -7,7 +7,8 @@ extension SynthPatchState {
     /// Convert to `AUParameterTree`-compatible indexed values.
     func toParameterValues() -> [EtherpadParameterAddress: AUValue] {
         let scaleIndex = SynthCatalog.scaleOptions.firstIndex(where: { $0.name == scaleName }) ?? 0
-        let octaveIndex = SynthCatalog.octaveValues.firstIndex(of: octave) ?? 2
+        let defaultOctaveIndex = SynthCatalog.octaveValues.firstIndex(of: SynthCatalog.defaultOctave) ?? 0
+        let octaveIndex = SynthCatalog.octaveValues.firstIndex(of: octave) ?? defaultOctaveIndex
         return [
             .scale: AUValue(scaleIndex),
             .key: AUValue(key),

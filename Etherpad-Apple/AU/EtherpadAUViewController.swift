@@ -25,7 +25,6 @@ public final class EtherpadAUViewController: AUViewController, AUAudioUnitFactor
     // MARK: - AU References
 
     private weak var audioUnit: EtherpadAudioUnit?
-    private var parameterObservationToken: AUParameterObserverToken?
 
     // MARK: - Toolbar Buttons
 
@@ -113,58 +112,28 @@ public final class EtherpadAUViewController: AUViewController, AUAudioUnitFactor
         au.midiProcessor.patchState = menuFactory.patch
         au.midiOutputHandler.patchState = menuFactory.patch
 
-        // Observe AU parameter tree changes (from host automation)
-        observeParameterTree(au)
-
-        // Use the AU's UI callback — NOT hostEngine.onPatchStateChanged.
-        // The AU owns onPatchStateChanged for authoritative MIDI processor sync.
+        // Single UI-refresh path: the AU funnels every patch change (host automation,
+        // menus, presets, state restore) through onUIStateChanged.
         au.onUIStateChanged = { [weak self] patchState in
             DispatchQueue.main.async {
-                self?.handleEngineStateChange(patchState)
+                self?.updateMenuFactoryUI(with: patchState)
             }
         }
     }
 
-    // MARK: - Parameter Tree Observation
-
-    private func observeParameterTree(_ au: EtherpadAudioUnit) {
-        guard let tree = au.parameterTree else { return }
-
-        // Remove previous observation if any
-        if let token = parameterObservationToken {
-            tree.removeParameterObserver(token)
-        }
-
-        // Observe parameter changes from host automation
-        parameterObservationToken = tree.token(byAddingParameterObserver: { [weak self] address, value in
-            DispatchQueue.main.async {
-                self?.handleParameterChange(address: address, value: value)
-            }
-        })
-    }
-
-    /// Handle a parameter change from host automation.
-    private func handleParameterChange(address: AUParameterAddress, value: AUValue) {
-        guard let au = audioUnit else { return }
-        // Rebuild UI from engine state (the AU already synced midiProcessor)
-        let enginePatch = au.hostEngine.currentPatchState
-        updateMenuFactoryUI(with: enginePatch)
-    }
-
-    /// Handle engine-driven patch state changes (from toolbar menus, etc.).
-    private func handleEngineStateChange(_ patchState: SynthPatchState) {
-        updateMenuFactoryUI(with: patchState)
-    }
-
-    /// Update the menu factory and UI to match a new patch state.
+    /// Sync the toolbar to a new patch state, rebuilding only the controls that changed.
     /// Does NOT re-apply to engine or midiProcessor — the AU handles that.
     private func updateMenuFactoryUI(with patchState: SynthPatchState) {
-        // Only update if actually changed to avoid infinite loops
-        guard menuFactory.patch != patchState else { return }
+        let old = menuFactory.patch
+        guard old != patchState else { return }
 
         menuFactory.updatePatchSilently(patchState)
-        surface.numberOfNotes = Double(patchState.size)
-        refreshMenuTitles()
+        if old.size != patchState.size { surface.numberOfNotes = Double(patchState.size) }
+        if old.scaleName != patchState.scaleName { refreshMenuTitle(for: .scale) }
+        if old.key != patchState.key { refreshMenuTitle(for: .key) }
+        if old.octave != patchState.octave { refreshMenuTitle(for: .octave) }
+        if old.size != patchState.size { refreshMenuTitle(for: .size) }
+        if old.sound != patchState.sound { refreshMenuTitle(for: .sound) }
     }
 
     // MARK: - Touch Surface
@@ -237,16 +206,31 @@ public final class EtherpadAUViewController: AUViewController, AUAudioUnitFactor
     }
 
     private func refreshMenuTitles() {
-        scaleBtn?.setTitle(menuFactory.scaleTitle, for: .normal)
-        scaleBtn?.menu = menuFactory.scaleMenu()
-        keyBtn?.setTitle(menuFactory.keyTitle, for: .normal)
-        keyBtn?.menu = menuFactory.keyMenu()
-        octBtn?.setTitle(menuFactory.octaveTitle, for: .normal)
-        octBtn?.menu = menuFactory.octaveMenu()
-        sizeBtn?.setTitle(menuFactory.sizeTitle, for: .normal)
-        sizeBtn?.menu = menuFactory.sizeMenu()
-        soundBtn?.setTitle(menuFactory.soundTitle, for: .normal)
-        soundBtn?.menu = menuFactory.soundMenu()
+        for address in EtherpadParameterAddress.allCases {
+            refreshMenuTitle(for: address)
+        }
+    }
+
+    private func refreshMenuTitle(for address: EtherpadParameterAddress?) {
+        switch address {
+        case .scale:
+            scaleBtn?.setTitle(menuFactory.scaleTitle, for: .normal)
+            scaleBtn?.menu = menuFactory.scaleMenu()
+        case .key:
+            keyBtn?.setTitle(menuFactory.keyTitle, for: .normal)
+            keyBtn?.menu = menuFactory.keyMenu()
+        case .octave:
+            octBtn?.setTitle(menuFactory.octaveTitle, for: .normal)
+            octBtn?.menu = menuFactory.octaveMenu()
+        case .size:
+            sizeBtn?.setTitle(menuFactory.sizeTitle, for: .normal)
+            sizeBtn?.menu = menuFactory.sizeMenu()
+        case .sound:
+            soundBtn?.setTitle(menuFactory.soundTitle, for: .normal)
+            soundBtn?.menu = menuFactory.soundMenu()
+        case nil:
+            break
+        }
     }
 }
 

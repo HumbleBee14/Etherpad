@@ -32,7 +32,7 @@ enum EtherpadParameterFactory {
         let key = AUParameterTree.createParameter(
             withIdentifier: "key", name: "Key",
             address: EtherpadParameterAddress.key.rawValue,
-            min: 0, max: 11,
+            min: 0, max: AUValue(SynthCatalog.keyNames.count - 1),
             unit: .indexed, unitName: nil, flags: flags,
             valueStrings: SynthCatalog.keyNames,
             dependentParameters: nil
