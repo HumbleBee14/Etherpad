@@ -37,7 +37,7 @@
 		8C3D4E5F60718293A4B5C6D7 /* VisualEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D4E5F60718293A4B5C6D7E8 /* VisualEffects.swift */; };
 		8D2387EF55B4DC79FB9EA926 /* SynthCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E6ED90D527C6B94739ED5C9 /* SynthCatalog.swift */; };
 		8D7A2CE333F84BCEE9A51B14 /* SynthPatchState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25F1E79BBA966253DB187CDB /* SynthPatchState.swift */; };
-		91D2EA6867727AD5C7391C26 /* SynthPatchMenuFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02E7B051A52229DB23ECE2DB /* SynthPatchMenuFactory.swift */; };
+		A0B3C3D3E3F300000000B302 /* AUPatchMenuFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0B3C3D3E3F300000000B301 /* AUPatchMenuFactory.swift */; };
 		9CE0D85CD5F60E185E022311 /* VisualEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBCDF72A7572D182527EB70D /* VisualEffects.swift */; };
 		A1B2C3D4E5F60718293A4001 /* MacTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4002 /* MacTheme.swift */; };
 		A6220EE26DF77B1F7BB07A5B /* EtherpadViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D45A6FC8E72E5F76D667776A /* EtherpadViewController.swift */; };
@@ -98,6 +98,7 @@
 /* Begin PBXFileReference section */
 		00C76DA0D09E5F638D001B8E /* MacSynthTables.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacSynthTables.swift; path = macOS/MacSynthTables.swift; sourceTree = "<group>"; };
 		02E7B051A52229DB23ECE2DB /* SynthPatchMenuFactory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SynthPatchMenuFactory.swift; path = Shared/SynthPatchMenuFactory.swift; sourceTree = "<group>"; };
+		A0B3C3D3E3F300000000B301 /* AUPatchMenuFactory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AUPatchMenuFactory.swift; path = AU/AUPatchMenuFactory.swift; sourceTree = "<group>"; };
 		0459D88593563AE08363B271 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = macOS/Assets.xcassets; sourceTree = "<group>"; };
 		11587677099646A8784B8D95 /* main.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = main.swift; path = macOS/main.swift; sourceTree = "<group>"; };
 		14D61CFCEF0A2DDF6F998191 /* CsoundMIDI.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = CsoundMIDI.h; path = CsoundMIDI.h; sourceTree = "<group>"; };
@@ -289,6 +290,7 @@
 			children = (
 				637B4B3336C05B24F478A639 /* EtherpadAUViewController.swift */,
 				BC17E5B8EFF4EA201FE1E0D0 /* EtherpadAudioUnit.swift */,
+				A0B3C3D3E3F300000000B301 /* AUPatchMenuFactory.swift */,
 				BA945D7DD9EDF38A5259B7FB /* Info.plist */,
 				3333604A572A944853DDBEBB /* Etherpad-AU-Bridging-Header.h */,
 				AA01000000000000000001F0 /* AUParameterAddresses.swift */,
@@ -574,6 +576,7 @@
 			files = (
 				8796B1687004603E8919A674 /* EtherpadAUViewController.swift in Sources */,
 				3F4A495DFC96528CF571DA17 /* EtherpadAudioUnit.swift in Sources */,
+				A0B3C3D3E3F300000000B302 /* AUPatchMenuFactory.swift in Sources */,
 				FD6B1AF06E244CAFFD1680B1 /* HostCsoundEngine.swift in Sources */,
 				D0E0E9EEEDEA81BDC17D7605 /* TouchSurfaceView.swift in Sources */,
 				9CE0D85CD5F60E185E022311 /* VisualEffects.swift in Sources */,
@@ -583,7 +586,6 @@
 				C22209C7AA97E7341D7A6A41 /* SynthScore.swift in Sources */,
 				644CDE52DC65ED8CED9D2CA4 /* SynthTouchCoordinator.swift in Sources */,
 				DFAE2667CBB800651FAD099A /* SynthVoiceLayout.swift in Sources */,
-				91D2EA6867727AD5C7391C26 /* SynthPatchMenuFactory.swift in Sources */,
 				AA01000000000000000001F1 /* AUParameterAddresses.swift in Sources */,
 				AA01000000000000000002F1 /* EtherpadPresets.swift in Sources */,
 				AA01000000000000000003F1 /* MIDIProcessor.swift in Sources */,

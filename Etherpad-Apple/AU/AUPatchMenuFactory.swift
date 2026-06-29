@@ -1,30 +1,31 @@
 import UIKit
+import AudioToolbox
 
-/// Builds patch UIMenus from `SynthCatalog` and applies changes through `SynthEngineProtocol`.
-/// Standalone iOS only. AU uses `AUPatchMenuFactory` (routes taps through the parameter tree).
-/// SYNC NOTE: keep functionally in sync with `AU/AUPatchMenuFactory.swift` — menu contents and
-/// option order must match; presentation may diverge.
-final class SynthPatchMenuFactory {
+/// Builds patch UIMenus from `SynthCatalog` for the AUv3 plugin.
+/// Taps emit a recordable automation gesture (via `onGesture`) instead of calling the engine
+/// directly — that is the only behavioural difference from the standalone factory.
+/// SYNC NOTE: keep functionally in sync with `iOS/Shared/SynthPatchMenuFactory.swift` — menu
+/// contents and option order must match; presentation may diverge.
+final class AUPatchMenuFactory {
 
     private(set) var patch: SynthPatchState
-    weak var engine: SynthEngineProtocol?
+
+    /// Fired on every tap: the parameter address and the indexed value the host should record.
+    var onGesture: ((EtherpadParameterAddress, AUValue) -> Void)?
+
+    /// Fired after `patch` updates, for local UI refresh (titles/menus/size).
     var onPatchChanged: ((SynthPatchState) -> Void)?
 
     init(patch: SynthPatchState = .factoryDefault) {
         self.patch = patch
     }
 
-    func applyPatch(to engine: SynthEngineProtocol) {
-        self.engine = engine
-        engine.applyPatchState(patch)
-    }
-
     // MARK: - Menus
 
     func scaleMenu() -> UIMenu {
-        UIMenu(title: "Scale", children: SynthCatalog.scaleOptions.map { opt in
+        UIMenu(title: "Scale", children: SynthCatalog.scaleOptions.enumerated().map { i, opt in
             menuAction(title: opt.name, isSelected: opt.name == patch.scaleName, isDefault: opt.isDefault) { [weak self] in
-                self?.updateScale(opt.name, steps: opt.steps)
+                self?.selectScale(name: opt.name, index: i)
             }
         })
     }
@@ -32,15 +33,16 @@ final class SynthPatchMenuFactory {
     func keyMenu() -> UIMenu {
         UIMenu(title: "Key", children: SynthCatalog.keyNames.enumerated().map { i, name in
             menuAction(title: name, isSelected: i == patch.key, isDefault: i == SynthCatalog.defaultKey) { [weak self] in
-                self?.updateKey(i)
+                self?.selectKey(i)
             }
         })
     }
 
     func octaveMenu() -> UIMenu {
-        UIMenu(title: "Octave", children: zip(SynthCatalog.octaveLabels, SynthCatalog.octaveValues).map { label, value in
-            menuAction(title: label, isSelected: value == patch.octave, isDefault: value == SynthCatalog.defaultOctave) { [weak self] in
-                self?.updateOctave(value)
+        UIMenu(title: "Octave", children: zip(SynthCatalog.octaveLabels, SynthCatalog.octaveValues).enumerated().map { i, pair in
+            let (label, value) = pair
+            return menuAction(title: label, isSelected: value == patch.octave, isDefault: value == SynthCatalog.defaultOctave) { [weak self] in
+                self?.selectOctave(value: value, index: i)
             }
         })
     }
@@ -48,7 +50,7 @@ final class SynthPatchMenuFactory {
     func sizeMenu() -> UIMenu {
         UIMenu(title: "Size", children: SynthCatalog.sizeRange.map { n in
             menuAction(title: "\(n)", isSelected: n == patch.size, isDefault: n == SynthCatalog.defaultSize) { [weak self] in
-                self?.updateSize(n)
+                self?.selectSize(n)
             }
         })
     }
@@ -56,12 +58,12 @@ final class SynthPatchMenuFactory {
     func soundMenu() -> UIMenu {
         UIMenu(title: "Sound", children: SynthCatalog.soundNames.enumerated().map { i, name in
             menuAction(title: name, isSelected: i == patch.sound, isDefault: i == SynthCatalog.defaultSound) { [weak self] in
-                self?.updateSound(i)
+                self?.selectSound(i)
             }
         })
     }
 
-    // MARK: - Toolbar titles (for bar button labels)
+    // MARK: - Toolbar titles
 
     var scaleTitle: String { "Scale: \(patch.scaleName)" }
     var keyTitle: String {
@@ -75,46 +77,40 @@ final class SynthPatchMenuFactory {
         return "Sound: \(name)"
     }
 
-    // MARK: - Patch updates
+    // MARK: - Selection (emit gesture, then refresh)
 
-    private func updateScale(_ name: String, steps: [Int]) {
+    private func selectScale(name: String, index: Int) {
         patch.scaleName = name
-        engine?.setScale(steps)
-        notifyPatchChanged()
+        emit(.scale, index)
     }
 
-    private func updateKey(_ key: Int) {
+    private func selectKey(_ key: Int) {
         patch.key = key
-        engine?.setKey(key)
-        notifyPatchChanged()
+        emit(.key, key)
     }
 
-    private func updateOctave(_ octave: Int) {
-        patch.octave = octave
-        engine?.setOctave(octave)
-        notifyPatchChanged()
+    private func selectOctave(value: Int, index: Int) {
+        patch.octave = value
+        emit(.octave, index)
     }
 
-    private func updateSize(_ size: Int) {
+    private func selectSize(_ size: Int) {
         patch.size = size
-        engine?.setSize(size)
-        notifyPatchChanged()
+        emit(.size, SynthCatalog.sizeIndex(for: size))
     }
 
-    private func updateSound(_ sound: Int) {
+    private func selectSound(_ sound: Int) {
         patch.sound = sound
-        engine?.setSound(sound)
-        notifyPatchChanged()
+        emit(.sound, sound)
     }
 
-    /// Update internal patch state without applying to the engine.
-    /// Used by AU view controller when the engine already has the new state
-    /// (e.g., from host parameter automation).
+    /// Update internal patch without firing callbacks (host automation already changed the engine).
     func updatePatchSilently(_ newPatch: SynthPatchState) {
         patch = newPatch
     }
 
-    private func notifyPatchChanged() {
+    private func emit(_ address: EtherpadParameterAddress, _ index: Int) {
+        onGesture?(address, AUValue(index))
         onPatchChanged?(patch)
     }
 

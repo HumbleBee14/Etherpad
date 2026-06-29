@@ -44,6 +44,10 @@ public final class EtherpadAudioUnit: AUAudioUnit {
     /// Prevents `implementorValueObserver` re-entry while pushing engine state to the tree.
     private var isSyncingParameters = false
 
+    /// Originator token for UI-driven writes. Suppresses our added UI-refresh observer so
+    /// host playback updates the UI but our own gesture writes do not loop back.
+    private var uiObserverToken: AUParameterObserverToken?
+
     // MARK: - Init
 
     public override init(componentDescription: AudioComponentDescription,
@@ -104,6 +108,27 @@ public final class EtherpadAudioUnit: AUAudioUnit {
                 return "\(Int(valuePtr?.pointee ?? param.value))"
             }
         }
+
+        // UI-refresh observer: fires for host-originated changes only (our own writes pass
+        // this token as originator and are suppressed), keeping the plugin UI in sync without
+        // a feedback loop. Engine updates flow separately via implementorValueObserver above.
+        uiObserverToken = _parameterTree.token(byAddingParameterObserver: { [weak self] _, _ in
+            guard let self else { return }
+            let patch = self.hostEngine.currentPatchState
+            let notify: () -> Void = { self.onUIStateChanged?(patch) }
+            if Thread.isMainThread { notify() } else { DispatchQueue.main.async(execute: notify) }
+        })
+    }
+
+    /// Write a recordable automation gesture for a discrete menu change.
+    /// `.touch`/`.value`/`.release` back-to-back so the host records the change with no drag.
+    /// `implementorValueObserver` still fires and updates the engine; the originator token
+    /// suppresses only our UI-refresh observer (no feedback loop).
+    func recordParameterGesture(address: EtherpadParameterAddress, index: AUValue) {
+        guard let param = EtherpadParameterFactory.parameter(for: address, in: _parameterTree) else { return }
+        param.setValue(index, originator: uiObserverToken, atHostTime: 0, eventType: .touch)
+        param.setValue(index, originator: uiObserverToken, atHostTime: 0, eventType: .value)
+        param.setValue(index, originator: uiObserverToken, atHostTime: 0, eventType: .release)
     }
 
     /// Push current engine patch state to the parameter tree (e.g., after preset load).
