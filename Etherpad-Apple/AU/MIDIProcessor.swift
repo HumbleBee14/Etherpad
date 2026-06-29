@@ -45,6 +45,10 @@ final class MIDIProcessor {
     private var channelAftertouchValue: Float = 0  // 0…1
     private var pitchBendValue: Float = 0      // -1…+1
 
+    // Per-note (MIDI 2.0 / MPE) modulation, additive on top of channel-wide.
+    private var perNoteBend: [Float] = Array(repeating: 0, count: SynthVoiceLayout.maxTouches)       // −1…+1
+    private var perNoteBrightness: [Float] = Array(repeating: 0, count: SynthVoiceLayout.maxTouches) //  0…1
+
     // MARK: - Public API
 
     /// Process all render events in the `AURenderEvent` linked list.
@@ -68,6 +72,36 @@ final class MIDIProcessor {
         }
     }
 
+    /// Single engine-facing choke point. Both the MIDI 1.0 and MIDI 2.0 paths feed this.
+    private func dispatch(_ msg: MIDI2Message) {
+        switch msg {
+        case let .noteOn(note, vel16):
+            noteOn(note: note, velocity: UInt8(MIDI2Scale.velocity(vel16) * 127))
+        case let .noteOff(note, _):
+            noteOff(note: note)
+        case let .controlChange(index, value32):
+            controlChange(cc: index, value: UInt8(MIDI2Scale.unipolar(value32) * 127))
+        case let .channelPitchBend(value32):
+            pitchBendValue = MIDI2Scale.bipolar(value32)
+            updateActiveVoicePositions()
+        case let .channelPressure(value32):
+            channelAftertouchValue = MIDI2Scale.unipolar(value32)
+            updateActiveVoicePositions()
+        case let .polyPressure(note, value32):
+            polyAftertouch(note: note, value: UInt8(MIDI2Scale.unipolar(value32) * 127))
+        case let .perNotePitchBend(note, value32):
+            if let slot = noteToSlot[Int(note)] {
+                perNoteBend[slot] = MIDI2Scale.bipolar(value32)
+                updateActiveVoicePositions()
+            }
+        case let .perNoteController(note, index, value32):
+            if index == 74, let slot = noteToSlot[Int(note)] {
+                perNoteBrightness[slot] = MIDI2Scale.unipolar(value32)
+                updateActiveVoicePositions()
+            }
+        }
+    }
+
     /// Release all active MIDI-triggered voices.
     func allNotesOff() {
         for slot in 0..<SynthVoiceLayout.maxTouches {
@@ -86,6 +120,10 @@ final class MIDIProcessor {
         expressionValue = 1.0
         brightnessValue = 0
         channelAftertouchValue = 0
+        for i in 0..<SynthVoiceLayout.maxTouches {
+            perNoteBend[i] = 0
+            perNoteBrightness[i] = 0
+        }
     }
 
     // MARK: - MIDI Message Dispatch
@@ -97,17 +135,18 @@ final class MIDIProcessor {
 
         switch status {
         case 0x90 where data2 > 0:
-            noteOn(note: data1, velocity: data2)
+            dispatch(.noteOn(note: data1, velocity16: UInt16(data2) << 9))
         case 0x80, 0x90:
-            noteOff(note: data1)
+            dispatch(.noteOff(note: data1, velocity16: 0))
         case 0xB0:
-            controlChange(cc: data1, value: data2)
+            dispatch(.controlChange(index: data1, value32: UInt32(data2) << 25))
         case 0xE0:
-            pitchBend(lsb: data1, msb: data2)
+            let combined = (UInt32(data2) << 7) | UInt32(data1)   // 14-bit
+            dispatch(.channelPitchBend(value32: combined << 18))
         case 0xD0:
-            channelAftertouch(value: data1)
+            dispatch(.channelPressure(value32: UInt32(data1) << 25))
         case 0xA0:
-            polyAftertouch(note: data1, value: data2)
+            dispatch(.polyPressure(note: data1, value32: UInt32(data2) << 25))
         default:
             break
         }
@@ -166,6 +205,8 @@ final class MIDIProcessor {
         noteToSlot[Int(note)] = nil
         slotToNote[slot] = nil
         sustainedSlots.remove(slot)
+        perNoteBend[slot] = 0
+        perNoteBrightness[slot] = 0
     }
 
     // MARK: - Control Change
@@ -206,20 +247,7 @@ final class MIDIProcessor {
         }
     }
 
-    // MARK: - Pitch Bend
-
-    private func pitchBend(lsb: UInt8, msb: UInt8) {
-        let combined = (Int(msb) << 7) | Int(lsb)
-        pitchBendValue = Float(combined - 8192) / 8192.0  // -1…+1
-        updateActiveVoicePositions()
-    }
-
     // MARK: - Aftertouch
-
-    private func channelAftertouch(value: UInt8) {
-        channelAftertouchValue = Float(value) / 127.0
-        updateActiveVoicePositions()
-    }
 
     private func polyAftertouch(note: UInt8, value: UInt8) {
         guard let slot = noteToSlot[Int(note)], let engine = engine else { return }
@@ -244,11 +272,12 @@ final class MIDIProcessor {
             y += modWheelValue * 0.2
             y += brightnessValue * 0.15
             y += channelAftertouchValue * 0.15
+            y += perNoteBrightness[slot] * 0.15
             y = y.clamped01()
 
-            // Modulate X with pitch bend (shift within surface range)
+            // Modulate X with channel + per-note pitch bend (shift within surface range)
             let (baseX, _) = midiNoteToXY(note: note, velocity: UInt8(baseY * 127))
-            let bendOffset = pitchBendValue * 0.1  // ±10% of surface width
+            let bendOffset = (pitchBendValue + perNoteBend[slot]) * 0.1  // ±10% of surface width
             let x = (baseX + bendOffset).clamped01()
 
             engine.updatePosition(slot: slot, x: x, y: y)
