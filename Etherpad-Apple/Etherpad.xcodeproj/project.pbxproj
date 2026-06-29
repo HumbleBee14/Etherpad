@@ -37,7 +37,6 @@
 		8C3D4E5F60718293A4B5C6D7 /* VisualEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D4E5F60718293A4B5C6D7E8 /* VisualEffects.swift */; };
 		8D2387EF55B4DC79FB9EA926 /* SynthCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E6ED90D527C6B94739ED5C9 /* SynthCatalog.swift */; };
 		8D7A2CE333F84BCEE9A51B14 /* SynthPatchState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25F1E79BBA966253DB187CDB /* SynthPatchState.swift */; };
-		91D2EA6867727AD5C7391C26 /* SynthPatchMenuFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02E7B051A52229DB23ECE2DB /* SynthPatchMenuFactory.swift */; };
 		A0B3C3D3E3F300000000B302 /* AUPatchMenuFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0B3C3D3E3F300000000B301 /* AUPatchMenuFactory.swift */; };
 		9CE0D85CD5F60E185E022311 /* VisualEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBCDF72A7572D182527EB70D /* VisualEffects.swift */; };
 		A1B2C3D4E5F60718293A4001 /* MacTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4002 /* MacTheme.swift */; };
@@ -587,7 +586,6 @@
 				C22209C7AA97E7341D7A6A41 /* SynthScore.swift in Sources */,
 				644CDE52DC65ED8CED9D2CA4 /* SynthTouchCoordinator.swift in Sources */,
 				DFAE2667CBB800651FAD099A /* SynthVoiceLayout.swift in Sources */,
-				91D2EA6867727AD5C7391C26 /* SynthPatchMenuFactory.swift in Sources */,
 				AA01000000000000000001F1 /* AUParameterAddresses.swift in Sources */,
 				AA01000000000000000002F1 /* EtherpadPresets.swift in Sources */,
 				AA01000000000000000003F1 /* MIDIProcessor.swift in Sources */,

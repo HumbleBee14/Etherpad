@@ -20,7 +20,7 @@ public final class EtherpadAUViewController: AUViewController, AUAudioUnitFactor
 
     private let surface = TouchSurfaceView()
     private let touchCoordinator = SynthTouchCoordinator()
-    private let menuFactory = SynthPatchMenuFactory()
+    private let menuFactory = AUPatchMenuFactory()
 
     // MARK: - AU References
 
@@ -49,13 +49,15 @@ public final class EtherpadAUViewController: AUViewController, AUAudioUnitFactor
         touchCoordinator.engine = nil
         surface.delegate = self
 
+        // A tap records an automation gesture; the engine + MIDI update via the AU's
+        // implementorValueObserver, so the VC only refreshes its own toolbar here.
+        menuFactory.onGesture = { [weak self] address, index in
+            self?.audioUnit?.recordParameterGesture(address: address, index: index)
+        }
         menuFactory.onPatchChanged = { [weak self] patch in
             guard let self = self else { return }
             self.surface.numberOfNotes = Double(patch.size)
             self.refreshMenuTitles()
-            // Sync MIDI processors immediately when toolbar menus change.
-            self.audioUnit?.midiProcessor.patchState = patch
-            self.audioUnit?.midiOutputHandler.patchState = patch
         }
     }
 
@@ -102,15 +104,12 @@ public final class EtherpadAUViewController: AUViewController, AUAudioUnitFactor
     }
 
     private func wireEngine(_ au: EtherpadAudioUnit) {
-        // Connect touch coordinator to the synth engine
         touchCoordinator.engine = au.hostEngine
-        menuFactory.applyPatch(to: au.hostEngine)
+
+        // The engine's current patch is the source of truth; mirror it into the menu factory.
+        menuFactory.updatePatchSilently(au.hostEngine.currentPatchState)
         surface.numberOfNotes = Double(menuFactory.patch.size)
         refreshMenuTitles()
-
-        // Sync initial MIDI processor state
-        au.midiProcessor.patchState = menuFactory.patch
-        au.midiOutputHandler.patchState = menuFactory.patch
 
         // Single UI-refresh path: the AU funnels every patch change (host automation,
         // menus, presets, state restore) through onUIStateChanged.
