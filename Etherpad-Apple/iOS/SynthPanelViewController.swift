@@ -234,9 +234,9 @@ final class SynthPanelViewController: UIViewController {
     }
 
     private func beginRecording() {
+        sweepStaleRecordings()
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("\(defaultRecordingName()).wav")
-        try? FileManager.default.removeItem(at: url)
         engine.startRecording(to: url)
         guard engine.isRecording else { return }
         recordingURL = url
@@ -305,6 +305,15 @@ final class SynthPanelViewController: UIViewController {
         let fmt = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
         return "Etherpad \(fmt.string(from: Date()))"
+    }
+
+    private func sweepStaleRecordings() {
+        let tmp = FileManager.default.temporaryDirectory
+        let files = (try? FileManager.default.contentsOfDirectory(
+            at: tmp, includingPropertiesForKeys: nil)) ?? []
+        for url in files where url.lastPathComponent.hasPrefix("Etherpad ") && url.pathExtension == "wav" {
+            try? FileManager.default.removeItem(at: url)
+        }
     }
 }
 
