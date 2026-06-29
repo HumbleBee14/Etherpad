@@ -135,56 +135,67 @@ final class MIDIProcessor {
 
         switch status {
         case 0x90 where data2 > 0:
-            dispatch(.noteOn(note: data1, velocity16: UInt16(data2) << 9))
+            dispatch(.noteOn(note: data1, velocity16: MIDI1Upscale.to16(data2)))
         case 0x80, 0x90:
             dispatch(.noteOff(note: data1, velocity16: 0))
         case 0xB0:
-            dispatch(.controlChange(index: data1, value32: UInt32(data2) << 25))
+            dispatch(.controlChange(index: data1, value32: MIDI1Upscale.to32(data2)))
         case 0xE0:
-            let combined = (UInt32(data2) << 7) | UInt32(data1)   // 14-bit
-            dispatch(.channelPitchBend(value32: combined << 18))
+            let combined = UInt16(data2 & 0x7F) << 7 | UInt16(data1 & 0x7F)   // 14-bit
+            dispatch(.channelPitchBend(value32: MIDI1Upscale.to32(from14: combined)))
         case 0xD0:
-            dispatch(.channelPressure(value32: UInt32(data1) << 25))
+            dispatch(.channelPressure(value32: MIDI1Upscale.to32(data1)))
         case 0xA0:
-            dispatch(.polyPressure(note: data1, value32: UInt32(data2) << 25))
+            dispatch(.polyPressure(note: data1, value32: MIDI1Upscale.to32(data2)))
         default:
             break
         }
     }
 
     /// Parse a MIDI 2.0 UMP event list (iOS 15+). Walks packed UMP words, strides by
-    /// message type, decodes Channel-Voice-2, and feeds the shared dispatcher.
+    /// message type, decodes Channel-Voice messages, and feeds the shared dispatcher.
     private func handleMIDIEventList(_ event: UnsafePointer<AURenderEvent>) {
         if #available(iOS 15.0, *) {
-            event.withMemoryRebound(to: AUMIDIEventList.self, capacity: 1) { listEvent in
-                var list = listEvent.pointee.eventList
-                withUnsafeMutablePointer(to: &list.packet) { firstPacket in
-                    var packet = firstPacket
-                    for _ in 0..<list.numPackets {
-                        parseUMPPacket(packet)
-                        packet = MIDIEventPacketNext(packet)
-                    }
+            // MIDIEventList is variable-length; copying it by value truncates to the inline
+            // first packet. Walk the original buffer in place via a mutable pointer to it.
+            let listPtr = UnsafeMutableRawPointer(mutating: event)
+                .assumingMemoryBound(to: AUMIDIEventList.self)
+            let numPackets = listPtr.pointee.eventList.numPackets
+            withUnsafeMutablePointer(to: &listPtr.pointee.eventList.packet) { firstPacket in
+                var packet = firstPacket
+                for _ in 0..<numPackets {
+                    parseUMPPacket(packet)
+                    packet = MIDIEventPacketNext(packet)
                 }
             }
         }
     }
 
-    /// Walk the UMP words of one packet and dispatch each Channel-Voice-2 message.
+    /// Walk the UMP words of one packet and dispatch each Channel-Voice message.
     @available(iOS 15.0, *)
     private func parseUMPPacket(_ packet: UnsafeMutablePointer<MIDIEventPacket>) {
-        let count = Int(packet.pointee.wordCount)
+        // words is a fixed 64-entry inline tuple; never trust wordCount past it.
+        let count = min(Int(packet.pointee.wordCount), 64)
         guard count > 0 else { return }
         withUnsafeMutablePointer(to: &packet.pointee.words) { tuplePtr in
-            tuplePtr.withMemoryRebound(to: UInt32.self, capacity: count) { words in
+            tuplePtr.withMemoryRebound(to: UInt32.self, capacity: 64) { words in
                 var i = 0
                 while i < count {
                     let word0 = words[i]
                     let mt = UInt8(word0 >> 28 & 0xF)
                     let stride = MIDI2UMPDecoder.wordCount(forMessageType: mt)
                     guard i + stride <= count else { break }
-                    if mt == 0x4,
-                       let msg = MIDI2UMPDecoder.decodeChannelVoice2(word0: word0, word1: words[i + 1]) {
-                        dispatch(msg)
+                    switch mt {
+                    case 0x4:
+                        if let msg = MIDI2UMPDecoder.decodeChannelVoice2(word0: word0, word1: words[i + 1]) {
+                            dispatch(msg)
+                        }
+                    case 0x2:
+                        if let msg = MIDI2UMPDecoder.decodeChannelVoice1(word0: word0) {
+                            dispatch(msg)
+                        }
+                    default:
+                        break
                     }
                     i += stride
                 }
