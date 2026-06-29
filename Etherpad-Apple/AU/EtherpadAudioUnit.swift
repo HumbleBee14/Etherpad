@@ -264,15 +264,14 @@ public final class EtherpadAudioUnit: AUAudioUnit {
             }
 
             if preset.number >= 0 {
-                // Factory preset
-                if let patch = EtherpadPresets.patchState(for: preset.number) {
-                    hostEngine.applyPatchState(patch)
-                    midiProcessor.patchState = patch
-                    midiOutputHandler.patchState = patch
-                    syncParameterTreeFromEngine()
-                }
+                // Factory preset: ignore an out-of-range number rather than show it as selected.
+                guard let patch = EtherpadPresets.patchState(for: preset.number) else { return }
+                hostEngine.applyPatchState(patch)
+                midiProcessor.patchState = patch
+                midiOutputHandler.patchState = patch
+                syncParameterTreeFromEngine()
             }
-            // User presets are handled via fullState by the framework
+            // User presets (number < 0) are restored via fullState by the framework.
             _currentPreset = preset
         }
     }
