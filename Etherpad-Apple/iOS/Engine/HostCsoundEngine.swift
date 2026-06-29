@@ -8,7 +8,7 @@ import os
 /// Thread safety:
 /// - `cs` lifetime is guarded by `audioLock` during render vs stop.
 /// - Patch state lives in `RealtimePatchState` (safe reads from parameter + MIDI threads).
-/// - Csound `csoundEventString` is internally thread-safe (Csound 6+); float channel writes are atomic on ARM64.
+/// - Score events use `csoundEventString` async queue; float channel writes are atomic on ARM64.
 final class HostCsoundEngine: HostAudioEngine {
 
     enum Error: Swift.Error {
@@ -184,7 +184,8 @@ final class HostCsoundEngine: HostAudioEngine {
             return core.csBits
         }
         guard let cs = Self.csoundPtr(from: csBits) else { return }
-        s.withCString { csoundEventString(cs, $0, 0) }
+        // async=1: enqueue onto Csound's realtime queue, drained on the render thread.
+        s.withCString { csoundEventString(cs, $0, 1) }
     }
 
     func noteOn(slot: Int, x: Float, y: Float) {

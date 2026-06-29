@@ -71,7 +71,8 @@ void InterruptionListener(void *inClientData, UInt32 inInterruption);
 - (void)sendScore:(NSString *)score
 {
   if (mCsData.cs != NULL) {
-    csoundEventString(mCsData.cs, (char*)[score cStringUsingEncoding:NSASCIIStringEncoding], 0);
+    // async=1: enqueue onto Csound's realtime queue, drained on the render thread.
+    csoundEventString(mCsData.cs, (char*)[score cStringUsingEncoding:NSASCIIStringEncoding], 1);
   }
 }
 
