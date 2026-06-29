@@ -264,9 +264,13 @@ final class HostCsoundEngine: HostAudioEngine {
             guard index < SynthCatalog.scaleOptions.count else { return }
             setScale(SynthCatalog.scaleOptions[index].steps)
         case 1: // key
-            setKey(Int(value))
+            let index = Int(value)
+            guard index < SynthCatalog.keyNames.count else { return }
+            setKey(index)
         case 2: // sound
-            setSound(Int(value))
+            let index = Int(value)
+            guard index < SynthCatalog.soundNames.count else { return }
+            setSound(index)
         case 3: // octave
             let index = Int(value)
             guard index < SynthCatalog.octaveValues.count else { return }
