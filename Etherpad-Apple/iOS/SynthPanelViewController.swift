@@ -64,7 +64,7 @@ final class SynthPanelViewController: UIViewController {
 
     deinit {
         NotificationCenter.default.removeObserver(self)
-        recordingTimer?.invalidate()
+        finalizeRecordingIfNeeded()
         engine.allNotesOff()
         engine.stop()
     }
@@ -209,6 +209,7 @@ final class SynthPanelViewController: UIViewController {
     private func beginRecording() {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("\(defaultRecordingName()).wav")
+        try? FileManager.default.removeItem(at: url)
         engine.startRecording(to: url)
         guard engine.isRecording else { return }
         recordingURL = url
@@ -240,6 +241,7 @@ final class SynthPanelViewController: UIViewController {
     }
 
     private func presentShareSheet(for url: URL) {
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
         let share = UIActivityViewController(activityItems: [url], applicationActivities: nil)
         share.completionWithItemsHandler = { _, _, _, _ in
             try? FileManager.default.removeItem(at: url)

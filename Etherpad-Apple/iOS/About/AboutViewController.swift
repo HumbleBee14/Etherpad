@@ -333,13 +333,12 @@ final class AboutViewController: UIViewController {
 
     private weak var recordingSwitch: UISwitch?
     private weak var recordingHeader: UILabel?
-    private weak var recordingSubtitle: UILabel?
 
     private func makeRecordingSection() -> UIView {
-        let labels = UIStackView()
-        labels.axis = .vertical
-        labels.spacing = 2
-        labels.alignment = .leading
+        let row = UIStackView()
+        row.axis = .horizontal
+        row.alignment = .center
+        row.spacing = 12
 
         let header = UILabel()
         header.text = "Recording"
@@ -347,20 +346,8 @@ final class AboutViewController: UIViewController {
         header.textColor = textColor
         themedLabels.append(header)
         recordingHeader = header
-        labels.addArrangedSubview(header)
+        row.addArrangedSubview(header)
 
-        let subtitle = UILabel()
-        subtitle.text = "(Not supported in Split mode yet)"
-        subtitle.font = .systemFont(ofSize: 12)
-        subtitle.textColor = subtleColor
-        recordingSubtitle = subtitle
-        labels.addArrangedSubview(subtitle)
-
-        let row = UIStackView()
-        row.axis = .horizontal
-        row.alignment = .center
-        row.spacing = 12
-        row.addArrangedSubview(labels)
         row.addArrangedSubview(UIView())
 
         let toggle = UISwitch()
@@ -383,7 +370,6 @@ final class AboutViewController: UIViewController {
         recordingSwitch?.isEnabled = enabled
         let alpha: CGFloat = enabled ? 1 : 0.4
         recordingHeader?.alpha = alpha
-        recordingSubtitle?.alpha = alpha
         recordingSwitch?.alpha = alpha
     }
 
