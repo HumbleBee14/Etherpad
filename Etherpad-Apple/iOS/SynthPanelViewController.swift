@@ -95,6 +95,7 @@ final class SynthPanelViewController: UIViewController {
     @objc private func appWillEnterForeground() {
         backgroundGraceTimer?.invalidate()
         backgroundGraceTimer = nil
+        if engine.isRecording { finalizeAndKeepRecording() }
         if let url = pendingShareURL {
             pendingShareURL = nil
             presentShareSheet(for: url)
