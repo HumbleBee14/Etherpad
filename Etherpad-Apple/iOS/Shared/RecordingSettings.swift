@@ -7,9 +7,6 @@ final class RecordingSettings {
     // Hard cap on one recording. Raise to extend everywhere.
     static let maxDuration: TimeInterval = 10 * 60
 
-    // Grace after backgrounding before finalizing; returning within it keeps the take.
-    static let backgroundGracePeriod: TimeInterval = 10
-
     static var isEnabled: Bool {
         get { UserDefaults.standard.bool(forKey: key) }
         set {

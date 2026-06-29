@@ -21,7 +21,6 @@ final class SynthPanelViewController: UIViewController {
     private weak var toolbarBar: UIVisualEffectView?
     private var recordingURL: URL?
     private var recordingTimer: Timer?
-    private var backgroundGraceTimer: Timer?
     private var pendingShareURL: URL?
 
     override func viewDidLoad() {
@@ -56,8 +55,8 @@ final class SynthPanelViewController: UIViewController {
             self, selector: #selector(appDidEnterBackground),
             name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.addObserver(
-            self, selector: #selector(appWillEnterForeground),
-            name: UIApplication.willEnterForegroundNotification, object: nil)
+            self, selector: #selector(appDidBecomeActive),
+            name: UIApplication.didBecomeActiveNotification, object: nil)
         NotificationCenter.default.addObserver(
             self, selector: #selector(handleInterruption(_:)),
             name: AVAudioSession.interruptionNotification, object: nil)
@@ -84,22 +83,13 @@ final class SynthPanelViewController: UIViewController {
     }
 
     @objc private func appDidEnterBackground() {
-        guard engine.isRecording else { return }
-        backgroundGraceTimer?.invalidate()
-        backgroundGraceTimer = Timer.scheduledTimer(
-            withTimeInterval: RecordingSettings.backgroundGracePeriod, repeats: false) { [weak self] _ in
-            self?.finalizeAndKeepRecording()
-        }
+        finalizeAndKeepRecording()
     }
 
-    @objc private func appWillEnterForeground() {
-        backgroundGraceTimer?.invalidate()
-        backgroundGraceTimer = nil
-        if engine.isRecording { finalizeAndKeepRecording() }
-        if let url = pendingShareURL {
-            pendingShareURL = nil
-            presentShareSheet(for: url)
-        }
+    @objc private func appDidBecomeActive() {
+        guard let url = pendingShareURL else { return }
+        pendingShareURL = nil
+        presentShareSheet(for: url)
     }
 
     @objc private func handleInterruption(_ notification: Notification) {
@@ -263,8 +253,6 @@ final class SynthPanelViewController: UIViewController {
     }
 
     private func stopRecordingKeepingFile() -> URL? {
-        backgroundGraceTimer?.invalidate()
-        backgroundGraceTimer = nil
         recordingTimer?.invalidate()
         recordingTimer = nil
         guard engine.isRecording else { return nil }
@@ -275,8 +263,6 @@ final class SynthPanelViewController: UIViewController {
     }
 
     private func discardRecording() {
-        backgroundGraceTimer?.invalidate()
-        backgroundGraceTimer = nil
         recordingTimer?.invalidate()
         recordingTimer = nil
         guard engine.isRecording else { return }
