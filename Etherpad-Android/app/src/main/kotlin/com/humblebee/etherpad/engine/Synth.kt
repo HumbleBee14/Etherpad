@@ -60,10 +60,10 @@ internal class Synth(resources: Resources) {
         EtherEngine.nativeInputMessage("i104 0 0.5 $idx")
     }
 
-    // Leading -1 in steps selects the Bohlen-Pierce sentinel path.
+    // A single negative value is a sentinel scale path (-1 BP, -2/-3 Overtone); else 14 ET steps.
     fun setScale(steps: IntArray) {
-        val msg = if (steps[0] == -1) {
-            "i103 0 0.5 -1"
+        val msg = if (steps.size == 1 && steps[0] < 0) {
+            "i103 0 0.5 ${steps[0]}"
         } else {
             "i103 0 0.5 " + steps.joinToString(" ")
         }
