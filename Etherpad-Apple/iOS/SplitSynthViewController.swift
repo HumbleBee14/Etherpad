@@ -27,10 +27,8 @@ final class SplitSynthViewController: UIViewController {
 
     private func applyTheme() {
         let theme = Theme.current
-        if SplitModeController.isEnabled {
-            view.backgroundColor = theme.background
-            divider?.backgroundColor = theme.accent(alpha: 0.85)
-        }
+        view.backgroundColor = theme.background
+        divider?.backgroundColor = theme.accent(alpha: 0.85)
     }
 
     override var prefersStatusBarHidden: Bool { true }
