@@ -44,8 +44,9 @@ public final class EtherpadAudioUnit: AUAudioUnit {
     /// Prevents `implementorValueObserver` re-entry while pushing engine state to the tree.
     private var isSyncingParameters = false
 
-    /// Originator token for UI-driven writes. Suppresses our added UI-refresh observer so
-    /// host playback updates the UI but our own gesture writes do not loop back.
+    /// Originator token for our own gesture writes. Passed as the originator so the
+    /// UI-refresh observer skips them — the engine still updates via
+    /// `implementorValueObserver`, which then refreshes the UI through `onUIStateChanged`.
     private var uiObserverToken: AUParameterObserverToken?
 
     // MARK: - Init
@@ -109,9 +110,10 @@ public final class EtherpadAudioUnit: AUAudioUnit {
             }
         }
 
-        // UI-refresh observer: fires for host-originated changes only (our own writes pass
-        // this token as originator and are suppressed), keeping the plugin UI in sync without
-        // a feedback loop. Engine updates flow separately via implementorValueObserver above.
+        // UI-refresh observer: keeps the plugin UI in sync when a host writes a parameter
+        // while the engine isn't running (no onPatchStateChanged callback yet). Our own
+        // gesture writes pass uiObserverToken as originator so they skip this block — they
+        // already refresh the UI via implementorValueObserver -> onUIStateChanged.
         uiObserverToken = _parameterTree.token(byAddingParameterObserver: { [weak self] _, _ in
             guard let self else { return }
             let patch = self.hostEngine.currentPatchState
@@ -126,9 +128,12 @@ public final class EtherpadAudioUnit: AUAudioUnit {
     /// suppresses only our UI-refresh observer (no feedback loop).
     func recordParameterGesture(address: EtherpadParameterAddress, index: AUValue) {
         guard let param = EtherpadParameterFactory.parameter(for: address, in: _parameterTree) else { return }
-        param.setValue(index, originator: uiObserverToken, atHostTime: 0, eventType: .touch)
-        param.setValue(index, originator: uiObserverToken, atHostTime: 0, eventType: .value)
-        param.setValue(index, originator: uiObserverToken, atHostTime: 0, eventType: .release)
+        // Stamp the gesture with the real host time; `atHostTime: 0` makes hosts record the
+        // change at timeline zero (or drop it) instead of at the playhead.
+        let now = mach_absolute_time()
+        param.setValue(index, originator: uiObserverToken, atHostTime: now, eventType: .touch)
+        param.setValue(index, originator: uiObserverToken, atHostTime: now, eventType: .value)
+        param.setValue(index, originator: uiObserverToken, atHostTime: now, eventType: .release)
     }
 
     /// Push current engine patch state to the parameter tree (e.g., after preset load).
