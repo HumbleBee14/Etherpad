@@ -62,6 +62,9 @@ See [../docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md) for the synth pipeline
 
 See [../docs/IOS_PORT.md](../docs/IOS_PORT.md) for the iOS port strategy notes.
 
+See [AU/MIDI.md](AU/MIDI.md) for the AUv3 plugin's MIDI, automation, and
+host-recording notes (including how to record a touch performance in Logic/AUM).
+
 ## Credits
 
 - Apple apps by **Dinesh (aka HumbleBee)** — [dineshy.com](https://dineshy.com)
