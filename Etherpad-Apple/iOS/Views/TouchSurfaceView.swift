@@ -15,11 +15,8 @@ final class TouchSurfaceView: UIView {
     }
 
     private var effects: VisualEffects = .current
+    private var theme: Theme = .current
 
-    private let bgColor     = UIColor(red: 0x3b/255, green: 0x44/255, blue: 0x4b/255, alpha: 1)
-    private let lineColor   = UIColor(red: 0x50/255, green: 0x72/255, blue: 0xA7/255, alpha: 1)
-    private let circleColor = UIColor(red: 233/255, green: 214/255, blue: 107/255, alpha: 0.5)
-    private let glowColor   = UIColor(red: 233/255, green: 214/255, blue: 107/255, alpha: 0.07)
     private let baseRadius: CGFloat = 60
     private let lineWidth: CGFloat = 3
 
@@ -47,11 +44,20 @@ final class TouchSurfaceView: UIView {
     }
     private func commonInit() {
         isMultipleTouchEnabled = true
-        backgroundColor = bgColor
+        backgroundColor = theme.background
         contentMode = .redraw
         NotificationCenter.default.addObserver(
             self, selector: #selector(effectsChanged),
             name: .visualEffectsChanged, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(themeChanged),
+            name: .themeChanged, object: nil)
+    }
+
+    @objc private func themeChanged() {
+        theme = .current
+        backgroundColor = theme.background
+        setNeedsDisplay()
     }
 
     deinit {
@@ -91,14 +97,14 @@ final class TouchSurfaceView: UIView {
         guard let ctx = UIGraphicsGetCurrentContext() else { return }
         let now = CACurrentMediaTime()
 
-        ctx.setFillColor(bgColor.cgColor)
+        ctx.setFillColor(theme.background.cgColor)
         ctx.fill(bounds)
 
         // Pitch column glow under each active touch.
         if effects.contains(.columnGlow), numberOfNotes > 0 {
             let cols = CGFloat(numberOfNotes)
             let colW = bounds.width / cols
-            ctx.setFillColor(glowColor.cgColor)
+            ctx.setFillColor(theme.glowColor.cgColor)
             for (touch, _) in activeVoices {
                 let p = touch.location(in: self)
                 let idx = max(0, min(Int(cols) - 1, Int(p.x / colW)))
@@ -108,7 +114,7 @@ final class TouchSurfaceView: UIView {
         }
 
         // Grid lines.
-        ctx.setStrokeColor(lineColor.cgColor)
+        ctx.setStrokeColor(theme.line.cgColor)
         ctx.setLineWidth(lineWidth)
         ctx.setLineJoin(.round)
         let noteCount = max(numberOfNotes, 1)
@@ -128,8 +134,7 @@ final class TouchSurfaceView: UIView {
                     let alpha = life * 0.35
                     // Older points shrink toward 30% of their original radius for a tapered trail.
                     let r: CGFloat = 18 * (0.3 + 0.7 * CGFloat(life))
-                    ctx.setFillColor(UIColor(red: 233/255, green: 214/255, blue: 107/255,
-                                             alpha: alpha).cgColor)
+                    ctx.setFillColor(theme.accent(alpha: alpha).cgColor)
                     ctx.fillEllipse(in: CGRect(x: tp.p.x - r, y: tp.p.y - r, width: r * 2, height: r * 2))
                 }
             }
@@ -142,8 +147,7 @@ final class TouchSurfaceView: UIView {
                 let p = CGFloat(age / Self.rippleDuration)
                 let radius = Self.rippleMaxRadius * p
                 let alpha = max(0, 1 - p) * 0.6
-                ctx.setStrokeColor(UIColor(red: 233/255, green: 214/255, blue: 107/255,
-                                           alpha: alpha).cgColor)
+                ctx.setStrokeColor(theme.accent(alpha: alpha).cgColor)
                 ctx.setLineWidth(2)
                 ctx.strokeEllipse(in: CGRect(x: ring.origin.x - radius,
                                              y: ring.origin.y - radius,
@@ -152,7 +156,7 @@ final class TouchSurfaceView: UIView {
         }
 
         // Touch circles (size scales with Y if .intensity is on).
-        ctx.setFillColor(circleColor.cgColor)
+        ctx.setFillColor(theme.circleColor.cgColor)
         for (touch, _) in activeVoices {
             let p = touch.location(in: self)
             let scale: CGFloat

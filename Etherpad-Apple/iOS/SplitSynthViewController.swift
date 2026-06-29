@@ -5,6 +5,7 @@ final class SplitSynthViewController: UIViewController {
 
     private var leftPanel:  SynthPanelViewController?
     private var rightPanel: SynthPanelViewController?
+    private weak var divider: UIView?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -15,6 +16,21 @@ final class SplitSynthViewController: UIViewController {
         NotificationCenter.default.addObserver(
             self, selector: #selector(splitModeDidChange),
             name: SplitModeController.didChangeNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(themeChanged),
+            name: .themeChanged, object: nil)
+    }
+
+    @objc private func themeChanged() {
+        applyTheme()
+    }
+
+    private func applyTheme() {
+        let theme = Theme.current
+        if SplitModeController.isEnabled {
+            view.backgroundColor = theme.background
+            divider?.backgroundColor = theme.accent(alpha: 0.85)
+        }
     }
 
     override var prefersStatusBarHidden: Bool { true }
@@ -60,7 +76,8 @@ final class SplitSynthViewController: UIViewController {
     }
 
     private func layoutSplitMode() {
-        view.backgroundColor = UIColor(red: 0x1a/255, green: 0x1e/255, blue: 0x22/255, alpha: 1)
+        let theme = Theme.current
+        view.backgroundColor = theme.background
 
         let left = SynthPanelViewController()
         let right = SynthPanelViewController()
@@ -97,9 +114,10 @@ final class SplitSynthViewController: UIViewController {
         right.didMove(toParent: self)
 
         let divider = UIView()
-        divider.backgroundColor = UIColor(red: 0xe9/255, green: 0xd6/255, blue: 0x6b/255, alpha: 0.85)
+        divider.backgroundColor = theme.accent(alpha: 0.85)
         divider.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(divider)
+        self.divider = divider
         NSLayoutConstraint.activate([
             divider.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             divider.topAnchor.constraint(equalTo: view.topAnchor),
