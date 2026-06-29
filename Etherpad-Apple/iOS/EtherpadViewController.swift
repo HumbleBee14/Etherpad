@@ -90,6 +90,13 @@ final class EtherpadViewController: UIViewController {
         if type == .began {
             surface.cancelAllTouches()
             engine.allNotesOff()
+        } else if type == .ended {
+            let options = (info[AVAudioSessionInterruptionOptionKey] as? UInt).map {
+                AVAudioSession.InterruptionOptions(rawValue: $0)
+            }
+            if options?.contains(.shouldResume) ?? true {
+                try? AVAudioSession.sharedInstance().setActive(true)
+            }
         }
     }
 
