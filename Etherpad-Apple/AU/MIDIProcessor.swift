@@ -152,16 +152,42 @@ final class MIDIProcessor {
         }
     }
 
-    /// Handle MIDI 2.0 UMP event list (iOS 17+).
+    /// Parse a MIDI 2.0 UMP event list (iOS 15+). Walks packed UMP words, strides by
+    /// message type, decodes Channel-Voice-2, and feeds the shared dispatcher.
     private func handleMIDIEventList(_ event: UnsafePointer<AURenderEvent>) {
-        // MIDI 2.0 UMP: On iOS 17+, hosts may send MIDIEventList with UMP words.
-        // Most hosts still send legacy MIDI which arrives as .MIDI events.
-        // Future enhancement: parse UMP words for per-note controllers,
-        // high-resolution velocity, and per-note pitch bend.
-        if #available(iOS 17.0, *) {
+        if #available(iOS 15.0, *) {
             event.withMemoryRebound(to: AUMIDIEventList.self, capacity: 1) { listEvent in
-                let eventList = listEvent.pointee.eventList
-                _ = eventList // Stub: iterate packets for MIDI 2.0 per-note controllers
+                var list = listEvent.pointee.eventList
+                withUnsafeMutablePointer(to: &list.packet) { firstPacket in
+                    var packet = firstPacket
+                    for _ in 0..<list.numPackets {
+                        parseUMPPacket(packet)
+                        packet = MIDIEventPacketNext(packet)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Walk the UMP words of one packet and dispatch each Channel-Voice-2 message.
+    @available(iOS 15.0, *)
+    private func parseUMPPacket(_ packet: UnsafeMutablePointer<MIDIEventPacket>) {
+        let count = Int(packet.pointee.wordCount)
+        guard count > 0 else { return }
+        withUnsafeMutablePointer(to: &packet.pointee.words) { tuplePtr in
+            tuplePtr.withMemoryRebound(to: UInt32.self, capacity: count) { words in
+                var i = 0
+                while i < count {
+                    let word0 = words[i]
+                    let mt = UInt8(word0 >> 28 & 0xF)
+                    let stride = MIDI2UMPDecoder.wordCount(forMessageType: mt)
+                    guard i + stride <= count else { break }
+                    if mt == 0x4,
+                       let msg = MIDI2UMPDecoder.decodeChannelVoice2(word0: word0, word1: words[i + 1]) {
+                        dispatch(msg)
+                    }
+                    i += stride
+                }
             }
         }
     }
