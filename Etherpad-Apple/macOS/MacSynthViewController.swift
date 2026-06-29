@@ -12,6 +12,9 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     private let bannerBlur = NSVisualEffectView()
     private let bannerLabel = NSTextField(labelWithString: "Multitouch Mode On — Press Esc to Exit")
 
+    private var recordingTimer: Timer?
+    private static let maxRecordingDuration: TimeInterval = 60 * 60
+
     private var controlBar: NSView!
     private var recordButton: NSButton!
     private var immersiveButton: NSButton!
@@ -432,12 +435,18 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
             return
         }
         updateRecordButton(recording: true)
+        recordingTimer = Timer.scheduledTimer(
+            withTimeInterval: Self.maxRecordingDuration, repeats: false) { [weak self] _ in
+            self?.finishRecording()
+        }
         bannerLabel.font = .systemFont(ofSize: 13, weight: .semibold)
         bannerLabel.stringValue = "Recording…  (⌥S to stop)"
         showBannerBriefly()
     }
 
     private func finishRecording() {
+        recordingTimer?.invalidate()
+        recordingTimer = nil
         let url = engine.stopRecording()
         updateRecordButton(recording: false)
         guard let url = url else { return }
