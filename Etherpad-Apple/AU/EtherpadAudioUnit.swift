@@ -5,7 +5,8 @@ import AudioToolbox
 ///
 /// Provides:
 /// - Full `AUParameterTree` with 5 automatable parameters
-/// - Comprehensive MIDI input (Note On/Off, CC, Pitch Bend, Aftertouch, MIDI 2.0)
+/// - Comprehensive MIDI input: MIDI 1.0 fully, plus MIDI 2.0 UMP Channel Voice
+///   (16-bit velocity, per-note pitch bend, per-note brightness)
 /// - MIDI output from touch pad gestures
 /// - State persistence via `fullState` for host session save/restore
 /// - 10 factory presets
@@ -188,6 +189,10 @@ public final class EtherpadAudioUnit: AUAudioUnit {
     public override var outputBusses: AUAudioUnitBusArray { _outputBusArray }
 
     public override var canProcessInPlace: Bool { false }
+
+    /// Receive native MIDI 2.0 (UMP) when the host supports it; CoreMIDI translates
+    /// MIDI 1.0 hosts to this protocol. Without this override the AU gets legacy MIDI.
+    public override var audioUnitMIDIProtocol: MIDIProtocolID { ._2_0 }
 
     /// Reverb + delay tail in the CSD is roughly 2 seconds.
     public override var tailTime: TimeInterval { 2.0 }
