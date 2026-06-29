@@ -17,6 +17,10 @@ final class SynthPanelViewController: UIViewController {
     private var sizeBtn: UIButton!
     private var soundBtn: UIButton!
     private weak var settingsBtn: UIButton?
+    private weak var recordBtn: UIButton?
+    private weak var toolbarBar: UIVisualEffectView?
+    private var recordingURL: URL?
+    private var recordingTimer: Timer?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -49,6 +53,9 @@ final class SynthPanelViewController: UIViewController {
         NotificationCenter.default.addObserver(
             self, selector: #selector(handleInterruption(_:)),
             name: AVAudioSession.interruptionNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(recordingSettingChanged),
+            name: RecordingSettings.didChangeNotification, object: nil)
     }
 
     override var prefersStatusBarHidden: Bool { true }
@@ -57,6 +64,7 @@ final class SynthPanelViewController: UIViewController {
 
     deinit {
         NotificationCenter.default.removeObserver(self)
+        recordingTimer?.invalidate()
         engine.allNotesOff()
         engine.stop()
     }
@@ -64,6 +72,7 @@ final class SynthPanelViewController: UIViewController {
     @objc private func appWillResignActive() {
         surface.cancelAllTouches()
         engine.allNotesOff()
+        finalizeRecordingIfNeeded()
     }
 
     @objc private func handleInterruption(_ notification: Notification) {
@@ -75,6 +84,7 @@ final class SynthPanelViewController: UIViewController {
         if type == .began {
             surface.cancelAllTouches()
             engine.allNotesOff()
+            finalizeRecordingIfNeeded()
         } else if type == .ended {
             let options = (info[AVAudioSessionInterruptionOptionKey] as? UInt).map {
                 AVAudioSession.InterruptionOptions(rawValue: $0)
@@ -93,6 +103,7 @@ final class SynthPanelViewController: UIViewController {
         bar.clipsToBounds = true
         bar.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(bar)
+        toolbarBar = bar
         NSLayoutConstraint.activate([
             bar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             bar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -107,6 +118,17 @@ final class SynthPanelViewController: UIViewController {
         soundBtn = makeBarButton(title: "Sound", menu: menuFactory.soundMenu())
 
         var buttons: [UIButton] = [scaleBtn, keyBtn, octBtn, sizeBtn, soundBtn]
+
+        if RecordingSettings.isEnabled && showsAboutButton {
+            let rec = UIButton(type: .system)
+            let cfg = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
+            rec.setImage(UIImage(systemName: "record.circle", withConfiguration: cfg), for: .normal)
+            rec.tintColor = .white
+            rec.addTarget(self, action: #selector(toggleRecording), for: .touchUpInside)
+            recordBtn = rec
+            buttons.append(rec)
+        }
+
         if showsAboutButton {
             let gear = UIButton(type: .system)
             let cfg = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
@@ -164,6 +186,82 @@ final class SynthPanelViewController: UIViewController {
             pop.delegate = self
         }
         present(settings, animated: true)
+    }
+
+    // MARK: - Recording
+
+    @objc private func recordingSettingChanged() {
+        if engine.isRecording { finalizeRecordingIfNeeded() }
+        guard let bar = toolbarBar else { return }
+        bar.removeFromSuperview()
+        recordBtn = nil
+        configureToolbar()
+    }
+
+    @objc private func toggleRecording() {
+        if engine.isRecording {
+            finishRecording()
+        } else {
+            beginRecording()
+        }
+    }
+
+    private func beginRecording() {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("\(defaultRecordingName()).wav")
+        engine.startRecording(to: url)
+        guard engine.isRecording else { return }
+        recordingURL = url
+        updateRecordButton(recording: true)
+        recordingTimer = Timer.scheduledTimer(
+            withTimeInterval: RecordingSettings.maxDuration, repeats: false) { [weak self] _ in
+            self?.finishRecording()
+        }
+    }
+
+    private func finishRecording() {
+        recordingTimer?.invalidate()
+        recordingTimer = nil
+        engine.stopRecording()
+        updateRecordButton(recording: false)
+        guard let url = recordingURL else { return }
+        recordingURL = nil
+        presentShareSheet(for: url)
+    }
+
+    private func finalizeRecordingIfNeeded() {
+        guard engine.isRecording else { return }
+        recordingTimer?.invalidate()
+        recordingTimer = nil
+        engine.stopRecording()
+        if let url = recordingURL { try? FileManager.default.removeItem(at: url) }
+        recordingURL = nil
+        updateRecordButton(recording: false)
+    }
+
+    private func presentShareSheet(for url: URL) {
+        let share = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        share.completionWithItemsHandler = { _, _, _, _ in
+            try? FileManager.default.removeItem(at: url)
+        }
+        if let pop = share.popoverPresentationController {
+            pop.sourceView = recordBtn ?? view
+            pop.sourceRect = recordBtn?.bounds ?? CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 0, height: 0)
+        }
+        present(share, animated: true)
+    }
+
+    private func updateRecordButton(recording: Bool) {
+        let cfg = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
+        let name = recording ? "stop.fill" : "record.circle"
+        recordBtn?.setImage(UIImage(systemName: name, withConfiguration: cfg), for: .normal)
+        recordBtn?.tintColor = recording ? .systemRed : .white
+    }
+
+    private func defaultRecordingName() -> String {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
+        return "Etherpad \(fmt.string(from: Date()))"
     }
 }
 
