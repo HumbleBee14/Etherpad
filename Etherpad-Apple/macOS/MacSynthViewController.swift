@@ -17,6 +17,8 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
 
     private var controlBar: NSView!
     private var recordButton: NSButton!
+    private var presetButton: NSButton!
+    private var presetPopover: NSPopover?
     private var immersiveButton: NSButton!
     private var immersiveMode = false
     private var barShown = true
@@ -99,6 +101,14 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         immersiveButton.bezelStyle = .accessoryBar
         immersiveButton.toolTip = "Immersive mode — hide controls (⌥H)"
         bar.addArrangedSubview(immersiveButton)
+
+        let presetImg = NSImage(systemSymbolName: "slider.horizontal.3",
+                                accessibilityDescription: "Presets")!
+        presetButton = NSButton(image: presetImg, target: self, action: #selector(showPresets))
+        presetButton.imagePosition = .imageOnly
+        presetButton.bezelStyle = .accessoryBar
+        presetButton.toolTip = "Presets"
+        bar.addArrangedSubview(presetButton)
 
         let gear = NSImage(systemSymbolName: "gearshape", accessibilityDescription: "Settings")!
         let settings = NSButton(image: gear, target: self, action: #selector(showSettings))
@@ -645,6 +655,61 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
     private func presentSettings() {
         let settings = MacSettingsViewController()
         presentAsModalWindow(settings)
+    }
+
+    // MARK: - Presets
+    @objc private func showPresets() {
+        if let existing = presetPopover, existing.isShown {
+            existing.performClose(nil)
+            return
+        }
+        let content = MacPresetPopoverViewController()
+        content.delegate = self
+        content.onRequestClose = { [weak self] in self?.presetPopover?.performClose(nil) }
+        let popover = NSPopover()
+        popover.contentViewController = content
+        popover.behavior = .transient
+        popover.appearance = NSAppearance(named: .vibrantDark)
+        presetPopover = popover
+        popover.show(relativeTo: presetButton.bounds, of: presetButton, preferredEdge: .maxY)
+    }
+}
+
+extension MacSynthViewController: MacPresetPopoverDelegate {
+    func currentPreset() -> MacPreset {
+        MacPreset(name: "",
+                  scale: scalePopup.indexOfSelectedItem,
+                  key: keyPopup.indexOfSelectedItem,
+                  octave: octavePopup.indexOfSelectedItem,
+                  size: sizePopup.indexOfSelectedItem,
+                  sound: soundPopup.indexOfSelectedItem)
+    }
+
+    func loadPreset(_ preset: MacPreset) {
+        applyIndices(scale: preset.scale, key: preset.key, octave: preset.octave,
+                     size: preset.size, sound: preset.sound)
+    }
+
+    func resetToDefaults() {
+        applyIndices(scale: DefaultIndex.scale, key: DefaultIndex.key,
+                     octave: DefaultIndex.octave, size: DefaultIndex.size,
+                     sound: DefaultIndex.sound)
+    }
+
+    /// Single point that drives every config from a set of popup indices: selects each
+    /// popup, then routes through the existing *Changed handlers so the engine, surface,
+    /// and persisted indices all stay in sync. New configs only need a line here.
+    private func applyIndices(scale: Int, key: Int, octave: Int, size: Int, sound: Int) {
+        func clamp(_ i: Int, _ pop: NSPopUpButton) -> Int {
+            (0..<pop.numberOfItems).contains(i) ? i : 0
+        }
+        scalePopup.selectItem(at: clamp(scale, scalePopup))
+        keyPopup.selectItem(at: clamp(key, keyPopup))
+        octavePopup.selectItem(at: clamp(octave, octavePopup))
+        sizePopup.selectItem(at: clamp(size, sizePopup))
+        soundPopup.selectItem(at: clamp(sound, soundPopup))
+        scaleChanged(scalePopup); keyChanged(keyPopup); octaveChanged(octavePopup)
+        sizeChanged(sizePopup);  soundChanged(soundPopup)
     }
 }
 

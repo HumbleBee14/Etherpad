@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		MACPRE000000000000000200 /* MacPreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = MACPRE000000000000000100 /* MacPreset.swift */; };
+		MACPRE000000000000000201 /* MacPresetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = MACPRE000000000000000101 /* MacPresetStore.swift */; };
+		MACPRE000000000000000202 /* MacPresetPopoverViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = MACPRE000000000000000102 /* MacPresetPopoverViewController.swift */; };
+		MACPRE000000000000000203 /* MacPresetRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = MACPRE000000000000000103 /* MacPresetRowView.swift */; };
 		007CAC947742DE2F069D9397 /* etherpad.csd in Resources */ = {isa = PBXBuildFile; fileRef = 2AAFC2E3511EC1E15B11152C /* etherpad.csd */; };
 		12E7C8CF08EBC01345720F0D /* SynthPanelViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E930DABB2FC2BBC40083C323 /* SynthPanelViewController.swift */; };
 		161F631934129F972C54F30D /* SynthEngineProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9646FC42AC791C70D12F828 /* SynthEngineProtocol.swift */; };
@@ -107,6 +111,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		MACPRE000000000000000100 /* MacPreset.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacPreset.swift; path = macOS/MacPreset.swift; sourceTree = "<group>"; };
+		MACPRE000000000000000101 /* MacPresetStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacPresetStore.swift; path = macOS/MacPresetStore.swift; sourceTree = "<group>"; };
+		MACPRE000000000000000102 /* MacPresetPopoverViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacPresetPopoverViewController.swift; path = macOS/MacPresetPopoverViewController.swift; sourceTree = "<group>"; };
+		MACPRE000000000000000103 /* MacPresetRowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacPresetRowView.swift; path = macOS/MacPresetRowView.swift; sourceTree = "<group>"; };
 		00C76DA0D09E5F638D001B8E /* MacSynthTables.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MacSynthTables.swift; path = macOS/MacSynthTables.swift; sourceTree = "<group>"; };
 		02E7B051A52229DB23ECE2DB /* SynthPatchMenuFactory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SynthPatchMenuFactory.swift; path = Shared/SynthPatchMenuFactory.swift; sourceTree = "<group>"; };
 		A0B3C3D3E3F300000000B301 /* AUPatchMenuFactory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AUPatchMenuFactory.swift; path = AU/AUPatchMenuFactory.swift; sourceTree = "<group>"; };
@@ -256,6 +264,10 @@
 				E4ED418A67903CEC1D0D2EB8 /* etherpad.csd */,
 				927946F772CF3097D3332248 /* MacSurfaceView.swift */,
 				5FD858A422F262A004AEC8C8 /* MacSynthViewController.swift */,
+				MACPRE000000000000000100 /* MacPreset.swift */,
+				MACPRE000000000000000101 /* MacPresetStore.swift */,
+				MACPRE000000000000000102 /* MacPresetPopoverViewController.swift */,
+				MACPRE000000000000000103 /* MacPresetRowView.swift */,
 				6B2D3C4E5F60718293A4B5C6 /* MacSettingsViewController.swift */,
 				9D4E5F60718293A4B5C6D7E8 /* VisualEffects.swift */,
 				A1B2C3D4E5F60718293A4002 /* MacTheme.swift */,
@@ -558,6 +570,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				MACPRE000000000000000200 /* MacPreset.swift in Sources */,
+				MACPRE000000000000000201 /* MacPresetStore.swift in Sources */,
+				MACPRE000000000000000202 /* MacPresetPopoverViewController.swift in Sources */,
+				MACPRE000000000000000203 /* MacPresetRowView.swift in Sources */,
 				E0283414C0932713ADF3B3A1 /* main.swift in Sources */,
 				16B0FFF1CD60E99928421CD9 /* MacSynthTables.swift in Sources */,
 				B905C3D9DC41551A8CA521EE /* MacCsoundEngine.swift in Sources */,

@@ -148,40 +148,31 @@ final class MacSettingsViewController: NSViewController {
 
     private func makeEffectContainer() -> NSStackView {
         chips.removeAll()
-        let container = NSStackView()
-        container.orientation = .vertical
-        container.spacing = 10
-        container.alignment = .leading
-        container.translatesAutoresizingMaskIntoConstraints = false
-
-        let pairs = stride(from: 0, to: VisualEffects.all.count, by: 2).map {
-            Array(VisualEffects.all[$0..<min($0 + 2, VisualEffects.all.count)])
+        let icons = VisualEffects.all.map { effect -> NSButton in
+            let chip = makeChip(effect: effect)
+            chips.append((chip, effect))
+            return chip
         }
-        for pair in pairs {
-            let rowChips = pair.map { effect -> NSButton in
-                let chip = makeChip(label: effect.label, effect: effect)
-                chips.append((chip, effect))
-                return chip
-            }
-            let row = NSStackView(views: rowChips)
-            row.orientation = .horizontal
-            row.distribution = .fillEqually
-            row.spacing = 10
-            row.translatesAutoresizingMaskIntoConstraints = false
-            container.addArrangedSubview(row)
-            row.widthAnchor.constraint(equalToConstant: innerWidth).isActive = true
-        }
-        return container
+        let row = NSStackView(views: icons)
+        row.orientation = .horizontal
+        row.distribution = .fillEqually
+        row.spacing = 10
+        row.translatesAutoresizingMaskIntoConstraints = false
+        row.widthAnchor.constraint(equalToConstant: innerWidth).isActive = true
+        return row
     }
 
-    private func makeChip(label: String, effect: VisualEffects) -> NSButton {
-        let btn = NSButton(title: label, target: self, action: #selector(toggleEffect(_:)))
+    private func makeChip(effect: VisualEffects) -> NSButton {
+        let img = NSImage(systemSymbolName: effect.symbolName, accessibilityDescription: effect.label)
+        let btn = NSButton(image: img ?? NSImage(), target: self, action: #selector(toggleEffect(_:)))
+        btn.imagePosition = .imageOnly
         btn.setButtonType(.toggle)
         btn.isBordered = false
         btn.wantsLayer = true
         btn.layer?.cornerRadius = 8
         btn.tag = effect.rawValue
-        btn.heightAnchor.constraint(equalToConstant: 36).isActive = true
+        btn.toolTip = effect.label
+        btn.heightAnchor.constraint(equalToConstant: 44).isActive = true
         applyChipStyle(btn, isOn: isChipOn(effect))
         return btn
     }
@@ -198,8 +189,7 @@ final class MacSettingsViewController: NSViewController {
     }
 
     private func isChipOn(_ effect: VisualEffects) -> Bool {
-        effect.rawValue == 0 ? VisualEffects.current.isEmpty
-                             : VisualEffects.current.contains(effect)
+        VisualEffects.current.contains(effect)
     }
 
     @objc private func toggleEffect(_ sender: NSButton) {
