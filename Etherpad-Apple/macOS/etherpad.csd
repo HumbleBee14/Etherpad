@@ -44,6 +44,9 @@ gicosine ftgen 2, 0, 4096, 11, 1
 
 gienv ftgen 0, 0, 1024, 5, 1, 1024, 0.0001
 
+gimorfA ftgen 0, 0, 4096, 10, 1, 0.5, 0.33, 0.25, 0.2
+gimorfB ftgen 0, 0, 4096, 10, 1, 0, 0.9, 0, 0.7, 0, 0.5, 0, 0.4
+
 giscale_type init 0
 
 gadelL,gadelR init 0
@@ -243,6 +246,74 @@ a1 vowel a1, (1 - ky) * 12, 0
 a1 butlp a1, scale(1 - ky, 200, 10000)
 a1 = a1 * linsegr(0, 0.005, 1, 0.5, 0)
 a2 = a1
+
+elseif(gisound == 5) then
+;Morphwave — cross-fade two wavetables by ky
+kmorf = ky
+amwA oscili 1, kcps, gimorfA
+amwB oscili 1, kcps, gimorfB
+amw = amwA * (1 - kmorf) + amwB * kmorf
+amw tone amw, 1200 + 7000 * ky
+aenv linsegr 0, 0.2, 1, 0.7, 0
+a1 = amw * ky * 0.05 * aenv
+a2 = a1
+
+elseif(gisound == 6) then
+;PWM Pad — pulse-width modulation, slow breathing
+kpwlfo oscili 0.25, 0.3, gisine
+kpw = 0.5 + kpwlfo
+kpw limit kpw, 0.1, 0.9
+apwm vco2 1, kcps, 2, kpw
+apwm butlp apwm, 1500 + 5000 * ky
+aenv linsegr 0, 0.3, 1, 0.8, 0
+a1 = apwm * ky * 0.05 * aenv
+a2 = a1
+
+elseif(gisound == 7) then
+;Glass Choir — formant "ahh" pad with real ensemble shimmer (no noise)
+kvoc = 1.5 + 2 * ky                         ; vowel morph: oo/oh → ah/eh as Y rises
+kdr1 randi 0.004, 0.6, 0.1                  ; slow independent pitch drift per voice
+kdr2 randi 0.004, 0.5, 0.3
+kdr3 randi 0.004, 0.7, 0.7
+kdr4 randi 0.004, 0.55, 0.9
+av1 vco2 1, kcps * (1.005 + kdr1), 0        ; 4 detuned voices = choir width
+av2 vco2 1, kcps * (0.995 + kdr2), 0
+av3 vco2 1, kcps * (1.012 + kdr3), 0
+av4 vco2 1, kcps * (0.988 + kdr4), 0
+avL = av1 + av3
+avR = av2 + av4
+avL vowel avL, kvoc, 0
+avR vowel avR, kvoc, 0
+avL butlp avL, 2500 + 4000 * ky             ; soften — airy, not harsh
+avR butlp avR, 2500 + 4000 * ky
+aenv linsegr 0, 0.4, 1, 1.0, 0              ; slow choral swell + long tail
+a1 = avL * ky * 0.05 * aenv
+a2 = avR * ky * 0.05 * aenv
+; extra reverb+delay bloom so old notes linger under new ones (fanning)
+gaL = gaL + a1 * 0.35
+gaR = gaR + a2 * 0.35
+gadelL = gadelL + a1 * 0.2
+gadelR = gadelR + a2 * 0.2
+
+elseif(gisound == 8) then
+;FM Bell — inharmonic FM, metallic warble, long ring (stays finger-responsive)
+kbright = 1.5 + 6 * ktimb                    ; Y opens the metallic overtones (FM index)
+; two slightly detuned voices → beating = cast-metal "bell" warble
+abel1 foscili 1, kcps,        1, 1.414, kbright, gisine
+abel2 foscili 1, kcps + 0.7,  1, 1.414, kbright, gisine
+ahum  foscili 0.5, kcps * 0.5, 1, 2.0,  kbright * 0.4, gisine   ; sub "hum" partial
+ashim foscili 0.3, kcps,      1, 5.43, kbright * 0.3, gisine    ; high inharmonic shimmer
+abell = (abel1 + abel2) * 0.5 + ahum + ashim
+abell butlp abell, 1500 + 9000 * ky
+; fast attack, sustain while held, long bell ring on release
+abell = abell * linsegr(0, 0.003, 1, 2.5, 0)
+a1 = abell * ky * 0.04
+a2 = a1
+; extra reverb+delay bloom so old notes linger under new ones (fanning)
+gaL = gaL + a1 * 0.4
+gaR = gaR + a2 * 0.4
+gadelL = gadelL + a1 * 0.25
+gadelR = gadelR + a2 * 0.25
 
 endif
 

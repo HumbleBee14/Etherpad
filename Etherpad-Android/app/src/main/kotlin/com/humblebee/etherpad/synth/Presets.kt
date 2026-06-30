@@ -18,7 +18,8 @@ internal object Presets {
     const val DefaultOctaveIdx = 2
 
     val SoundLabels = arrayOf(
-        "Ether Pad", "Distorted Dreams", "Xanpalamin", "Give It a Tri", "Digital Monk",
+        "Ether Pad", "Distorted Dreams", "Xanpalamin", "Soft Triangle", "Digital Monk",
+        "Morphwave", "PWM Pad", "Glass Choir", "FM Bell",
     )
     const val DefaultSoundIdx = 0
 

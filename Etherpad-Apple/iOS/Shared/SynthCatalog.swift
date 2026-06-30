@@ -37,7 +37,8 @@ enum SynthCatalog {
     static let octaveValues = [6, 5, 4, 3, 2]
 
     static let soundNames = [
-        "Ether Pad", "Distorted Dreams", "Xanpalamin", "Give it a Tri", "Digital Monk",
+        "Ether Pad", "Distorted Dreams", "Xanpalamin", "Soft Triangle", "Digital Monk",
+        "Morphwave", "PWM Pad", "Glass Choir", "FM Bell",
     ]
 
     static let sizeRange = 4...14
