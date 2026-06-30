@@ -11,4 +11,6 @@ object EtherEngine {
     external fun nativeSetControlChannel(name: String, value: Double)
     external fun nativeInputMessage(score: String)
     external fun nativeGetControlChannel(name: String): Double
+    external fun nativeStartRecording(path: String): Boolean
+    external fun nativeStopRecording()
 }

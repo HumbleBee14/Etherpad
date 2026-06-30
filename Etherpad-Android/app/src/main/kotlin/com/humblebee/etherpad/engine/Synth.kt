@@ -69,4 +69,12 @@ internal class Synth(resources: Resources) {
         }
         EtherEngine.nativeInputMessage(msg)
     }
+
+    // ── recording ─────────────────────────────────────────────────────────
+
+    /** Begin writing engine output to a WAV at [path]. Returns false if already
+     *  recording or the file can't be opened. */
+    fun startRecording(path: String): Boolean = EtherEngine.nativeStartRecording(path)
+
+    fun stopRecording() = EtherEngine.nativeStopRecording()
 }

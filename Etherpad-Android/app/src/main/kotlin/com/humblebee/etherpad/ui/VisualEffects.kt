@@ -1,14 +1,19 @@
 package com.humblebee.etherpad.ui
 
 import android.content.Context
-import android.content.SharedPreferences
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Adjust
+import androidx.compose.material.icons.outlined.Album
+import androidx.compose.material.icons.outlined.Gesture
+import androidx.compose.material.icons.outlined.ViewColumn
+import androidx.compose.ui.graphics.vector.ImageVector
 
 // Persisted as a bitmask in SharedPreferences; empty set selects "None".
-enum class VisualEffect(val mask: Int, val label: String) {
-    Ripple(1 shl 0, "Ripple"),
-    Trail(1 shl 1, "Trail"),
-    Intensity(1 shl 2, "Intensity Ring"),
-    ColumnGlow(1 shl 3, "Column Glow");
+enum class VisualEffect(val mask: Int, val label: String, val icon: ImageVector) {
+    Ripple(1 shl 0, "Ripple", Icons.Outlined.Album),
+    Trail(1 shl 1, "Trail", Icons.Outlined.Gesture),
+    Intensity(1 shl 2, "Intensity Ring", Icons.Outlined.Adjust),
+    ColumnGlow(1 shl 3, "Column Glow", Icons.Outlined.ViewColumn);
 
     companion object {
         const val PREFS_NAME = "EtherpadPrefs"

@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.outlined.RadioButtonChecked
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -18,7 +20,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -27,25 +28,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.humblebee.etherpad.engine.Synth
 import com.humblebee.etherpad.synth.Presets
 
 // Each button is wrapped in its own Box so its ChoiceDropdown anchors directly beneath it.
 @Composable
-internal fun TopMenuBar(synth: Synth, touchState: TouchState, onAboutClick: () -> Unit) {
-    var sizeIdx   by remember { mutableIntStateOf(Presets.DefaultSizeIdx) }
-    var keyIdx    by remember { mutableIntStateOf(Presets.DefaultKeyIdx) }
-    var octaveIdx by remember { mutableIntStateOf(Presets.DefaultOctaveIdx) }
-    var soundIdx  by remember { mutableIntStateOf(Presets.DefaultSoundIdx) }
-    var scaleIdx  by remember { mutableIntStateOf(Presets.DefaultScaleIdx) }
-
+internal fun TopMenuBar(
+    config: SynthConfigState,
+    theme: EtherTheme,
+    recordVisible: Boolean,
+    isRecording: Boolean,
+    onRecordToggle: () -> Unit,
+    onAboutClick: () -> Unit,
+) {
     var openMenu by remember { mutableStateOf<String?>(null) }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(40.dp)
-            .background(EtherColors.TopBar.copy(alpha = 0.55f))
+            .background(theme.topBar.copy(alpha = 0.55f))
             .padding(horizontal = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -53,79 +54,78 @@ internal fun TopMenuBar(synth: Synth, touchState: TouchState, onAboutClick: () -
             label = "Octave",
             expanded = openMenu == "octave",
             options = Presets.OctaveLabels,
-            selected = octaveIdx,
+            selected = config.octaveIdx,
             defaultIdx = Presets.DefaultOctaveIdx,
+            theme = theme,
             onOpen = { openMenu = "octave" },
             onDismiss = { openMenu = null },
-            onPick = { idx ->
-                octaveIdx = idx
-                synth.setOctave(Presets.OctaveValues[idx])
-                openMenu = null
-            },
+            onPick = { config.setOctave(it); openMenu = null },
         )
         Spacer(Modifier.padding(start = 20.dp))
         DropdownButton(
             label = "Scale",
             expanded = openMenu == "scale",
             options = Presets.ScaleLabels,
-            selected = scaleIdx,
+            selected = config.scaleIdx,
             defaultIdx = Presets.DefaultScaleIdx,
+            theme = theme,
             onOpen = { openMenu = "scale" },
             onDismiss = { openMenu = null },
-            onPick = { idx ->
-                scaleIdx = idx
-                synth.setScale(Presets.ScaleSteps[idx])
-                openMenu = null
-            },
+            onPick = { config.setScale(it); openMenu = null },
         )
         Spacer(Modifier.padding(start = 20.dp))
         DropdownButton(
             label = "Key",
             expanded = openMenu == "key",
             options = Presets.KeyLabels,
-            selected = keyIdx,
+            selected = config.keyIdx,
             defaultIdx = Presets.DefaultKeyIdx,
+            theme = theme,
             onOpen = { openMenu = "key" },
             onDismiss = { openMenu = null },
-            onPick = { idx ->
-                keyIdx = idx
-                synth.setKey(idx)
-                openMenu = null
-            },
+            onPick = { config.setKey(it); openMenu = null },
         )
         Spacer(Modifier.padding(start = 20.dp))
         DropdownButton(
             label = "Size",
             expanded = openMenu == "size",
             options = Presets.SizeLabels,
-            selected = sizeIdx,
+            selected = config.sizeIdx,
             defaultIdx = Presets.DefaultSizeIdx,
+            theme = theme,
             onOpen = { openMenu = "size" },
             onDismiss = { openMenu = null },
-            onPick = { idx ->
-                sizeIdx = idx
-                val n = idx + 4
-                touchState.numberOfNotes.intValue = n
-                synth.setSize(n)
-                openMenu = null
-            },
+            onPick = { config.setSize(it); openMenu = null },
         )
         Spacer(Modifier.padding(start = 20.dp))
         DropdownButton(
             label = "Sound",
             expanded = openMenu == "sound",
             options = Presets.SoundLabels,
-            selected = soundIdx,
+            selected = config.soundIdx,
             defaultIdx = Presets.DefaultSoundIdx,
+            theme = theme,
             onOpen = { openMenu = "sound" },
             onDismiss = { openMenu = null },
-            onPick = { idx ->
-                soundIdx = idx
-                synth.setSound(idx)
-                openMenu = null
-            },
+            onPick = { config.setSound(it); openMenu = null },
         )
-        Spacer(Modifier.padding(start = 20.dp))
+        Spacer(Modifier.weight(1f))
+        PresetsMenu(
+            config = config,
+            theme = theme,
+            expanded = openMenu == "presets",
+            onOpen = { openMenu = "presets" },
+            onDismiss = { openMenu = null },
+        )
+        if (recordVisible) {
+            IconButton(onClick = onRecordToggle, modifier = Modifier.size(40.dp)) {
+                Icon(
+                    imageVector = if (isRecording) Icons.Filled.Stop else Icons.Outlined.RadioButtonChecked,
+                    contentDescription = if (isRecording) "Stop recording" else "Record",
+                    tint = if (isRecording) Color(0xFFE53935) else Color.White,
+                )
+            }
+        }
         IconButton(
             onClick = onAboutClick,
             modifier = Modifier.size(40.dp),
@@ -146,6 +146,7 @@ private fun DropdownButton(
     options: Array<String>,
     selected: Int,
     defaultIdx: Int,
+    theme: EtherTheme,
     onOpen: () -> Unit,
     onDismiss: () -> Unit,
     onPick: (Int) -> Unit,
@@ -157,6 +158,7 @@ private fun DropdownButton(
             options = options,
             selected = selected,
             defaultIdx = defaultIdx,
+            theme = theme,
             onDismiss = onDismiss,
             onPick = onPick,
         )
@@ -164,7 +166,7 @@ private fun DropdownButton(
 }
 
 @Composable
-private fun MenuButton(label: String, onClick: () -> Unit) {
+internal fun MenuButton(label: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(4.dp))
@@ -174,7 +176,7 @@ private fun MenuButton(label: String, onClick: () -> Unit) {
         TextButton(onClick = onClick) {
             Text(
                 text = label,
-                color = EtherColors.TopBarText,
+                color = Color.White,
                 style = MaterialTheme.typography.titleMedium,
             )
         }

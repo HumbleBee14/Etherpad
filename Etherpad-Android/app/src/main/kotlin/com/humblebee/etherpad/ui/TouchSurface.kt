@@ -43,6 +43,7 @@ internal fun TouchSurface(
     synth: Synth,
     state: TouchState,
     effects: Set<VisualEffect>,
+    theme: EtherTheme,
     modifier: Modifier = Modifier,
 ) {
     val slots = remember { mutableMapOf<Long, Int>() }
@@ -64,7 +65,7 @@ internal fun TouchSurface(
 
     Canvas(
         modifier = modifier
-            .background(EtherColors.Background)
+            .background(theme.background)
             .pointerInput(Unit) {
                 awaitPointerEventScope {
                     while (true) {
@@ -131,7 +132,7 @@ internal fun TouchSurface(
             state.live.values.forEach { p ->
                 val idx = (p.x / colW).toInt().coerceIn(0, cols - 1)
                 drawRect(
-                    color = EtherColors.FingerCircle.copy(alpha = 0.10f),
+                    color = theme.accent(0.10f),
                     topLeft = Offset(idx * colW, 0f),
                     size = Size(colW, size.height),
                 )
@@ -143,7 +144,7 @@ internal fun TouchSurface(
             val step = size.width / cols.toFloat()
             for (i in 1 until cols) {
                 drawLine(
-                    color = EtherColors.Grid,
+                    color = theme.line,
                     start = Offset(i * step, 0f),
                     end = Offset(i * step, size.height),
                     strokeWidth = 6f,
@@ -164,7 +165,7 @@ internal fun TouchSurface(
                     val radius = (18f * density) * (0.3f + 0.7f * life)
                     if (alpha > 0f) {
                         drawCircle(
-                            color = EtherColors.FingerCircle.copy(alpha = alpha),
+                            color = theme.accent(alpha),
                             radius = radius,
                             center = tp.pos,
                         )
@@ -184,7 +185,7 @@ internal fun TouchSurface(
                 val alpha = (1f - progress) * 0.6f
                 if (alpha > 0f) {
                     drawCircle(
-                        color = EtherColors.FingerCircle.copy(alpha = alpha),
+                        color = theme.accent(alpha),
                         radius = radius,
                         center = r.origin,
                         style = Stroke(width = 2f * density),
@@ -205,7 +206,7 @@ internal fun TouchSurface(
                 1f
             }
             drawCircle(
-                color = EtherColors.FingerCircle,
+                color = theme.circleColor,
                 radius = 60f * density * scale,
                 center = p,
             )
