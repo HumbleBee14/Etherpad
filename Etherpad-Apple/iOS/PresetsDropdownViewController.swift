@@ -24,10 +24,16 @@ final class PresetsDropdownViewController: UITableViewController {
         super.viewDidLoad()
         view.backgroundColor = .clear
         tableView.backgroundColor = .clear
-        tableView.backgroundView = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
-        tableView.separatorStyle = .none
+        tableView.backgroundView = UIVisualEffectView(effect: UIBlurEffect(style: .systemChromeMaterialDark))
+        tableView.separatorStyle = .singleLine
+        tableView.separatorColor = UIColor(white: 1.0, alpha: 0.12)
+        tableView.separatorInset = .zero
         tableView.rowHeight = UITableView.automaticDimension
         tableView.tableFooterView = UIView()
+        tableView.showsVerticalScrollIndicator = false
+        tableView.layer.cornerRadius = 14
+        tableView.layer.cornerCurve = .continuous
+        tableView.clipsToBounds = true
 
         NotificationCenter.default.addObserver(
             self, selector: #selector(storeChanged),
@@ -68,6 +74,7 @@ final class PresetsDropdownViewController: UITableViewController {
         if ip.section == 0 {
             let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
             cell.backgroundColor = .clear
+            cell.selectedBackgroundView = pressHighlight()
             cell.textLabel?.text = "Save current…"
             cell.textLabel?.textColor = Theme.current.accent
             cell.textLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
@@ -78,6 +85,7 @@ final class PresetsDropdownViewController: UITableViewController {
 
         let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
         cell.backgroundColor = .clear
+        cell.selectedBackgroundView = pressHighlight()
 
         if presets.isEmpty {
             cell.textLabel?.text = "No presets yet"
@@ -176,5 +184,11 @@ final class PresetsDropdownViewController: UITableViewController {
             PresetStore.rename(id: preset.id, to: name)
         }
         present(editor, animated: true)
+    }
+
+    private func pressHighlight() -> UIView {
+        let v = UIView()
+        v.backgroundColor = UIColor(white: 1.0, alpha: 0.12)
+        return v
     }
 }
