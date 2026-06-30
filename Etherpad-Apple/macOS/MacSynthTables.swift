@@ -35,5 +35,5 @@ enum MacSynthTables {
     static let keyNames = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"]
     static let octaveLabels = ["2","1","0","-1","-2"]
     static let octaveValues = [6, 5, 4, 3, 2]
-    static let soundNames = ["Ether Pad","Distorted Dreams","Xanpalamin","Give it a Tri","Digital Monk"]
+    static let soundNames = ["Ether Pad","Distorted Dreams","Xanpalamin","Soft Triangle","Digital Monk","Morphwave","PWM Pad","Glass Choir","FM Bell"]
 }
