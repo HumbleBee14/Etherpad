@@ -114,6 +114,12 @@ final class SynthPatchMenuFactory {
         patch = newPatch
     }
 
+    func applyPreset(_ preset: Preset) {
+        patch = preset.patch
+        engine?.applyPatchState(patch)
+        notifyPatchChanged()
+    }
+
     private func notifyPatchChanged() {
         onPatchChanged?(patch)
     }

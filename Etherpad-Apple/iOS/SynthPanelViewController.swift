@@ -22,6 +22,7 @@ final class SynthPanelViewController: UIViewController {
     private var recordingURL: URL?
     private var recordingTimer: Timer?
     private var pendingShareURL: URL?
+    private let menuGestureDelegate = AllowSimultaneousMenuGesture()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -140,6 +141,13 @@ final class SynthPanelViewController: UIViewController {
 
         var buttons: [UIButton] = [scaleBtn, keyBtn, octBtn, sizeBtn, soundBtn]
 
+        let preset = UIButton(type: .system)
+        let presetCfg = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
+        preset.setImage(UIImage(systemName: "slider.horizontal.3", withConfiguration: presetCfg), for: .normal)
+        preset.tintColor = .white
+        preset.addTarget(self, action: #selector(showPresets), for: .touchUpInside)
+        buttons.append(preset)
+
         if RecordingSettings.isEnabled && showsAboutButton {
             let rec = UIButton(type: .system)
             let cfg = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
@@ -173,6 +181,11 @@ final class SynthPanelViewController: UIViewController {
             stack.leadingAnchor.constraint(equalTo: bar.contentView.leadingAnchor),
             stack.trailingAnchor.constraint(equalTo: bar.contentView.trailingAnchor),
         ])
+
+        // Let toolbar buttons open while fingers are tracking on the surface.
+        for btn in buttons {
+            btn.gestureRecognizers?.forEach { $0.delegate = menuGestureDelegate }
+        }
     }
 
     private func refreshMenus() {
@@ -207,6 +220,15 @@ final class SynthPanelViewController: UIViewController {
             pop.delegate = self
         }
         present(settings, animated: true)
+    }
+
+    @objc private func showPresets() {
+        let presets = PresetsViewController(
+            currentPatch: { [weak self] in self?.menuFactory.patch ?? .factoryDefault },
+            onLoad: { [weak self] preset in self?.menuFactory.applyPreset(preset) })
+        let nav = UINavigationController(rootViewController: presets)
+        nav.modalPresentationStyle = .formSheet
+        present(nav, animated: true)
     }
 
     // MARK: - Recording
@@ -315,4 +337,9 @@ extension SynthPanelViewController: UIPopoverPresentationControllerDelegate {
     ) -> UIModalPresentationStyle {
         .none
     }
+}
+
+final class AllowSimultaneousMenuGesture: NSObject, UIGestureRecognizerDelegate {
+    func gestureRecognizer(_ g: UIGestureRecognizer,
+                           shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
 }
