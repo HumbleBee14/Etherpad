@@ -28,6 +28,7 @@ set(CSOUND_INCLUDE_DIR
 
 add_library(ether_engine SHARED
     engine.cpp
+    wav_writer.cpp
 )
 
 target_include_directories(ether_engine PRIVATE

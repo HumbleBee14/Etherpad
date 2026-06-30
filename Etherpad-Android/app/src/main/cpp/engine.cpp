@@ -29,6 +29,7 @@
 #include <android/log.h>
 #include <oboe/Oboe.h>
 #include "csound.h"
+#include "wav_writer.h"
 
 #include <atomic>
 #include <cstdarg>
@@ -153,9 +154,12 @@ class EtherEngine final : public oboe::AudioStreamCallback {
             stream_.reset();
             return false;
         }
-        LOGI("oboe stream started: framesPerBurst=%d bufferSize=%d api=%s",
+        // Record at the negotiated stream rate, not Csound sr_ (Oboe may differ).
+        streamSampleRate_ = stream_->getSampleRate();
+        LOGI("oboe stream started: framesPerBurst=%d bufferSize=%d sr=%d api=%s",
              stream_->getFramesPerBurst(),
              stream_->getBufferSizeInFrames(),
+             streamSampleRate_,
              oboe::convertToText(stream_->getAudioApi()));
         return true;
     }
@@ -176,6 +180,12 @@ class EtherEngine final : public oboe::AudioStreamCallback {
             stream_->close();
             stream_.reset();
             LOGI("oboe stream stopped");
+        }
+        // Stream is down; the audio thread can no longer flush a deferred close,
+        // so finalize any active recording here to avoid a truncated file.
+        if (recording_.load()) {
+            recording_.store(false, std::memory_order_release);
+            if (wav_.isOpen()) wav_.close();
         }
     }
 
@@ -225,7 +235,46 @@ class EtherEngine final : public oboe::AudioStreamCallback {
             spoutCursor_ += copyFrames;
             frameIndex   += copyFrames;
         }
+
+        // Tap the output the listener hears. Audio thread solely owns the writer
+        // while armed; close is deferred here on stop to avoid a mid-append close.
+        if (recording_.load(std::memory_order_acquire)) {
+            wav_.append(out, numFrames);
+            if (stopRequested_.load(std::memory_order_acquire)) {
+                wav_.close();
+                recording_.store(false, std::memory_order_release);
+            }
+        }
         return oboe::DataCallbackResult::Continue;
+    }
+
+    // ─── Recording ──────────────────────────────────────────────────────
+
+    bool startRecording(const std::string& path) {
+        std::lock_guard<std::mutex> lk(lifecycle_mutex_);
+        if (recording_.load() || csound_ == nullptr || !stream_) return false;
+        if (!wav_.open(path, streamSampleRate_, nchnls_)) {
+            LOGE("WAV open failed: %s", path.c_str());
+            return false;
+        }
+        stopRequested_.store(false, std::memory_order_release);
+        recording_.store(true, std::memory_order_release);
+        LOGI("recording started: %s", path.c_str());
+        return true;
+    }
+
+    void stopRecording() {
+        // Mutex guards our read of stream_ (stop() resets it under the same lock).
+        // Live stream → defer close to the audio thread; else close here.
+        std::lock_guard<std::mutex> lk(lifecycle_mutex_);
+        if (!recording_.load()) return;
+        if (stream_) {
+            stopRequested_.store(true, std::memory_order_release);
+        } else {
+            recording_.store(false, std::memory_order_release);
+            if (wav_.isOpen()) wav_.close();
+        }
+        LOGI("recording stop requested");
     }
 
     // ─── Event injection (called from UI thread via JNI) ────────────────
@@ -260,6 +309,11 @@ class EtherEngine final : public oboe::AudioStreamCallback {
     // Position within the current Csound k-period buffer. Initial value of
     // ksmps_ means "the buffer is empty, render a fresh one immediately."
     int spoutCursor_ = 1 << 30;
+
+    WavWriter wav_;
+    std::atomic<bool> recording_{false};
+    std::atomic<bool> stopRequested_{false};
+    int streamSampleRate_ = 44100;  // Oboe-negotiated rate; set in start()
 };
 
 // One engine per process. The activity owns its lifecycle but the C++ object
@@ -314,6 +368,17 @@ JNIEXPORT jdouble JNICALL
 Java_com_humblebee_etherpad_engine_EtherEngine_nativeGetControlChannel(JNIEnv* env, jobject, jstring name) {
     auto n = jstringToStd(env, name);
     return gEngine().getControlChannel(n.c_str());
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_humblebee_etherpad_engine_EtherEngine_nativeStartRecording(JNIEnv* env, jobject, jstring path) {
+    auto p = jstringToStd(env, path);
+    return gEngine().startRecording(p) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT void JNICALL
+Java_com_humblebee_etherpad_engine_EtherEngine_nativeStopRecording(JNIEnv*, jobject) {
+    gEngine().stopRecording();
 }
 
 } // extern "C"
