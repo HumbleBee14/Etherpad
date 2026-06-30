@@ -108,6 +108,9 @@ final class PresetsViewController: UITableViewController {
         cell.textLabel?.text = preset.name
         cell.detailTextLabel?.text = Preset.summary(for: preset.patch)
         cell.selectionStyle = .default
+        if preset.patch == currentPatch() {
+            cell.textLabel?.textColor = Theme.current.accent
+        }
         return cell
     }
 
