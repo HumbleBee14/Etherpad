@@ -302,13 +302,22 @@ elseif(p4 == -3) then
 giscale_type = 3
 else
 ;set scale type to equal temperament with midi pitches
+;overwrite giscale in place; never ftfree (a held note in instr 1 reads it)
 giscale_type = 0
-ftfree giscale, 0
-giscale ftgen 0, 0, 14, -2, \
-p4, p5, p6, p7,
-p8, p9, p10, p11,
-p12, p13, p14, p15,
-p16, p17
+tablew p4,  0,  giscale
+tablew p5,  1,  giscale
+tablew p6,  2,  giscale
+tablew p7,  3,  giscale
+tablew p8,  4,  giscale
+tablew p9,  5,  giscale
+tablew p10, 6,  giscale
+tablew p11, 7,  giscale
+tablew p12, 8,  giscale
+tablew p13, 9,  giscale
+tablew p14, 10, giscale
+tablew p15, 11, giscale
+tablew p16, 12, giscale
+tablew p17, 13, giscale
 endif
 
 endin

@@ -20,6 +20,16 @@ struct VisualEffects: OptionSet {
         }
     }
 
+    var symbolName: String {
+        switch self {
+        case .ripple:     return "circle.circle"
+        case .trail:      return "scribble.variable"
+        case .intensity:  return "smallcircle.filled.circle"
+        case .columnGlow: return "pianokeys"
+        default:          return "questionmark"
+        }
+    }
+
     private static let key = "EtherpadVisualEffects"
     static var current: VisualEffects {
         get { VisualEffects(rawValue: UserDefaults.standard.integer(forKey: key)) }

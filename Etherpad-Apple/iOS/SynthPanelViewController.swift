@@ -4,7 +4,7 @@ import AVFoundation
 final class SynthPanelViewController: UIViewController {
 
     var showsAboutButton: Bool = true
-    var trailingAlignedToolbar: Bool = false
+    var showsRecordButton: Bool = true
 
     private let engine = CsoundEngine()
     private let surface = TouchSurfaceView()
@@ -18,10 +18,12 @@ final class SynthPanelViewController: UIViewController {
     private var soundBtn: UIButton!
     private weak var settingsBtn: UIButton?
     private weak var recordBtn: UIButton?
+    private weak var presetBtn: UIButton?
     private weak var toolbarBar: UIVisualEffectView?
     private var recordingURL: URL?
     private var recordingTimer: Timer?
     private var pendingShareURL: URL?
+    private let menuGestureDelegate = AllowSimultaneousMenuGesture()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -140,7 +142,15 @@ final class SynthPanelViewController: UIViewController {
 
         var buttons: [UIButton] = [scaleBtn, keyBtn, octBtn, sizeBtn, soundBtn]
 
-        if RecordingSettings.isEnabled && showsAboutButton {
+        let preset = UIButton(type: .system)
+        let presetCfg = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
+        preset.setImage(UIImage(systemName: "slider.horizontal.3", withConfiguration: presetCfg), for: .normal)
+        preset.tintColor = .white
+        preset.addTarget(self, action: #selector(showPresets), for: .touchUpInside)
+        presetBtn = preset
+        buttons.append(preset)
+
+        if RecordingSettings.isEnabled && showsRecordButton {
             let rec = UIButton(type: .system)
             let cfg = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
             rec.setImage(UIImage(systemName: "record.circle", withConfiguration: cfg), for: .normal)
@@ -173,6 +183,11 @@ final class SynthPanelViewController: UIViewController {
             stack.leadingAnchor.constraint(equalTo: bar.contentView.leadingAnchor),
             stack.trailingAnchor.constraint(equalTo: bar.contentView.trailingAnchor),
         ])
+
+        // Let toolbar buttons open while fingers are tracking on the surface.
+        for btn in buttons {
+            btn.gestureRecognizers?.forEach { $0.delegate = menuGestureDelegate }
+        }
     }
 
     private func refreshMenus() {
@@ -207,6 +222,21 @@ final class SynthPanelViewController: UIViewController {
             pop.delegate = self
         }
         present(settings, animated: true)
+    }
+
+    @objc private func showPresets() {
+        let dropdown = PresetsDropdownViewController(
+            currentPatch: { [weak self] in self?.menuFactory.patch ?? .factoryDefault },
+            onLoad: { [weak self] preset in self?.menuFactory.applyPreset(preset) })
+        dropdown.modalPresentationStyle = .popover
+        if let pop = dropdown.popoverPresentationController {
+            pop.sourceView = presetBtn
+            pop.sourceRect = presetBtn?.bounds ?? .zero
+            pop.permittedArrowDirections = .up
+            pop.backgroundColor = .clear
+            pop.delegate = self
+        }
+        present(dropdown, animated: true)
     }
 
     // MARK: - Recording
@@ -315,4 +345,9 @@ extension SynthPanelViewController: UIPopoverPresentationControllerDelegate {
     ) -> UIModalPresentationStyle {
         .none
     }
+}
+
+final class AllowSimultaneousMenuGesture: NSObject, UIGestureRecognizerDelegate {
+    func gestureRecognizer(_ g: UIGestureRecognizer,
+                           shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
 }
