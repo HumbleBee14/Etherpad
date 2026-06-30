@@ -165,29 +165,16 @@ final class PresetsDropdownViewController: UITableViewController {
         }
         let patch = currentPatch()
         let suggested = Preset.suggestedName(for: patch, maxLength: PresetStore.maxNameLength)
-        let alert = UIAlertController(title: "Save Preset", message: nil, preferredStyle: .alert)
-        alert.addTextField { tf in
-            tf.text = suggested
-            tf.clearButtonMode = .whileEditing
-            tf.autocapitalizationType = .words
+        let editor = PresetEditViewController(initialName: suggested) { name in
+            PresetStore.add(Preset(name: name, patch: patch))
         }
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Save", style: .default) { _ in
-            let name = Self.trimmed(alert.textFields?.first?.text)
-            PresetStore.add(Preset(name: name.isEmpty ? suggested : name, patch: patch))
-        })
-        present(alert, animated: true)
-    }
-
-    private func presentEditPopup(for preset: Preset) {
-        let editor = PresetEditViewController(
-            preset: preset,
-            onSave: { name in PresetStore.rename(id: preset.id, to: name) })
         present(editor, animated: true)
     }
 
-    private static func trimmed(_ raw: String?) -> String {
-        String((raw ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            .prefix(PresetStore.maxNameLength))
+    private func presentEditPopup(for preset: Preset) {
+        let editor = PresetEditViewController(initialName: preset.name) { name in
+            PresetStore.rename(id: preset.id, to: name)
+        }
+        present(editor, animated: true)
     }
 }

@@ -1,17 +1,17 @@
 import UIKit
 
-/// Compact glass edit popup for a preset, pinned just above the keyboard.
-/// Name field + Delete (left) / Save (right).
+/// Compact glass name popup pinned to the top, used for both saving a new
+/// preset and renaming one. Name field + Cancel / Save.
 final class PresetEditViewController: UIViewController, UITextFieldDelegate {
 
-    private let preset: Preset
+    private let initialName: String
     private let onSave: (String) -> Void
 
     private let card = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
     private let field = UITextField()
 
-    init(preset: Preset, onSave: @escaping (String) -> Void) {
-        self.preset = preset
+    init(initialName: String, onSave: @escaping (String) -> Void) {
+        self.initialName = initialName
         self.onSave = onSave
         super.init(nibName: nil, bundle: nil)
         modalPresentationStyle = .overFullScreen
@@ -32,7 +32,7 @@ final class PresetEditViewController: UIViewController, UITextFieldDelegate {
         card.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(card)
 
-        field.text = preset.name
+        field.text = initialName
         field.textColor = UIColor(white: 0.96, alpha: 1)
         field.font = .systemFont(ofSize: 16)
         field.clearButtonMode = .whileEditing
@@ -99,7 +99,7 @@ final class PresetEditViewController: UIViewController, UITextFieldDelegate {
         let raw = field.text ?? ""
         let trimmed = String(raw.trimmingCharacters(in: .whitespacesAndNewlines)
             .prefix(PresetStore.maxNameLength))
-        onSave(trimmed.isEmpty ? preset.name : trimmed)
+        onSave(trimmed.isEmpty ? initialName : trimmed)
         dismiss(animated: true)
     }
 }
