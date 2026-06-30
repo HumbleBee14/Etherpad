@@ -19,6 +19,7 @@
 		3F4A495DFC96528CF571DA17 /* EtherpadAudioUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC17E5B8EFF4EA201FE1E0D0 /* EtherpadAudioUnit.swift */; };
 		4F412DC2909C8F250EF9C04D /* Etherpad-AU.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D2503B4F14E2392F9ADFCCFC /* Etherpad-AU.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		564A2C153D87A6F0085177DA /* SplitModeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E930DAB92FC2BBC40083C323 /* SplitModeController.swift */; };
+		A1B2C3D4E5F600000000P301 /* PresetsDropdownViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F600000000P300 /* PresetsDropdownViewController.swift */; };
 		57AE05F3812D84333F3B65A3 /* SynthCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E6ED90D527C6B94739ED5C9 /* SynthCatalog.swift */; };
 		5E2F8DAAF338A0A386BAA573 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BF59E8C574D9F23440EEAA6 /* AppDelegate.swift */; };
 		5E2F8DAAF338A0A386BAA574 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BF59E8C574D9F23440EEAA6E /* SceneDelegate.swift */; };
@@ -45,7 +46,6 @@
 		A1B2C3D4E5F600000000P102 /* Preset.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F600000000P100 /* Preset.swift */; };
 		A1B2C3D4E5F600000000P201 /* PresetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F600000000P200 /* PresetStore.swift */; };
 		A1B2C3D4E5F600000000P202 /* PresetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F600000000P200 /* PresetStore.swift */; };
-		A1B2C3D4E5F600000000P301 /* PresetsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F600000000P300 /* PresetsViewController.swift */; };
 		A0B3C3D3E3F300000000B302 /* AUPatchMenuFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0B3C3D3E3F300000000B301 /* AUPatchMenuFactory.swift */; };
 		9CE0D85CD5F60E185E022311 /* VisualEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBCDF72A7572D182527EB70D /* VisualEffects.swift */; };
 		A1B2C3D4E5F60718293A4001 /* MacTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4002 /* MacTheme.swift */; };
@@ -116,7 +116,6 @@
 		25F1E79BBA966253DB187CDB /* SynthPatchState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SynthPatchState.swift; path = Shared/SynthPatchState.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F600000000P100 /* Preset.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Preset.swift; path = Shared/Preset.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F600000000P200 /* PresetStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PresetStore.swift; path = Shared/PresetStore.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F600000000P300 /* PresetsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetsViewController.swift; sourceTree = "<group>"; };
 		2AAFC2E3511EC1E15B11152C /* etherpad.csd */ = {isa = PBXFileReference; lastKnownFileType = text; path = etherpad.csd; sourceTree = "<group>"; };
 		312F55F2E10D297204649FF1 /* Etherpad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Etherpad.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3333604A572A944853DDBEBB /* Etherpad-AU-Bridging-Header.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = "Etherpad-AU-Bridging-Header.h"; path = "AU/Etherpad-AU-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -164,6 +163,7 @@
 		E4ED418A67903CEC1D0D2EB8 /* etherpad.csd */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = etherpad.csd; path = macOS/etherpad.csd; sourceTree = "<group>"; };
 		E57CB3960F46B4B9EBF73C39 /* Etherpad-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Etherpad-Bridging-Header.h"; sourceTree = "<group>"; };
 		E930DAB92FC2BBC40083C323 /* SplitModeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitModeController.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F600000000P300 /* PresetsDropdownViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetsDropdownViewController.swift; sourceTree = "<group>"; };
 		E930DABA2FC2BBC40083C323 /* SplitSynthViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitSynthViewController.swift; sourceTree = "<group>"; };
 		E930DABB2FC2BBC40083C323 /* SynthPanelViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynthPanelViewController.swift; sourceTree = "<group>"; };
 		E9D3E6CA2FC13C2D005E6DA3 /* CsoundiOS.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = Frameworks/CsoundiOS.xcframework; sourceTree = "<group>"; };
@@ -286,7 +286,7 @@
 				0E82060D587238367A90A289 /* Resources */,
 				756EEFA6914F7ED110A72201 /* Views */,
 				E930DAB92FC2BBC40083C323 /* SplitModeController.swift */,
-				A1B2C3D4E5F600000000P300 /* PresetsViewController.swift */,
+				A1B2C3D4E5F600000000P300 /* PresetsDropdownViewController.swift */,
 				E930DABA2FC2BBC40083C323 /* SplitSynthViewController.swift */,
 				E930DABB2FC2BBC40083C323 /* SynthPanelViewController.swift */,
 				DEBA61FC52554F67FB46D7E1 /* Headers */,
@@ -580,6 +580,7 @@
 				A1B2C3D4E5F600000000R101 /* RecordingSettings.swift in Sources */,
 				B5485E7CEEF6E31ED6EA3E5E /* VisualEffects.swift in Sources */,
 				564A2C153D87A6F0085177DA /* SplitModeController.swift in Sources */,
+				A1B2C3D4E5F600000000P301 /* PresetsDropdownViewController.swift in Sources */,
 				1D0104B675C2C0BBC3384C41 /* SplitSynthViewController.swift in Sources */,
 				12E7C8CF08EBC01345720F0D /* SynthPanelViewController.swift in Sources */,
 				75B6DD717A9CB76CB76A491E /* CsoundMIDI.m in Sources */,
@@ -589,7 +590,6 @@
 				EAB53B6D9EAA8DAD8615CCDC /* SynthPatchState.swift in Sources */,
 				A1B2C3D4E5F600000000P101 /* Preset.swift in Sources */,
 				A1B2C3D4E5F600000000P201 /* PresetStore.swift in Sources */,
-				A1B2C3D4E5F600000000P301 /* PresetsViewController.swift in Sources */,
 				8778D03BE3B2CD6182CD281A /* SynthScore.swift in Sources */,
 				B7D1F66265CA9AF10AC3E313 /* SynthTouchCoordinator.swift in Sources */,
 				6B43BB712DB5D9D21913A7DF /* SynthVoiceLayout.swift in Sources */,

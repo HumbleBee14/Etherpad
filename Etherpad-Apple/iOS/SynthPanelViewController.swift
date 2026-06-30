@@ -18,6 +18,7 @@ final class SynthPanelViewController: UIViewController {
     private var soundBtn: UIButton!
     private weak var settingsBtn: UIButton?
     private weak var recordBtn: UIButton?
+    private weak var presetBtn: UIButton?
     private weak var toolbarBar: UIVisualEffectView?
     private var recordingURL: URL?
     private var recordingTimer: Timer?
@@ -146,6 +147,7 @@ final class SynthPanelViewController: UIViewController {
         preset.setImage(UIImage(systemName: "slider.horizontal.3", withConfiguration: presetCfg), for: .normal)
         preset.tintColor = .white
         preset.addTarget(self, action: #selector(showPresets), for: .touchUpInside)
+        presetBtn = preset
         buttons.append(preset)
 
         if RecordingSettings.isEnabled && showsRecordButton {
@@ -223,12 +225,18 @@ final class SynthPanelViewController: UIViewController {
     }
 
     @objc private func showPresets() {
-        let presets = PresetsViewController(
+        let dropdown = PresetsDropdownViewController(
             currentPatch: { [weak self] in self?.menuFactory.patch ?? .factoryDefault },
             onLoad: { [weak self] preset in self?.menuFactory.applyPreset(preset) })
-        let nav = UINavigationController(rootViewController: presets)
-        nav.modalPresentationStyle = .formSheet
-        present(nav, animated: true)
+        dropdown.modalPresentationStyle = .popover
+        if let pop = dropdown.popoverPresentationController {
+            pop.sourceView = presetBtn
+            pop.sourceRect = presetBtn?.bounds ?? .zero
+            pop.permittedArrowDirections = .up
+            pop.backgroundColor = .clear
+            pop.delegate = self
+        }
+        present(dropdown, animated: true)
     }
 
     // MARK: - Recording

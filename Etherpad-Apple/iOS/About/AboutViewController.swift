@@ -12,15 +12,24 @@ final class AboutViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = bgColor
+        view.backgroundColor = .clear
         view.layer.cornerRadius = 16
         view.layer.cornerCurve = .continuous
         view.layer.masksToBounds = true
-        applyPanelBorder()
+
+        let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
+        blur.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(blur)
+        NSLayoutConstraint.activate([
+            blur.topAnchor.constraint(equalTo: view.topAnchor),
+            blur.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            blur.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            blur.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+        ])
 
         let scroll = UIScrollView()
         scroll.translatesAutoresizingMaskIntoConstraints = false
-        scroll.backgroundColor = bgColor
+        scroll.backgroundColor = .clear
         view.addSubview(scroll)
 
         let stack = UIStackView()
@@ -36,18 +45,36 @@ final class AboutViewController: UIViewController {
         title.text = "Etherpad"
         title.font = .systemFont(ofSize: 22, weight: .bold)
         title.textColor = textColor
-        title.textAlignment = .center
+        title.textAlignment = .left
         themedLabels.append(title)
-        stack.addArrangedSubview(title)
 
         let tagline = UILabel()
         tagline.text = "A multi-touch synth for iPhone and iPad"
         tagline.font = .systemFont(ofSize: 13)
         tagline.textColor = textColor
-        tagline.textAlignment = .center
+        tagline.textAlignment = .left
         tagline.numberOfLines = 0
         themedLabels.append(tagline)
-        stack.addArrangedSubview(tagline)
+
+        let titleStack = UIStackView(arrangedSubviews: [title, tagline])
+        titleStack.axis = .vertical
+        titleStack.alignment = .leading
+        titleStack.spacing = 2
+
+        let headerRow = UIStackView(arrangedSubviews: [])
+        headerRow.axis = .horizontal
+        headerRow.alignment = .center
+        headerRow.spacing = 12
+        if let logo = UIImage(named: "logo_shadow") ?? UIImage(named: "logo") {
+            let iv = UIImageView(image: logo)
+            iv.contentMode = .scaleAspectFit
+            iv.translatesAutoresizingMaskIntoConstraints = false
+            iv.widthAnchor.constraint(equalToConstant: 52).isActive = true
+            iv.heightAnchor.constraint(equalToConstant: 52).isActive = true
+            headerRow.addArrangedSubview(iv)
+        }
+        headerRow.addArrangedSubview(titleStack)
+        stack.addArrangedSubview(inset(headerRow))
 
         stack.addArrangedSubview(makeSpacer(8))
 
@@ -131,15 +158,6 @@ final class AboutViewController: UIViewController {
         ])
         stack.addArrangedSubview(creditContainer)
 
-        if let logo = UIImage(named: "logo_shadow") ?? UIImage(named: "logo") {
-            stack.addArrangedSubview(makeSpacer(20))
-            let iv = UIImageView(image: logo)
-            iv.contentMode = .scaleAspectFit
-            iv.translatesAutoresizingMaskIntoConstraints = false
-            iv.heightAnchor.constraint(lessThanOrEqualToConstant: 160).isActive = true
-            stack.addArrangedSubview(iv)
-        }
-
         NSLayoutConstraint.activate([
             scroll.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scroll.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -211,25 +229,15 @@ final class AboutViewController: UIViewController {
         chips.removeAll()
         let items: [(String, VisualEffects)] = VisualEffects.all.map { ($0.label, $0) }
 
-        let cols = 2
         let outer = UIStackView()
-        outer.axis = .vertical
+        outer.axis = .horizontal
         outer.alignment = .fill
         outer.distribution = .fillEqually
-        outer.spacing = 10
+        outer.spacing = 8
 
-        var row: UIStackView?
-        for (i, item) in items.enumerated() {
-            if i % cols == 0 {
-                row = UIStackView()
-                row!.axis = .horizontal
-                row!.spacing = 10
-                row!.alignment = .fill
-                row!.distribution = .fillEqually
-                outer.addArrangedSubview(row!)
-            }
+        for item in items {
             let chip = makeChip(label: item.0, effect: item.1)
-            row!.addArrangedSubview(chip)
+            outer.addArrangedSubview(chip)
             chips.append((chip, item.1))
         }
 
@@ -248,26 +256,28 @@ final class AboutViewController: UIViewController {
 
     private func makeChip(label: String, effect: VisualEffects) -> UIButton {
         let btn = UIButton(type: .custom)
-        btn.setTitle(label, for: .normal)
-        btn.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
-        btn.titleLabel?.numberOfLines = 2
-        btn.titleLabel?.textAlignment = .center
-        btn.titleLabel?.lineBreakMode = .byWordWrapping
+        var cfg = UIButton.Configuration.plain()
+        cfg.image = UIImage(systemName: effect.symbolName,
+                            withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .regular))
+        cfg.imagePlacement = .top
+        cfg.imagePadding = 6
+        cfg.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 4, bottom: 10, trailing: 4)
+        var title = AttributedString(label)
+        title.font = .systemFont(ofSize: 11, weight: .medium)
+        cfg.attributedTitle = title
+        cfg.titleLineBreakMode = .byTruncatingTail
+        btn.configuration = cfg
         btn.layer.cornerRadius = 10
-        btn.heightAnchor.constraint(equalToConstant: 56).isActive = true
         btn.addAction(UIAction { [weak self] _ in self?.toggle(effect) }, for: .touchUpInside)
         applyChipStyle(btn, isOn: isChipOn(effect))
         return btn
     }
 
     private func applyChipStyle(_ btn: UIButton, isOn: Bool) {
-        if isOn {
-            btn.backgroundColor = linkColor
-            btn.setTitleColor(bgColor, for: .normal)
-        } else {
-            btn.backgroundColor = UIColor.white.withAlphaComponent(0.06)
-            btn.setTitleColor(textColor, for: .normal)
-        }
+        let fg = isOn ? bgColor : textColor
+        btn.backgroundColor = isOn ? linkColor : UIColor.white.withAlphaComponent(0.06)
+        btn.configuration?.baseForegroundColor = fg
+        btn.tintColor = fg
     }
 
     private func isChipOn(_ effect: VisualEffects) -> Bool {
@@ -454,16 +464,8 @@ final class AboutViewController: UIViewController {
 
     /// Repaint the popup's own chrome so the change is visible immediately.
     private func refreshThemeColors() {
-        view.backgroundColor = bgColor
-        for sub in view.subviews where sub is UIScrollView { sub.backgroundColor = bgColor }
         for label in themedLabels { label.textColor = textColor }
-        applyPanelBorder()
         refreshChips()
-    }
-
-    private func applyPanelBorder() {
-        view.layer.borderWidth = 1
-        view.layer.borderColor = theme.accent(alpha: 0.35).cgColor
     }
 
     // MARK: - Layout helper
