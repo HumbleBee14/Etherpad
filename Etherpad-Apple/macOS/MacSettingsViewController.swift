@@ -34,7 +34,7 @@ final class MacSettingsViewController: NSViewController {
         stack.edgeInsets = NSEdgeInsets(top: 24, left: sideInset, bottom: 24, right: sideInset)
         view.addSubview(stack)
 
-        let title = makeLabel("Settings", size: 22, weight: .bold)
+        let title = makeLabel("Etherpad", size: 22, weight: .bold)
         title.alignment = .center
         stack.addArrangedSubview(title)
 
@@ -58,9 +58,10 @@ final class MacSettingsViewController: NSViewController {
         holdTimeoutContainer.isHidden = TouchHoldSettings.mode == .native
         stack.addArrangedSubview(holdTimeoutContainer)
 
+        stack.addArrangedSubview(makeTipsBox())
         stack.addArrangedSubview(makeDeveloperLink())
         stack.addArrangedSubview(makeCreditsLabel())
-        stack.addArrangedSubview(makeTipsBox())
+        stack.addArrangedSubview(makeVersionLabel())
 
         for sub in stack.arrangedSubviews {
             sub.widthAnchor.constraint(equalToConstant: innerWidth).isActive = true
@@ -163,7 +164,9 @@ final class MacSettingsViewController: NSViewController {
     }
 
     private func makeChip(effect: VisualEffects) -> NSButton {
-        let img = NSImage(systemSymbolName: effect.symbolName, accessibilityDescription: effect.label)
+        let config = NSImage.SymbolConfiguration(pointSize: 22, weight: .regular)
+        let img = NSImage(systemSymbolName: effect.symbolName, accessibilityDescription: effect.label)?
+            .withSymbolConfiguration(config)
         let btn = NSButton(image: img ?? NSImage(), target: self, action: #selector(toggleEffect(_:)))
         btn.imagePosition = .imageOnly
         btn.setButtonType(.toggle)
@@ -427,6 +430,16 @@ final class MacSettingsViewController: NSViewController {
         l.lineBreakMode = .byWordWrapping
         l.maximumNumberOfLines = 0
         l.preferredMaxLayoutWidth = innerWidth
+        return l
+    }
+
+    private func makeVersionLabel() -> NSTextField {
+        let info = Bundle.main.infoDictionary
+        let short = info?["CFBundleShortVersionString"] as? String ?? "—"
+        let build = info?["CFBundleVersion"] as? String ?? "—"
+        let l = makeLabel("Version \(short) (\(build))", size: 11, weight: .regular)
+        l.textColor = subtleColor
+        l.alignment = .center
         return l
     }
 
