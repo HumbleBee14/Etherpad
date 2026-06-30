@@ -77,7 +77,7 @@ final class PresetRowView: NSView, NSTextFieldDelegate {
 
         actionStack = NSStackView(views: [editButton, deleteButton, confirmDelete, cancelDelete])
         actionStack.orientation = .horizontal
-        actionStack.spacing = 6
+        actionStack.spacing = 12
         actionStack.translatesAutoresizingMaskIntoConstraints = false
         actionStack.alphaValue = 0   // hidden until hover
 
@@ -106,7 +106,9 @@ final class PresetRowView: NSView, NSTextFieldDelegate {
     }
 
     private func styleDeleteConfirm(_ btn: NSButton, symbol: String, tint: NSColor, action: Selector) {
-        btn.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+        let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
+        btn.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)?
+            .withSymbolConfiguration(config)
         btn.imagePosition = .imageOnly
         btn.bezelStyle = .accessoryBar
         btn.isBordered = false
@@ -210,8 +212,11 @@ final class PresetRowView: NSView, NSTextFieldDelegate {
     }
 
     override func mouseDown(with event: NSEvent) {
+        if window?.firstResponder is NSText, state != .editing {
+            window?.makeFirstResponder(nil)
+            return
+        }
         guard state == .normal else { super.mouseDown(with: event); return }
-        // Clicks on the action buttons are handled by the buttons themselves.
         let p = convert(event.locationInWindow, from: nil)
         if actionStack.frame.contains(p) { super.mouseDown(with: event); return }
         onLoad?()
@@ -224,7 +229,9 @@ final class MacIconButton: NSButton {
 
     init(symbol: String, tooltip: String) {
         super.init(frame: .zero)
-        image = NSImage(systemSymbolName: symbol, accessibilityDescription: tooltip)
+        let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
+        image = NSImage(systemSymbolName: symbol, accessibilityDescription: tooltip)?
+            .withSymbolConfiguration(config)
         imagePosition = .imageOnly
         bezelStyle = .accessoryBar
         isBordered = false

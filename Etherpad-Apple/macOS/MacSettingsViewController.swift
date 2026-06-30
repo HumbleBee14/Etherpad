@@ -19,6 +19,7 @@ final class MacSettingsViewController: NSViewController {
     private var holdTimeoutContainer: NSView!
     private var holdSlider: NSSlider!
     private var holdValueLabel: NSTextField!
+    private var recordingSwitch: NSSwitch!
     private var escMonitor: Any?
 
     override func loadView() {
@@ -41,7 +42,7 @@ final class MacSettingsViewController: NSViewController {
         let tagline = makeLabel("Multi-touch synthesizer for Mac", size: 13, weight: .regular)
         tagline.alignment = .center
         tagline.textColor = textColor
-        stack.setCustomSpacing(20, after: title)
+        stack.setCustomSpacing(4, after: title)
         stack.addArrangedSubview(tagline)
 
         stack.addArrangedSubview(makeVisualizationsHeader())
@@ -58,14 +59,21 @@ final class MacSettingsViewController: NSViewController {
         holdTimeoutContainer.isHidden = TouchHoldSettings.mode == .native
         stack.addArrangedSubview(holdTimeoutContainer)
 
+        stack.addArrangedSubview(makeRecordingHeader())
+
         stack.addArrangedSubview(makeTipsBox())
-        stack.addArrangedSubview(makeDeveloperLink())
+        let developer = makeDeveloperLink()
+        stack.addArrangedSubview(developer)
         stack.addArrangedSubview(makeCreditsLabel())
-        stack.addArrangedSubview(makeVersionLabel())
+        stack.setCustomSpacing(4, after: developer)
 
         for sub in stack.arrangedSubviews {
             sub.widthAnchor.constraint(equalToConstant: innerWidth).isActive = true
         }
+
+        let version = makeVersionLabel()
+        version.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(version)
 
         NSLayoutConstraint.activate([
             view.widthAnchor.constraint(equalToConstant: contentWidth),
@@ -73,6 +81,9 @@ final class MacSettingsViewController: NSViewController {
             stack.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             stack.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             stack.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            version.topAnchor.constraint(equalTo: view.topAnchor, constant: 10),
+            version.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
         ])
     }
 
@@ -334,6 +345,51 @@ final class MacSettingsViewController: NSViewController {
         return container
     }
 
+    private func makeRecordingHeader() -> NSView {
+        let container = NSStackView()
+        container.orientation = .vertical
+        container.alignment = .leading
+        container.spacing = 4
+        container.translatesAutoresizingMaskIntoConstraints = false
+
+        let row = NSView()
+        row.translatesAutoresizingMaskIntoConstraints = false
+
+        let label = makeLabel("Recording", size: 15, weight: .semibold)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        row.addSubview(label)
+
+        recordingSwitch = NSSwitch()
+        recordingSwitch.target = self
+        recordingSwitch.action = #selector(recordingToggled(_:))
+        recordingSwitch.state = MacRecordingSettings.isEnabled ? .on : .off
+        recordingSwitch.translatesAutoresizingMaskIntoConstraints = false
+        row.addSubview(recordingSwitch)
+
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: row.leadingAnchor),
+            label.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            recordingSwitch.trailingAnchor.constraint(equalTo: row.trailingAnchor),
+            recordingSwitch.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            row.heightAnchor.constraint(equalToConstant: 24),
+        ])
+
+        let caption = makeLabel("⌥R to record, ⌥S to stop.", size: 12, weight: .regular)
+        caption.textColor = subtleColor
+        caption.lineBreakMode = .byWordWrapping
+        caption.maximumNumberOfLines = 0
+        caption.preferredMaxLayoutWidth = innerWidth
+
+        container.addArrangedSubview(row)
+        container.addArrangedSubview(caption)
+        row.widthAnchor.constraint(equalToConstant: innerWidth).isActive = true
+        return container
+    }
+
+    @objc private func recordingToggled(_ sender: NSSwitch) {
+        MacRecordingSettings.isEnabled = sender.state == .on
+    }
+
     private func makeSustainTimeoutRow() -> NSView {
         let container = NSStackView()
         container.orientation = .vertical
@@ -402,12 +458,12 @@ final class MacSettingsViewController: NSViewController {
         let prefix = makeLabel("Developer: ", size: 14, weight: .regular)
         prefix.textColor = textColor
 
-        let link = NSButton(title: "Dinesh", target: self, action: #selector(openDeveloperSite))
+        let link = NSButton(title: "Dinesh Y", target: self, action: #selector(openDeveloperSite))
         link.bezelStyle = .inline
         link.isBordered = false
         link.font = .systemFont(ofSize: 14)
         link.contentTintColor = linkColor
-        link.attributedTitle = NSAttributedString(string: "Dinesh", attributes: [
+        link.attributedTitle = NSAttributedString(string: "Dinesh Y", attributes: [
             .foregroundColor: linkColor,
             .cursor: NSCursor.pointingHand,
         ])
@@ -434,12 +490,10 @@ final class MacSettingsViewController: NSViewController {
     }
 
     private func makeVersionLabel() -> NSTextField {
-        let info = Bundle.main.infoDictionary
-        let short = info?["CFBundleShortVersionString"] as? String ?? "—"
-        let build = info?["CFBundleVersion"] as? String ?? "—"
-        let l = makeLabel("Version \(short) (\(build))", size: 11, weight: .regular)
+        let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
+        let l = makeLabel("v\(short)", size: 11, weight: .regular)
         l.textColor = subtleColor
-        l.alignment = .center
+        l.alignment = .right
         return l
     }
 
@@ -462,12 +516,10 @@ final class MacSettingsViewController: NSViewController {
         lineStack.translatesAutoresizingMaskIntoConstraints = false
 
         let shortcut = makeTipLine("Press ⌥M for touchpad mode (Esc to exit).")
-        let record = makeTipLine("Press ⌥R to record, ⌥S to stop — works even when the toolbar is hidden.")
         let gestures = makeTipLine(
             "For smooth multi-finger play, turn off gestures (Mission Control & App Exposé) in "
             + "System Settings ▸ Trackpad ▸ More Gestures.")
         lineStack.addArrangedSubview(shortcut)
-        lineStack.addArrangedSubview(record)
         lineStack.addArrangedSubview(gestures)
 
         box.contentView?.addSubview(lineStack)

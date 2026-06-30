@@ -92,6 +92,7 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         recordButton.imagePosition = .imageOnly
         recordButton.bezelStyle = .accessoryBar
         recordButton.toolTip = "Record audio (⌥R)"
+        recordButton.isHidden = !MacRecordingSettings.isEnabled
         bar.addArrangedSubview(recordButton)
 
         let immersiveImg = NSImage(systemSymbolName: "arrow.up.left.and.arrow.down.right",
@@ -170,6 +171,16 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         engine.start()
         restoreSettings()
         installRecordKeyMonitor()
+
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(recordingSettingChanged),
+            name: .recordingSettingChanged, object: nil)
+    }
+
+    @objc private func recordingSettingChanged() {
+        let on = MacRecordingSettings.isEnabled
+        recordButton.isHidden = !on
+        if !on, engine.isRecording { stopRecordingIfNeeded() }
     }
 
     private enum Key {
@@ -724,24 +735,6 @@ private final class DownwardPopUpButton: NSPopUpButton, NSMenuDelegate {
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         menu?.delegate = self
-    }
-
-    override func mouseDown(with event: NSEvent) {
-        guard let menu, menu.numberOfItems > 0 else {
-            super.mouseDown(with: event)
-            return
-        }
-        let selected = item(at: indexOfSelectedItem)
-        menu.popUp(positioning: selected, at: NSPoint(x: bounds.midX, y: bounds.minY), in: self)
-    }
-
-    override func performClick(_ sender: Any?) {
-        guard let menu, menu.numberOfItems > 0 else {
-            super.performClick(sender)
-            return
-        }
-        let selected = item(at: indexOfSelectedItem)
-        menu.popUp(positioning: selected, at: NSPoint(x: bounds.midX, y: bounds.minY), in: self)
     }
 
     func menuWillOpen(_ menu: NSMenu) {

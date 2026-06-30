@@ -7,9 +7,8 @@ protocol MacPresetPopoverDelegate: AnyObject {
     func resetToDefaults()
 }
 
-/// Glass list of saved presets shown in an NSPopover. Rows reveal edit/delete icons on
-/// hover; rename happens inline, delete confirms inline, and "Save current" inserts a new
-/// row already in inline-edit mode. No modal sheets.
+/// Saved-presets list shown in an NSPopover. Rows reveal edit/delete on hover; rename
+/// and delete-confirm happen inline.
 final class MacPresetPopoverViewController: NSViewController {
 
     weak var delegate: MacPresetPopoverDelegate?
@@ -20,22 +19,24 @@ final class MacPresetPopoverViewController: NSViewController {
     private let accent = NSColor(red: 0x3d/255, green: 0xd6/255, blue: 0xd6/255, alpha: 1)
     private let width: CGFloat = 340
     private let rowHeight: CGFloat = 54
+    private let headerHeight: CGFloat = 40
     private let maxVisibleRows = 6
 
     private var tableView: NSTableView!
     private var emptyLabel: NSTextField!
+    private var saveButton: NSButton!
     private var presets: [MacPreset] = []
 
-    /// A preset being named for the first time, shown as an extra inline-editing row at the
-    /// top. Committed to the store on Return, discarded on blur/Esc.
-    private var draft: MacPreset?
     /// id of the row currently in inline rename, if any.
     private var editingID: UUID?
 
     override func loadView() {
         presets = MacPresetStore.presets
 
-        let container = NSView()
+        let container = EndEditingEffectView()
+        container.material = .menu
+        container.blendingMode = .behindWindow
+        container.state = .active
         container.wantsLayer = true
 
         let header = makeHeader()
@@ -86,6 +87,7 @@ final class MacPresetPopoverViewController: NSViewController {
         save.isBordered = false
         save.contentTintColor = accent
         save.font = .systemFont(ofSize: 13, weight: .medium)
+        saveButton = save
 
         let reset = NSButton(image: NSImage(systemSymbolName: "arrow.counterclockwise",
                                             accessibilityDescription: "Reset to defaults")!,
@@ -135,6 +137,10 @@ final class MacPresetPopoverViewController: NSViewController {
         scroll.documentView = table
         scroll.drawsBackground = false
         scroll.hasVerticalScroller = true
+        scroll.scrollerStyle = .overlay
+        scroll.scrollerKnobStyle = .light
+        scroll.autohidesScrollers = true
+        scroll.contentInsets = NSEdgeInsetsZero
         scroll.translatesAutoresizingMaskIntoConstraints = false
         tableView = table
         return scroll
@@ -142,21 +148,17 @@ final class MacPresetPopoverViewController: NSViewController {
 
     // MARK: - State
 
-    /// Rows shown = draft (if any) followed by stored presets.
-    private var rows: [MacPreset] {
-        if let draft = draft { return [draft] + presets }
-        return presets
-    }
+    private var rows: [MacPreset] { presets }
 
     private func refresh() {
         tableView.reloadData()
         emptyLabel.isHidden = !rows.isEmpty
         let count = min(max(rows.count, 1), maxVisibleRows)
-        preferredContentSize = NSSize(width: width, height: 40 + 1 + CGFloat(count) * rowHeight)
+        preferredContentSize = NSSize(width: width, height: headerHeight + 1 + CGFloat(count) * rowHeight)
     }
 
     @objc private func presetsChanged() {
-        // Store mutations can originate from inside controlTextDidEndEditing; defer the
+        // A store mutation can originate from inside controlTextDidEndEditing; defer the
         // reload one tick so the table isn't reloaded mid-end-editing.
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
@@ -167,20 +169,34 @@ final class MacPresetPopoverViewController: NSViewController {
 
     // MARK: - Header actions
 
+    /// Saves immediately with the auto-generated name (no Enter step). At the cap, the
+    /// button label briefly turns into an error instead of saving.
     @objc private func saveTapped() {
         guard let delegate = delegate else { return }
-        guard !MacPresetStore.isFull else { NSSound.beep(); return }
-        guard draft == nil, editingID == nil else { return }   // already drafting / renaming
-        let current = delegate.currentPreset()
-        draft = MacPreset(
-            name: MacPreset.suggestedName(
-                scale: current.scale, key: current.key, octave: current.octave,
-                sound: current.sound, maxLength: MacPresetStore.maxNameLength),
-            scale: current.scale, key: current.key, octave: current.octave,
-            size: current.size, sound: current.sound)
-        editingID = draft?.id
-        refresh()
-        if let id = draft?.id { focusEditor(id: id) }
+        guard !MacPresetStore.isFull else { flashSaveError("Max \(MacPresetStore.maxPresets) presets"); return }
+        let c = delegate.currentPreset()
+        MacPresetStore.add(MacPreset(
+            name: MacPreset.suggestedName(scale: c.scale, key: c.key, octave: c.octave,
+                                          sound: c.sound, maxLength: MacPresetStore.maxNameLength),
+            scale: c.scale, key: c.key, octave: c.octave, size: c.size, sound: c.sound))
+    }
+
+    private var saveErrorWork: DispatchWorkItem?
+    private func flashSaveError(_ message: String) {
+        NSSound.beep()
+        saveErrorWork?.cancel()
+        saveButton.image = nil
+        saveButton.title = message
+        saveButton.contentTintColor = .systemRed
+        let work = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+            self.saveButton.image = NSImage(systemSymbolName: "plus", accessibilityDescription: "Save")
+            self.saveButton.imagePosition = .imageLeading
+            self.saveButton.title = "  Save current"
+            self.saveButton.contentTintColor = self.accent
+        }
+        saveErrorWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5, execute: work)
     }
 
     @objc private func resetTapped() {
@@ -189,12 +205,12 @@ final class MacPresetPopoverViewController: NSViewController {
     }
 
     // MARK: - Row actions
-    // Rows are resolved by id (not by a captured index) since the draft row shifts indices.
+    // Rows are resolved by id (not by a captured index) since reloads can reorder.
 
     private func index(of id: UUID) -> Int? { rows.firstIndex { $0.id == id } }
 
     private func loadRow(id: UUID) {
-        guard editingID == nil, id != draft?.id, let i = index(of: id) else { return }
+        guard editingID == nil, let i = index(of: id) else { return }
         delegate?.loadPreset(rows[i])
         dismissSelf()
     }
@@ -203,7 +219,7 @@ final class MacPresetPopoverViewController: NSViewController {
         guard index(of: id) != nil else { return }
         editingID = id
         refresh()
-        focusEditor(id: id)
+        DispatchQueue.main.async { [weak self] in self?.focusEditor(id: id) }
     }
 
     private func focusEditor(id: UUID) {
@@ -216,30 +232,16 @@ final class MacPresetPopoverViewController: NSViewController {
     // commit/cancel are invoked from controlTextDidEndEditing, so defer the table reload
     // to the next runloop tick rather than reloading mid-end-editing.
     private func commitEdit(id: UUID, newName: String) {
+        editingID = nil
         let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let d = draft, d.id == id {
-            draft = nil
-            editingID = nil
-            if !trimmed.isEmpty {
-                // add() posts didChangeNotification → presetsChanged reloads.
-                MacPresetStore.add(MacPreset(name: String(trimmed.prefix(MacPresetStore.maxNameLength)),
-                                             scale: d.scale, key: d.key, octave: d.octave,
-                                             size: d.size, sound: d.sound))
-            } else {
-                DispatchQueue.main.async { [weak self] in self?.refresh() }
-            }
+        if !trimmed.isEmpty {
+            MacPresetStore.rename(id: id, to: trimmed)
         } else {
-            editingID = nil
-            if !trimmed.isEmpty {
-                MacPresetStore.rename(id: id, to: trimmed)
-            } else {
-                DispatchQueue.main.async { [weak self] in self?.refresh() }
-            }
+            DispatchQueue.main.async { [weak self] in self?.refresh() }
         }
     }
 
     private func cancelEdit(id: UUID) {
-        if draft?.id == id { draft = nil }
         editingID = nil
         DispatchQueue.main.async { [weak self] in self?.refresh() }
     }
@@ -262,8 +264,7 @@ extension MacPresetPopoverViewController: NSTableViewDataSource, NSTableViewDele
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         let preset = rows[row]
-        let isDraft = preset.id == draft?.id
-        let isActive = !isDraft && (delegate.map { matches(preset, $0.currentPreset()) } ?? false)
+        let isActive = delegate.map { matches(preset, $0.currentPreset()) } ?? false
 
         let id = preset.id
         let cell = PresetRowView()
@@ -287,4 +288,13 @@ extension MacPresetPopoverViewController: NSTableViewDataSource, NSTableViewDele
 /// No default blue selection; hover tracking drives the row's own highlight.
 private final class PresetBackgroundRowView: NSTableRowView {
     override func drawSelection(in dirtyRect: NSRect) {}
+}
+
+private final class EndEditingEffectView: NSVisualEffectView {
+    override func mouseDown(with event: NSEvent) {
+        if window?.firstResponder is NSText {
+            window?.makeFirstResponder(nil)
+        }
+        super.mouseDown(with: event)
+    }
 }
