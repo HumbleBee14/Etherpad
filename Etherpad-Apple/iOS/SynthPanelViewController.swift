@@ -4,6 +4,7 @@ import AVFoundation
 final class SynthPanelViewController: UIViewController {
 
     var showsAboutButton: Bool = true
+    var showsRecordButton: Bool = true
 
     private let engine = CsoundEngine()
     private let surface = TouchSurfaceView()
@@ -147,7 +148,7 @@ final class SynthPanelViewController: UIViewController {
         preset.addTarget(self, action: #selector(showPresets), for: .touchUpInside)
         buttons.append(preset)
 
-        if RecordingSettings.isEnabled && showsAboutButton {
+        if RecordingSettings.isEnabled && showsRecordButton {
             let rec = UIButton(type: .system)
             let cfg = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
             rec.setImage(UIImage(systemName: "record.circle", withConfiguration: cfg), for: .normal)

@@ -80,7 +80,8 @@ final class SplitSynthViewController: UIViewController {
         let left = SynthPanelViewController()
         let right = SynthPanelViewController()
         left.showsAboutButton = false
-        right.showsAboutButton = false
+        left.showsRecordButton = false
+        right.showsRecordButton = false
 
         leftPanel = left
         rightPanel = right
