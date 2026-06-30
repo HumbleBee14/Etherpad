@@ -25,6 +25,7 @@ internal fun ChoiceDropdown(
     options: Array<String>,
     selected: Int,
     defaultIdx: Int,
+    theme: EtherTheme,
     onDismiss: () -> Unit,
     onPick: (Int) -> Unit,
 ) {
@@ -35,9 +36,9 @@ internal fun ChoiceDropdown(
         // the button it's anchored to.
         offset = DpOffset(x = 0.dp, y = 8.dp),
         shape = RoundedCornerShape(10.dp),
-        // Lift the surface a few shades above the slate background so it
-        // reads as a floating menu instead of a black hole.
-        containerColor = Color(0xFF4A555E),
+        // Lift the surface a few shades above the background so it reads as
+        // a floating menu instead of a black hole.
+        containerColor = theme.dropdownSurface,
         // Cap the menu height so longer lists (Scale, Sound) stay scrollable
         // and never run flush against the bottom of the screen.
         modifier = Modifier
