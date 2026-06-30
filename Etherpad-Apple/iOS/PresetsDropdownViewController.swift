@@ -29,9 +29,6 @@ final class PresetsDropdownViewController: UITableViewController {
         tableView.rowHeight = UITableView.automaticDimension
         tableView.tableFooterView = UIView()
 
-        let lp = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
-        tableView.addGestureRecognizer(lp)
-
         NotificationCenter.default.addObserver(
             self, selector: #selector(storeChanged),
             name: PresetStore.didChangeNotification, object: nil)
@@ -118,13 +115,41 @@ final class PresetsDropdownViewController: UITableViewController {
         dismiss(animated: true)
     }
 
-    // MARK: - Long press to edit
+    // MARK: - Swipe to edit / delete
 
-    @objc private func handleLongPress(_ g: UILongPressGestureRecognizer) {
-        guard g.state == .began, !presets.isEmpty else { return }
-        let point = g.location(in: tableView)
-        guard let ip = tableView.indexPathForRow(at: point), ip.section == 1 else { return }
-        presentEditPopup(for: presets[ip.row])
+    override func tableView(_ t: UITableView,
+                            trailingSwipeActionsConfigurationForRowAt ip: IndexPath)
+        -> UISwipeActionsConfiguration? {
+        guard ip.section == 1, !presets.isEmpty else { return nil }
+        let preset = presets[ip.row]
+
+        let delete = UIContextualAction(style: .destructive, title: nil) { [weak self] _, _, done in
+            self?.confirmDelete(preset)
+            done(true)
+        }
+        delete.image = UIImage(systemName: "trash")
+
+        let edit = UIContextualAction(style: .normal, title: nil) { [weak self] _, _, done in
+            self?.presentEditPopup(for: preset)
+            done(true)
+        }
+        edit.image = UIImage(systemName: "pencil")
+        edit.backgroundColor = Theme.current.accent
+
+        let config = UISwipeActionsConfiguration(actions: [edit, delete])
+        config.performsFirstActionWithFullSwipe = false
+        return config
+    }
+
+    private func confirmDelete(_ preset: Preset) {
+        let alert = UIAlertController(
+            title: "Delete “\(preset.name)”?",
+            message: nil, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Delete", style: .destructive) { _ in
+            PresetStore.delete(id: preset.id)
+        })
+        present(alert, animated: true)
     }
 
     // MARK: - Prompts
@@ -155,20 +180,10 @@ final class PresetsDropdownViewController: UITableViewController {
     }
 
     private func presentEditPopup(for preset: Preset) {
-        let alert = UIAlertController(title: nil, message: nil, preferredStyle: .alert)
-        alert.addTextField { tf in
-            tf.text = preset.name
-            tf.clearButtonMode = .whileEditing
-            tf.autocapitalizationType = .words
-        }
-        alert.addAction(UIAlertAction(title: "Delete", style: .destructive) { _ in
-            PresetStore.delete(id: preset.id)
-        })
-        alert.addAction(UIAlertAction(title: "Save", style: .default) { _ in
-            let name = Self.trimmed(alert.textFields?.first?.text)
-            PresetStore.rename(id: preset.id, to: name.isEmpty ? preset.name : name)
-        })
-        present(alert, animated: true)
+        let editor = PresetEditViewController(
+            preset: preset,
+            onSave: { name in PresetStore.rename(id: preset.id, to: name) })
+        present(editor, animated: true)
     }
 
     private static func trimmed(_ raw: String?) -> String {
