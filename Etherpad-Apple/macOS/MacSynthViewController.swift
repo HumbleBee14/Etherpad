@@ -17,6 +17,8 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
 
     private var controlBar: NSView!
     private var recordButton: NSButton!
+    private var presetButton: NSButton!
+    private var presetPopover: NSPopover?
     private var immersiveButton: NSButton!
     private var immersiveMode = false
     private var barShown = true
@@ -90,6 +92,7 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         recordButton.imagePosition = .imageOnly
         recordButton.bezelStyle = .accessoryBar
         recordButton.toolTip = "Record audio (⌥R)"
+        recordButton.isHidden = !MacRecordingSettings.isEnabled
         bar.addArrangedSubview(recordButton)
 
         let immersiveImg = NSImage(systemSymbolName: "arrow.up.left.and.arrow.down.right",
@@ -99,6 +102,14 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         immersiveButton.bezelStyle = .accessoryBar
         immersiveButton.toolTip = "Immersive mode — hide controls (⌥H)"
         bar.addArrangedSubview(immersiveButton)
+
+        let presetImg = NSImage(systemSymbolName: "slider.horizontal.3",
+                                accessibilityDescription: "Presets")!
+        presetButton = NSButton(image: presetImg, target: self, action: #selector(showPresets))
+        presetButton.imagePosition = .imageOnly
+        presetButton.bezelStyle = .accessoryBar
+        presetButton.toolTip = "Presets"
+        bar.addArrangedSubview(presetButton)
 
         let gear = NSImage(systemSymbolName: "gearshape", accessibilityDescription: "Settings")!
         let settings = NSButton(image: gear, target: self, action: #selector(showSettings))
@@ -160,6 +171,16 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         engine.start()
         restoreSettings()
         installRecordKeyMonitor()
+
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(recordingSettingChanged),
+            name: .recordingSettingChanged, object: nil)
+    }
+
+    @objc private func recordingSettingChanged() {
+        let on = MacRecordingSettings.isEnabled
+        recordButton.isHidden = !on
+        if !on, engine.isRecording { stopRecordingIfNeeded() }
     }
 
     private enum Key {
@@ -646,6 +667,61 @@ final class MacSynthViewController: NSViewController, MacTouchDelegate {
         let settings = MacSettingsViewController()
         presentAsModalWindow(settings)
     }
+
+    // MARK: - Presets
+    @objc private func showPresets() {
+        if let existing = presetPopover, existing.isShown {
+            existing.performClose(nil)
+            return
+        }
+        let content = MacPresetPopoverViewController()
+        content.delegate = self
+        content.onRequestClose = { [weak self] in self?.presetPopover?.performClose(nil) }
+        let popover = NSPopover()
+        popover.contentViewController = content
+        popover.behavior = .transient
+        popover.appearance = NSAppearance(named: .vibrantDark)
+        presetPopover = popover
+        popover.show(relativeTo: presetButton.bounds, of: presetButton, preferredEdge: .maxY)
+    }
+}
+
+extension MacSynthViewController: MacPresetPopoverDelegate {
+    func currentPreset() -> MacPreset {
+        MacPreset(name: "",
+                  scale: scalePopup.indexOfSelectedItem,
+                  key: keyPopup.indexOfSelectedItem,
+                  octave: octavePopup.indexOfSelectedItem,
+                  size: sizePopup.indexOfSelectedItem,
+                  sound: soundPopup.indexOfSelectedItem)
+    }
+
+    func loadPreset(_ preset: MacPreset) {
+        applyIndices(scale: preset.scale, key: preset.key, octave: preset.octave,
+                     size: preset.size, sound: preset.sound)
+    }
+
+    func resetToDefaults() {
+        applyIndices(scale: DefaultIndex.scale, key: DefaultIndex.key,
+                     octave: DefaultIndex.octave, size: DefaultIndex.size,
+                     sound: DefaultIndex.sound)
+    }
+
+    /// Single point that drives every config from a set of popup indices: selects each
+    /// popup, then routes through the existing *Changed handlers so the engine, surface,
+    /// and persisted indices all stay in sync. New configs only need a line here.
+    private func applyIndices(scale: Int, key: Int, octave: Int, size: Int, sound: Int) {
+        func clamp(_ i: Int, _ pop: NSPopUpButton) -> Int {
+            (0..<pop.numberOfItems).contains(i) ? i : 0
+        }
+        scalePopup.selectItem(at: clamp(scale, scalePopup))
+        keyPopup.selectItem(at: clamp(key, keyPopup))
+        octavePopup.selectItem(at: clamp(octave, octavePopup))
+        sizePopup.selectItem(at: clamp(size, sizePopup))
+        soundPopup.selectItem(at: clamp(sound, soundPopup))
+        scaleChanged(scalePopup); keyChanged(keyPopup); octaveChanged(octavePopup)
+        sizeChanged(sizePopup);  soundChanged(soundPopup)
+    }
 }
 
 private final class DownwardPopUpButton: NSPopUpButton, NSMenuDelegate {
@@ -659,24 +735,6 @@ private final class DownwardPopUpButton: NSPopUpButton, NSMenuDelegate {
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         menu?.delegate = self
-    }
-
-    override func mouseDown(with event: NSEvent) {
-        guard let menu, menu.numberOfItems > 0 else {
-            super.mouseDown(with: event)
-            return
-        }
-        let selected = item(at: indexOfSelectedItem)
-        menu.popUp(positioning: selected, at: NSPoint(x: bounds.midX, y: bounds.minY), in: self)
-    }
-
-    override func performClick(_ sender: Any?) {
-        guard let menu, menu.numberOfItems > 0 else {
-            super.performClick(sender)
-            return
-        }
-        let selected = item(at: indexOfSelectedItem)
-        menu.popUp(positioning: selected, at: NSPoint(x: bounds.midX, y: bounds.minY), in: self)
     }
 
     func menuWillOpen(_ menu: NSMenu) {

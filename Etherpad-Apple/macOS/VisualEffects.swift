@@ -20,6 +20,16 @@ struct VisualEffects: OptionSet {
         }
     }
 
+    var symbolName: String {
+        switch self {
+        case .ripple:     return "circle.circle"
+        case .trail:      return "scribble.variable"
+        case .intensity:  return "smallcircle.filled.circle"
+        case .columnGlow: return "pianokeys"
+        default:          return "questionmark"
+        }
+    }
+
     private static let key = "EtherpadVisualEffects"
     static var current: VisualEffects {
         get { VisualEffects(rawValue: UserDefaults.standard.integer(forKey: key)) }
@@ -33,6 +43,19 @@ struct VisualEffects: OptionSet {
 extension Notification.Name {
     static let visualEffectsChanged = Notification.Name("EtherpadVisualEffectsChanged")
     static let touchHoldChanged = Notification.Name("EtherpadTouchHoldChanged")
+    static let recordingSettingChanged = Notification.Name("EtherpadRecordingSettingDidChange")
+}
+
+enum MacRecordingSettings {
+    private static let key = "EtherpadMacRecordingEnabled"
+
+    static var isEnabled: Bool {
+        get { UserDefaults.standard.bool(forKey: key) }
+        set {
+            UserDefaults.standard.set(newValue, forKey: key)
+            NotificationCenter.default.post(name: .recordingSettingChanged, object: nil)
+        }
+    }
 }
 
 /// How a held-still trackpad touch is kept alive.

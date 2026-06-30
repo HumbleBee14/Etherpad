@@ -19,6 +19,7 @@ final class MacSettingsViewController: NSViewController {
     private var holdTimeoutContainer: NSView!
     private var holdSlider: NSSlider!
     private var holdValueLabel: NSTextField!
+    private var recordingSwitch: NSSwitch!
     private var escMonitor: Any?
 
     override func loadView() {
@@ -34,14 +35,14 @@ final class MacSettingsViewController: NSViewController {
         stack.edgeInsets = NSEdgeInsets(top: 24, left: sideInset, bottom: 24, right: sideInset)
         view.addSubview(stack)
 
-        let title = makeLabel("Settings", size: 22, weight: .bold)
+        let title = makeLabel("Etherpad", size: 22, weight: .bold)
         title.alignment = .center
         stack.addArrangedSubview(title)
 
         let tagline = makeLabel("Multi-touch synthesizer for Mac", size: 13, weight: .regular)
         tagline.alignment = .center
         tagline.textColor = textColor
-        stack.setCustomSpacing(20, after: title)
+        stack.setCustomSpacing(4, after: title)
         stack.addArrangedSubview(tagline)
 
         stack.addArrangedSubview(makeVisualizationsHeader())
@@ -58,13 +59,21 @@ final class MacSettingsViewController: NSViewController {
         holdTimeoutContainer.isHidden = TouchHoldSettings.mode == .native
         stack.addArrangedSubview(holdTimeoutContainer)
 
-        stack.addArrangedSubview(makeDeveloperLink())
-        stack.addArrangedSubview(makeCreditsLabel())
+        stack.addArrangedSubview(makeRecordingHeader())
+
         stack.addArrangedSubview(makeTipsBox())
+        let developer = makeDeveloperLink()
+        stack.addArrangedSubview(developer)
+        stack.addArrangedSubview(makeCreditsLabel())
+        stack.setCustomSpacing(4, after: developer)
 
         for sub in stack.arrangedSubviews {
             sub.widthAnchor.constraint(equalToConstant: innerWidth).isActive = true
         }
+
+        let version = makeVersionLabel()
+        version.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(version)
 
         NSLayoutConstraint.activate([
             view.widthAnchor.constraint(equalToConstant: contentWidth),
@@ -72,6 +81,9 @@ final class MacSettingsViewController: NSViewController {
             stack.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             stack.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             stack.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            version.topAnchor.constraint(equalTo: view.topAnchor, constant: 10),
+            version.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
         ])
     }
 
@@ -148,40 +160,33 @@ final class MacSettingsViewController: NSViewController {
 
     private func makeEffectContainer() -> NSStackView {
         chips.removeAll()
-        let container = NSStackView()
-        container.orientation = .vertical
-        container.spacing = 10
-        container.alignment = .leading
-        container.translatesAutoresizingMaskIntoConstraints = false
-
-        let pairs = stride(from: 0, to: VisualEffects.all.count, by: 2).map {
-            Array(VisualEffects.all[$0..<min($0 + 2, VisualEffects.all.count)])
+        let icons = VisualEffects.all.map { effect -> NSButton in
+            let chip = makeChip(effect: effect)
+            chips.append((chip, effect))
+            return chip
         }
-        for pair in pairs {
-            let rowChips = pair.map { effect -> NSButton in
-                let chip = makeChip(label: effect.label, effect: effect)
-                chips.append((chip, effect))
-                return chip
-            }
-            let row = NSStackView(views: rowChips)
-            row.orientation = .horizontal
-            row.distribution = .fillEqually
-            row.spacing = 10
-            row.translatesAutoresizingMaskIntoConstraints = false
-            container.addArrangedSubview(row)
-            row.widthAnchor.constraint(equalToConstant: innerWidth).isActive = true
-        }
-        return container
+        let row = NSStackView(views: icons)
+        row.orientation = .horizontal
+        row.distribution = .fillEqually
+        row.spacing = 10
+        row.translatesAutoresizingMaskIntoConstraints = false
+        row.widthAnchor.constraint(equalToConstant: innerWidth).isActive = true
+        return row
     }
 
-    private func makeChip(label: String, effect: VisualEffects) -> NSButton {
-        let btn = NSButton(title: label, target: self, action: #selector(toggleEffect(_:)))
+    private func makeChip(effect: VisualEffects) -> NSButton {
+        let config = NSImage.SymbolConfiguration(pointSize: 22, weight: .regular)
+        let img = NSImage(systemSymbolName: effect.symbolName, accessibilityDescription: effect.label)?
+            .withSymbolConfiguration(config)
+        let btn = NSButton(image: img ?? NSImage(), target: self, action: #selector(toggleEffect(_:)))
+        btn.imagePosition = .imageOnly
         btn.setButtonType(.toggle)
         btn.isBordered = false
         btn.wantsLayer = true
         btn.layer?.cornerRadius = 8
         btn.tag = effect.rawValue
-        btn.heightAnchor.constraint(equalToConstant: 36).isActive = true
+        btn.toolTip = effect.label
+        btn.heightAnchor.constraint(equalToConstant: 44).isActive = true
         applyChipStyle(btn, isOn: isChipOn(effect))
         return btn
     }
@@ -198,8 +203,7 @@ final class MacSettingsViewController: NSViewController {
     }
 
     private func isChipOn(_ effect: VisualEffects) -> Bool {
-        effect.rawValue == 0 ? VisualEffects.current.isEmpty
-                             : VisualEffects.current.contains(effect)
+        VisualEffects.current.contains(effect)
     }
 
     @objc private func toggleEffect(_ sender: NSButton) {
@@ -341,6 +345,51 @@ final class MacSettingsViewController: NSViewController {
         return container
     }
 
+    private func makeRecordingHeader() -> NSView {
+        let container = NSStackView()
+        container.orientation = .vertical
+        container.alignment = .leading
+        container.spacing = 4
+        container.translatesAutoresizingMaskIntoConstraints = false
+
+        let row = NSView()
+        row.translatesAutoresizingMaskIntoConstraints = false
+
+        let label = makeLabel("Recording", size: 15, weight: .semibold)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        row.addSubview(label)
+
+        recordingSwitch = NSSwitch()
+        recordingSwitch.target = self
+        recordingSwitch.action = #selector(recordingToggled(_:))
+        recordingSwitch.state = MacRecordingSettings.isEnabled ? .on : .off
+        recordingSwitch.translatesAutoresizingMaskIntoConstraints = false
+        row.addSubview(recordingSwitch)
+
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: row.leadingAnchor),
+            label.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            recordingSwitch.trailingAnchor.constraint(equalTo: row.trailingAnchor),
+            recordingSwitch.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            row.heightAnchor.constraint(equalToConstant: 24),
+        ])
+
+        let caption = makeLabel("⌥R to record, ⌥S to stop.", size: 12, weight: .regular)
+        caption.textColor = subtleColor
+        caption.lineBreakMode = .byWordWrapping
+        caption.maximumNumberOfLines = 0
+        caption.preferredMaxLayoutWidth = innerWidth
+
+        container.addArrangedSubview(row)
+        container.addArrangedSubview(caption)
+        row.widthAnchor.constraint(equalToConstant: innerWidth).isActive = true
+        return container
+    }
+
+    @objc private func recordingToggled(_ sender: NSSwitch) {
+        MacRecordingSettings.isEnabled = sender.state == .on
+    }
+
     private func makeSustainTimeoutRow() -> NSView {
         let container = NSStackView()
         container.orientation = .vertical
@@ -409,12 +458,12 @@ final class MacSettingsViewController: NSViewController {
         let prefix = makeLabel("Developer: ", size: 14, weight: .regular)
         prefix.textColor = textColor
 
-        let link = NSButton(title: "Dinesh", target: self, action: #selector(openDeveloperSite))
+        let link = NSButton(title: "Dinesh Y", target: self, action: #selector(openDeveloperSite))
         link.bezelStyle = .inline
         link.isBordered = false
         link.font = .systemFont(ofSize: 14)
         link.contentTintColor = linkColor
-        link.attributedTitle = NSAttributedString(string: "Dinesh", attributes: [
+        link.attributedTitle = NSAttributedString(string: "Dinesh Y", attributes: [
             .foregroundColor: linkColor,
             .cursor: NSCursor.pointingHand,
         ])
@@ -440,6 +489,14 @@ final class MacSettingsViewController: NSViewController {
         return l
     }
 
+    private func makeVersionLabel() -> NSTextField {
+        let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
+        let l = makeLabel("v\(short)", size: 11, weight: .regular)
+        l.textColor = subtleColor
+        l.alignment = .right
+        return l
+    }
+
     // MARK: - Tips (bottom)
 
     private func makeTipsBox() -> NSView {
@@ -459,12 +516,10 @@ final class MacSettingsViewController: NSViewController {
         lineStack.translatesAutoresizingMaskIntoConstraints = false
 
         let shortcut = makeTipLine("Press ⌥M for touchpad mode (Esc to exit).")
-        let record = makeTipLine("Press ⌥R to record, ⌥S to stop — works even when the toolbar is hidden.")
         let gestures = makeTipLine(
             "For smooth multi-finger play, turn off gestures (Mission Control & App Exposé) in "
             + "System Settings ▸ Trackpad ▸ More Gestures.")
         lineStack.addArrangedSubview(shortcut)
-        lineStack.addArrangedSubview(record)
         lineStack.addArrangedSubview(gestures)
 
         box.contentView?.addSubview(lineStack)
