@@ -136,6 +136,6 @@ final class PresetsViewController: UITableViewController {
         }
         rename.image = UIImage(systemName: "pencil")
 
-        return UISwipeActionsConfiguration(actions: [del, rename])
+        return UISwipeActionsConfiguration(actions: [rename, del])
     }
 }
