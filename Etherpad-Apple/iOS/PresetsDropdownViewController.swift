@@ -75,11 +75,18 @@ final class PresetsDropdownViewController: UITableViewController {
             let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
             cell.backgroundColor = .clear
             cell.selectedBackgroundView = pressHighlight()
-            cell.textLabel?.text = "Save current…"
+            cell.textLabel?.text = "Save current"
             cell.textLabel?.textColor = Theme.current.accent
             cell.textLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
             cell.imageView?.image = UIImage(systemName: "plus")
             cell.imageView?.tintColor = Theme.current.accent
+
+            let reset = UIButton(type: .system)
+            reset.setImage(UIImage(systemName: "arrow.counterclockwise"), for: .normal)
+            reset.tintColor = UIColor(white: 0.96, alpha: 1)
+            reset.frame = CGRect(x: 0, y: 0, width: 36, height: 36)
+            reset.addTarget(self, action: #selector(resetTapped), for: .touchUpInside)
+            cell.accessoryView = reset
             return cell
         }
 
@@ -177,6 +184,11 @@ final class PresetsDropdownViewController: UITableViewController {
             PresetStore.add(Preset(name: name, patch: patch))
         }
         present(editor, animated: true)
+    }
+
+    @objc private func resetTapped() {
+        onLoad(Preset(name: "", patch: .factoryDefault))
+        dismiss(animated: true)
     }
 
     private func presentEditPopup(for preset: Preset) {
