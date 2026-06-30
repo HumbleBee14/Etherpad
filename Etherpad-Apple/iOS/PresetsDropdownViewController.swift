@@ -74,19 +74,37 @@ final class PresetsDropdownViewController: UITableViewController {
         if ip.section == 0 {
             let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
             cell.backgroundColor = .clear
-            cell.selectedBackgroundView = pressHighlight()
-            cell.textLabel?.text = "Save current"
-            cell.textLabel?.textColor = Theme.current.accent
-            cell.textLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
-            cell.imageView?.image = UIImage(systemName: "plus")
-            cell.imageView?.tintColor = Theme.current.accent
+            cell.selectionStyle = .none
+
+            var saveCfg = UIButton.Configuration.plain()
+            saveCfg.image = UIImage(systemName: "plus")
+            saveCfg.imagePadding = 8
+            saveCfg.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
+            var saveTitle = AttributedString("Save current")
+            saveTitle.font = .systemFont(ofSize: 15, weight: .semibold)
+            saveCfg.attributedTitle = saveTitle
+            let save = UIButton(configuration: saveCfg)
+            save.tintColor = Theme.current.accent
+            save.contentHorizontalAlignment = .leading
+            save.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
 
             let reset = UIButton(type: .system)
             reset.setImage(UIImage(systemName: "arrow.counterclockwise"), for: .normal)
             reset.tintColor = UIColor(white: 0.96, alpha: 1)
-            reset.frame = CGRect(x: 0, y: 0, width: 36, height: 36)
             reset.addTarget(self, action: #selector(resetTapped), for: .touchUpInside)
-            cell.accessoryView = reset
+
+            let row = UIStackView(arrangedSubviews: [save, reset])
+            row.axis = .horizontal
+            row.alignment = .center
+            row.translatesAutoresizingMaskIntoConstraints = false
+            cell.contentView.addSubview(row)
+            NSLayoutConstraint.activate([
+                row.leadingAnchor.constraint(equalTo: cell.contentView.layoutMarginsGuide.leadingAnchor),
+                row.trailingAnchor.constraint(equalTo: cell.contentView.layoutMarginsGuide.trailingAnchor),
+                row.topAnchor.constraint(equalTo: cell.contentView.topAnchor),
+                row.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor),
+                reset.widthAnchor.constraint(equalToConstant: 36),
+            ])
             return cell
         }
 
@@ -121,11 +139,7 @@ final class PresetsDropdownViewController: UITableViewController {
 
     override func tableView(_ t: UITableView, didSelectRowAt ip: IndexPath) {
         t.deselectRow(at: ip, animated: true)
-        if ip.section == 0 {
-            promptSave()
-            return
-        }
-        guard !presets.isEmpty else { return }
+        guard ip.section == 1, !presets.isEmpty else { return }
         onLoad(presets[ip.row])
         dismiss(animated: true)
     }
@@ -184,6 +198,10 @@ final class PresetsDropdownViewController: UITableViewController {
             PresetStore.add(Preset(name: name, patch: patch))
         }
         present(editor, animated: true)
+    }
+
+    @objc private func saveTapped() {
+        promptSave()
     }
 
     @objc private func resetTapped() {
