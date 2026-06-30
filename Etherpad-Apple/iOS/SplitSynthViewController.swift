@@ -80,7 +80,7 @@ final class SplitSynthViewController: UIViewController {
         let left = SynthPanelViewController()
         let right = SynthPanelViewController()
         left.showsAboutButton = false
-        right.trailingAlignedToolbar = true
+        right.showsAboutButton = false
 
         leftPanel = left
         rightPanel = right

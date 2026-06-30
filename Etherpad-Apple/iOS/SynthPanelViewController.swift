@@ -4,7 +4,6 @@ import AVFoundation
 final class SynthPanelViewController: UIViewController {
 
     var showsAboutButton: Bool = true
-    var trailingAlignedToolbar: Bool = false
 
     private let engine = CsoundEngine()
     private let surface = TouchSurfaceView()
